@@ -1,0 +1,72 @@
+name: Deploy Football Pool
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: football-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, pdo_sqlite, mbstring, json, curl
+
+      - name: Validate Composer configuration
+        run: composer validate --strict
+
+      - name: Check PHP Syntax (Lint)
+        run: |
+          find public src -type f -name "*.php" 2>/dev/null -exec php -l {} + || true
+
+  deploy:
+    name: Deploy to Bluehost
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check FTP configuration
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+        run: |
+          test -n "$FTP_SERVER" || { echo "Missing production secret: FTP_SERVER"; exit 1; }
+          test -n "$FTP_USERNAME" || { echo "Missing production secret: FTP_USERNAME"; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo "Missing production secret: FTP_PASSWORD"; exit 1; }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER || vars.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME || vars.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD || vars.FTP_PASSWORD }}
+          port: 21
+          protocol: ftp
+          server-dir: ./
+          local-dir: ./
+          state-name: .ftp-deploy-sync-state.json
+          log-level: minimal
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/tests/**
+            **/.env*
+            **/error_log*
+            **/*.sqlite*

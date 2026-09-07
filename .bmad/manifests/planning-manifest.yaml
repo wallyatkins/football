@@ -1,0 +1,20 @@
+manifest_version: "1.0"
+generated_at: "2026-09-07T17:30:00Z"
+stage: "Agentic Planning"
+artifacts:
+  prd: "docs/prd.md"
+  architecture: "docs/architecture.md"
+  stories:
+    - "docs/stories/story-1.1-scaffold-routing.md"
+    - "docs/stories/story-1.2-wallyauth-oidc-pkce.md"
+    - "docs/stories/story-2.1-db-schema-migrations.md"
+    - "docs/stories/story-2.2-sports-api-sync.md"
+    - "docs/stories/story-3.1-pickem-grid-lockout.md"
+    - "docs/stories/story-3.2-survivor-selection-engine.md"
+    - "docs/stories/story-4.1-admin-payment-verification.md"
+    - "docs/stories/story-4.2-scoring-standings-rollover.md"
+quality_gates:
+  static_analysis: "PHPStan Level 6+"
+  code_standards: "PSR-12 / PHP-CS-Fixer"
+  test_framework: "PHPUnit 11"
+  security_scans: "OIDC Token signature & nonce verification, CSRF tokens, PDO parameterization"

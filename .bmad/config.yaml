@@ -1,0 +1,36 @@
+project:
+  name: "football.wallyatkins.com"
+  code: "FOOTBALL"
+  description: "Private Group NFL Pick'em & Survivor Pool Web Application"
+  version: "1.0.0-draft"
+  methodology: "BMAD (Breakthrough Method for Agile AI-Driven Development)"
+  stage: "planning"
+  target_host: "football.wallyatkins.com"
+  ecosystem: "wallyatkins.com"
+
+stack:
+  backend: "PHP 8.2+ (Native Front Controller & REST routing)"
+  webserver: "Apache 2.4 with mod_rewrite (.htaccess)"
+  database:
+    primary: "PostgreSQL 15+ (Production)"
+    fallback: "SQLite 3 (Development / Testing / Local WAL Mode)"
+  frontend: "Server-rendered PHP templates with Tailwind CSS & Alpine.js"
+  auth:
+    provider: "WallyAuth (auth.wallyatkins.com)"
+    protocol: "OpenID Connect (OIDC) Authorization Code Flow with PKCE"
+  sports_feed:
+    provider: "ESPN Hidden Public Scoreboard API / Community Fallbacks"
+
+epics:
+  - id: "EPIC-1"
+    name: "Auth & Workspace Baseline"
+    status: "planned"
+  - id: "EPIC-2"
+    name: "Ingestion & Game Management"
+    status: "planned"
+  - id: "EPIC-3"
+    name: "Gameplay & Submission State Engine"
+    status: "planned"
+  - id: "EPIC-4"
+    name: "Admin Verification & Standings"
+    status: "planned"
