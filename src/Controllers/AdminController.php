@@ -26,6 +26,7 @@ class AdminController
     public function payments(int $season, int $week): void
     {
         $admin = $this->requireAdmin();
+        $user = $admin;
 
         // 1. Weekly Pick'em Entries
         $entries = $this->db->query(

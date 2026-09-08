@@ -177,8 +177,8 @@ class PickemController
         // Ensure or update entry as locked
         if (!$entry) {
             $entryId = (int) $this->db->insert(
-                'INSERT INTO pickem_entries (user_id, season_year, week_number, mnf_total_points_prediction, payment_status, is_locked, locked_at)
-                 VALUES (:uid, :season, :week, :mnf, "pending", 1, CURRENT_TIMESTAMP)',
+                "INSERT INTO pickem_entries (user_id, season_year, week_number, mnf_total_points_prediction, payment_status, is_locked, locked_at)
+                 VALUES (:uid, :season, :week, :mnf, 'pending', 1, CURRENT_TIMESTAMP)",
                 ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'mnf' => $mnfPrediction]
             );
         } else {

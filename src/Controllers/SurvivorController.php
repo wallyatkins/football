@@ -189,8 +189,8 @@ class SurvivorController
             );
         } else {
             $this->db->execute(
-                'INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
-                 VALUES (:uid, :season, :week, :team, 0, "paid")',
+                "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+                 VALUES (:uid, :season, :week, :team, 0, 'paid')",
                 ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam]
             );
         }
