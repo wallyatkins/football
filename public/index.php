@@ -13,6 +13,16 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Dynamic Commissioner upgrade for active session
+if (!empty($_SESSION['user'])) {
+    $uEmail = strtolower($_SESSION['user']['email'] ?? '');
+    $uName = strtolower($_SESSION['user']['username'] ?? '');
+    $adminEmails = ['wallyatkins@gmail.com', 'wally@wallyatkins.com', 'accounts@wallyatkins.com'];
+    if (in_array($uEmail, $adminEmails, true) || in_array($uName, ['wallyatkins', 'wally'], true) || in_array($_SESSION['user']['role'] ?? '', ['admin', 'commissioner'], true)) {
+        $_SESSION['user']['role'] = 'commissioner';
+    }
+}
+
 // Load optional .env file if present
 $envFile = dirname(__DIR__) . '/.env';
 if (file_exists($envFile)) {
@@ -148,6 +158,10 @@ try {
 
         case '/admin/tiebreaker/randomize':
             (new AdminController())->randomizeTiebreaker();
+            exit;
+
+        case '/admin/picks/reset':
+            (new AdminController())->resetPicks();
             exit;
 
         default:

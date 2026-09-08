@@ -5,6 +5,7 @@ ob_start();
 $entryStatus = $entry['payment_status'] ?? 'none';
 $isPaid = in_array($entryStatus, ['paid', 'exempt'], true);
 $isUserLocked = !empty($entry['is_locked']);
+$isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
 $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
 $payPalUrl = 'https://paypal.me/WallyAtkins';
@@ -48,6 +49,14 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 <a href="/pickem?week=<?= $week + 1 ?>&season=<?= $season ?>" 
                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
                     Week <?= $week + 1 ?> &rarr;
+                </a>
+            <?php endif; ?>
+
+            <?php if (!empty($isCommissioner)): ?>
+                <a href="/admin/payments?week=<?= $week ?>&season=<?= $season ?>" 
+                   class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-900/60 border border-purple-500/40 text-purple-300 hover:bg-purple-800 hover:text-white transition flex items-center gap-1.5 shadow-sm">
+                    <span>👑</span>
+                    <span class="hidden sm:inline">Commissioner Portal</span>
                 </a>
             <?php endif; ?>
         </div>

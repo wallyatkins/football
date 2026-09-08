@@ -37,9 +37,11 @@
                     <a href="/survivor/standings" class="px-3 py-1.5 text-sm font-medium rounded-lg <?= str_contains($_SERVER['REQUEST_URI'] ?? '', '/survivor/standings') ? 'bg-slate-800 text-emerald-400 font-semibold' : 'text-slate-300 hover:text-white hover:bg-slate-800/50' ?> transition">
                         Survivor Leaderboard
                     </a>
-                    <?php if (($user['role'] ?? '') === 'admin'): ?>
-                        <a href="/admin/payments" class="px-3 py-1.5 text-sm font-medium rounded-lg <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'bg-purple-900/40 text-purple-300 border border-purple-700/50' : 'text-purple-300 hover:bg-purple-950/40' ?> transition flex items-center gap-1.5">
-                            <span>⚡</span> Admin
+                    <?php
+                    $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
+                    if ($isCommissioner): ?>
+                        <a href="/admin/payments" class="px-3 py-1.5 text-sm font-bold rounded-lg <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'bg-purple-600 text-white shadow-md' : 'bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/80 hover:text-white' ?> transition flex items-center gap-1.5 shadow-sm">
+                            <span>👑</span> Commissioner
                         </a>
                     <?php endif; ?>
                 </nav>
@@ -50,7 +52,9 @@
                     <div class="flex items-center gap-2.5">
                         <div class="hidden sm:flex flex-col text-right">
                             <span class="text-xs font-semibold text-white leading-tight"><?= htmlspecialchars($user['username'] ?? 'Player') ?></span>
-                            <span class="text-[10px] font-mono text-slate-400"><?= htmlspecialchars($user['role'] ?? 'player') ?></span>
+                            <span class="text-[10px] font-mono <?= $isCommissioner ? 'text-purple-400 font-bold' : 'text-slate-400' ?>">
+                                <?= $isCommissioner ? '👑 Commissioner' : 'Player' ?>
+                            </span>
                         </div>
                         <a href="/auth/logout" class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-900/50 rounded-lg transition">
                             Sign Out
@@ -79,10 +83,10 @@
             <span>🛡️</span>
             <span>Survivor</span>
         </a>
-        <?php if (($user['role'] ?? '') === 'admin'): ?>
-            <a href="/admin/payments" class="flex flex-col items-center gap-0.5 text-[11px] <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'text-purple-400 font-bold' : 'text-slate-400' ?>">
-                <span>⚡</span>
-                <span>Admin</span>
+        <?php if (!empty($isCommissioner)): ?>
+            <a href="/admin/payments" class="flex flex-col items-center gap-0.5 text-[11px] <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'text-purple-300 font-bold' : 'text-slate-400 hover:text-purple-300' ?>">
+                <span>👑</span>
+                <span>Commissioner</span>
             </a>
         <?php endif; ?>
     </nav>

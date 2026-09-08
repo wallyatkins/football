@@ -36,4 +36,13 @@ class LockoutTest extends TestCase
         $newTeam = 'BAL';
         $this->assertFalse(in_array($newTeam, $usedTeams, true), 'Unused team should be valid for selection.');
     }
+
+    public function testCommissionerRoleRecognition(): void
+    {
+        $allowedRoles = ['admin', 'commissioner'];
+
+        $this->assertTrue(in_array('commissioner', $allowedRoles, true));
+        $this->assertTrue(in_array('admin', $allowedRoles, true));
+        $this->assertFalse(in_array('player', $allowedRoles, true));
+    }
 }

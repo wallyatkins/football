@@ -268,12 +268,33 @@ class AdminController
         exit;
     }
 
+    public function resetPicks(): void
+    {
+        $this->requireAdmin();
+
+        $entryId = (int) ($_POST['entry_id'] ?? 0);
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+
+        if ($entryId > 0) {
+            $entry = $this->db->queryOne('SELECT user_id, week_number FROM pickem_entries WHERE id = :id', ['id' => $entryId]);
+            if ($entry) {
+                $this->db->execute('DELETE FROM pickem_picks WHERE entry_id = :id', ['id' => $entryId]);
+                $this->db->execute('DELETE FROM pickem_entries WHERE id = :id', ['id' => $entryId]);
+                $_SESSION['flash'] = "Picks and entry reset successfully for Week {$week}. Entrant can now draft fresh picks.";
+            }
+        }
+
+        header("Location: /admin/payments?week={$week}&season={$season}");
+        exit;
+    }
+
     private function requireAdmin(): array
     {
         $user = $_SESSION['user'] ?? null;
-        if (!$user || ($user['role'] ?? '') !== 'admin') {
+        if (!$user || !in_array($user['role'] ?? '', ['admin', 'commissioner'], true)) {
             http_response_code(403);
-            echo "Access Denied: Administrator role required.";
+            echo "Access Denied: Commissioner or Administrator role required.";
             exit;
         }
         return $user;

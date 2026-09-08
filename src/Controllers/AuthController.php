@@ -59,10 +59,15 @@ class AuthController
                 $roles = explode(' ', $roles);
             }
 
-            // Determine if user is admin
-            $adminEmails = array_map('trim', explode(',', getenv('ADMIN_EMAILS') ?: 'wally@wallyatkins.com'));
-            $isAdmin = in_array('admin', $roles, true) || in_array(strtolower($email), array_map('strtolower', $adminEmails), true);
-            $role = $isAdmin ? 'admin' : 'player';
+            // Determine if user is commissioner / admin
+            $adminEmails = array_map('trim', explode(',', getenv('ADMIN_EMAILS') ?: 'wally@wallyatkins.com,wallyatkins@gmail.com,accounts@wallyatkins.com'));
+            $isCommissioner = in_array('commissioner', $roles, true)
+                || in_array('football-commissioner', $roles, true)
+                || in_array('admin', $roles, true)
+                || in_array('tasks-admin', $roles, true)
+                || in_array(strtolower($email), array_map('strtolower', $adminEmails), true)
+                || in_array(strtolower($username), ['wallyatkins', 'wally'], true);
+            $role = $isCommissioner ? 'commissioner' : 'player';
 
             // Upsert user in local database
             $user = $this->db->queryOne('SELECT id, role FROM users WHERE oidc_sub = :sub', ['sub' => $sub]);

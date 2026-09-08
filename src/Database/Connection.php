@@ -277,6 +277,29 @@ class Connection
                     $this->pdo->exec("UPDATE games SET is_mnf = 1 WHERE id = {$selectedId}");
                 }
             }
+
+            // Ensure Wally has commissioner role and delete his legacy Week 1 picks
+            $wallyUserIds = $this->pdo->query(
+                "SELECT id FROM users WHERE lower(email) IN ('wallyatkins@gmail.com', 'wally@wallyatkins.com', 'accounts@wallyatkins.com') OR lower(username) IN ('wallyatkins', 'wally')"
+            )->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($wallyUserIds)) {
+                $idList = implode(',', array_map('intval', $wallyUserIds));
+
+                // Ensure commissioner role
+                $this->pdo->exec("UPDATE users SET role = 'commissioner' WHERE id IN ({$idList})");
+
+                // Clear Week 1 picks and entry so Wally can draft fresh 16-game picks
+                $entries = $this->pdo->query("SELECT id FROM pickem_entries WHERE user_id IN ({$idList}) AND week_number = 1")->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($entries)) {
+                    $eList = implode(',', array_map('intval', $entries));
+                    $this->pdo->exec("DELETE FROM pickem_picks WHERE entry_id IN ({$eList})");
+                    $this->pdo->exec("DELETE FROM pickem_entries WHERE id IN ({$eList})");
+                }
+            }
+
+            // Clean up any orphaned picks across all entries
+            $this->pdo->exec("DELETE FROM pickem_picks WHERE game_id NOT IN (SELECT id FROM games)");
         } catch (\Throwable) {
             // Ignore if tables not yet ready
         }

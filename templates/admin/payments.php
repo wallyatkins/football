@@ -307,6 +307,16 @@ $survivorPot = $survivorPaidCount * 10.00;
                                                 </button>
                                             <?php endif; ?>
                                         </form>
+
+                                        <!-- Reset / Clear Picks -->
+                                        <form action="/admin/picks/reset" method="POST" class="inline" onsubmit="return confirm('Delete and reset picks for <?= htmlspecialchars($e['username']) ?> in Week <?= $week ?>? This allows them to submit a completely fresh slate of picks.');">
+                                            <input type="hidden" name="entry_id" value="<?= $e['id'] ?>">
+                                            <input type="hidden" name="season_year" value="<?= $season ?>">
+                                            <input type="hidden" name="week_number" value="<?= $week ?>">
+                                            <button type="submit" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-slate-700 hover:border-rose-500/40 transition" title="Delete entry and picks for this week">
+                                                🗑️ Reset
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
