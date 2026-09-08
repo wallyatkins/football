@@ -146,6 +146,7 @@ class SportsDataService
             }
         }
 
+        $this->deduplicateWeek($seasonYear, $weekNumber);
         $this->ensureTiebreakerSelected($seasonYear, $weekNumber);
 
         return [
@@ -254,9 +255,44 @@ class SportsDataService
             }
         }
 
+        $this->deduplicateWeek($season, $week);
         $this->ensureTiebreakerSelected($season, $week);
 
         return ['total_events' => count($mockMatchups), 'inserted' => $synced, 'updated' => $updated];
+    }
+
+    public function deduplicateWeek(int $season, int $week): void
+    {
+        $games = $this->db->query(
+            'SELECT id, home_team, away_team FROM games WHERE season_year = :s AND week_number = :w ORDER BY id ASC',
+            ['s' => $season, 'w' => $week]
+        );
+
+        $seenMatchups = [];
+        $seenTeams = [];
+        $toDelete = [];
+
+        foreach ($games as $g) {
+            $h = \WallyFootball\Support\TeamData::normalize($g['home_team']);
+            $a = \WallyFootball\Support\TeamData::normalize($g['away_team']);
+            $teams = [$h, $a];
+            sort($teams);
+            $matchupKey = $teams[0] . '_' . $teams[1];
+
+            if (isset($seenMatchups[$matchupKey]) || isset($seenTeams[$h]) || isset($seenTeams[$a])) {
+                $toDelete[] = (int) $g['id'];
+            } else {
+                $seenMatchups[$matchupKey] = (int) $g['id'];
+                $seenTeams[$h] = (int) $g['id'];
+                $seenTeams[$a] = (int) $g['id'];
+            }
+        }
+
+        if (!empty($toDelete)) {
+            $delList = implode(',', $toDelete);
+            $this->db->execute("DELETE FROM pickem_picks WHERE game_id IN ({$delList})");
+            $this->db->execute("DELETE FROM games WHERE id IN ({$delList})");
+        }
     }
 
     public function ensureTiebreakerSelected(int $season, int $week): void
