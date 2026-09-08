@@ -85,6 +85,58 @@ $survivorPot = $survivorPaidCount * 10.00;
         </div>
     </div>
 
+    <!-- Designated Tiebreaker Game Control -->
+    <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/30 border border-amber-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div>
+            <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                    🎲 Random Tiebreaker Game
+                </span>
+                <span class="text-xs text-slate-400">Week <?= $week ?> Designated Contest</span>
+            </div>
+            <?php if (!empty($tiebreakerGame)): ?>
+                <?php
+                $tbAway = TeamData::get($tiebreakerGame['away_team']);
+                $tbHome = TeamData::get($tiebreakerGame['home_team']);
+                $tbKickoff = (new DateTimeImmutable($tiebreakerGame['kickoff_time']))
+                    ->setTimezone(new DateTimeZone('America/New_York'))->format('D, M j @ g:i A T');
+                ?>
+                <div class="flex items-center gap-3 my-2 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <img src="<?= htmlspecialchars($tbAway['logo']) ?>" alt="<?= htmlspecialchars($tbAway['name']) ?>" class="w-8 h-8 object-contain">
+                        <span class="font-black text-white text-base sm:text-lg"><?= htmlspecialchars($tbAway['name']) ?></span>
+                    </div>
+                    <span class="text-slate-500 font-black text-sm">@</span>
+                    <div class="flex items-center gap-2">
+                        <img src="<?= htmlspecialchars($tbHome['logo']) ?>" alt="<?= htmlspecialchars($tbHome['name']) ?>" class="w-8 h-8 object-contain">
+                        <span class="font-black text-white text-base sm:text-lg"><?= htmlspecialchars($tbHome['name']) ?></span>
+                    </div>
+                </div>
+                <div class="text-xs text-slate-400">
+                    <span class="font-mono text-amber-300 font-bold"><?= htmlspecialchars($tbKickoff) ?></span>
+                    <span class="mx-1 text-slate-600">&bull;</span>
+                    Status: <span class="uppercase font-mono font-bold text-slate-300"><?= htmlspecialchars($tiebreakerGame['status']) ?></span>
+                    <?php if ($tiebreakerGame['status'] === 'final'): ?>
+                        <span class="ml-1 font-mono text-emerald-400 font-bold">(Final: <?= $tiebreakerGame['away_score'] ?> - <?= $tiebreakerGame['home_score'] ?>, Total: <?= (int)$tiebreakerGame['home_score'] + (int)$tiebreakerGame['away_score'] ?> pts)</span>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="text-amber-400 font-bold text-sm">No tiebreaker game designated for this week yet.</div>
+            <?php endif; ?>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+            <form action="/admin/tiebreaker/randomize" method="POST" onsubmit="return confirm('Randomly re-roll the tiebreaker game for Week <?= $week ?>? All players will predict total points for the newly selected matchup.');">
+                <input type="hidden" name="season_year" value="<?= htmlspecialchars((string) $season) ?>">
+                <input type="hidden" name="week_number" value="<?= htmlspecialchars((string) $week) ?>">
+                <button type="submit" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-lg flex items-center gap-2">
+                    <span>🎲</span>
+                    <span>Re-roll Tiebreaker Game</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Summary Metrics Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Pick'em Pot -->
@@ -155,7 +207,7 @@ $survivorPot = $survivorPaidCount * 10.00;
                     <tr class="border-b border-slate-800 bg-slate-950/70 text-[11px] font-mono uppercase tracking-wider text-slate-400">
                         <th class="py-3.5 px-4">User</th>
                         <th class="py-3.5 px-4 text-center">Picks Made</th>
-                        <th class="py-3.5 px-4 text-center">MNF Total</th>
+                        <th class="py-3.5 px-4 text-center">Tiebreaker (Pts)</th>
                         <th class="py-3.5 px-4 text-center">Pick Status</th>
                         <th class="py-3.5 px-4 text-center">Payment Stake</th>
                         <th class="py-3.5 px-4">Verification Audit</th>

@@ -9,6 +9,11 @@ $isUserLocked = !empty($entry['is_locked']);
 $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
 $payPalUrl = 'https://paypal.me/WallyAtkins';
 $cashAppUrl = 'https://cash.app/$WallyAtkins';
+
+// Designated Tiebreaker Game Data
+$tbAwayData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['away_team']) : null;
+$tbHomeData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['home_team']) : null;
+$tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData['name']}" : "Official Tiebreaker Game";
 ?>
 
 <div class="space-y-6">
@@ -121,7 +126,7 @@ $cashAppUrl = 'https://cash.app/$WallyAtkins';
                             </span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                            Pick a winner for each matchup and enter the MNF tiebreaker score. <strong>Once saved and submitted, your picks are locked in for the week.</strong>
+                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Once saved and submitted, your picks are locked in for the week.</strong>
                         </p>
                         <div class="mt-2 text-[11px] text-slate-400">
                             Remember to add note <span class="font-mono text-amber-300 font-bold">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span> when sending your $10 stake.
@@ -204,8 +209,8 @@ $cashAppUrl = 'https://cash.app/$WallyAtkins';
                         <div class="flex items-center gap-2 text-slate-400">
                             <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
                             <?php if ($isMnf): ?>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm">
-                                    ⭐ MNF Tiebreaker
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                    ⭐ Official Tiebreaker Game
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -353,12 +358,29 @@ $cashAppUrl = 'https://cash.app/$WallyAtkins';
                 <div>
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">Official Tiebreaker Question</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">MNF Total Points</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Game of the Week</span>
                     </div>
-                    <h4 class="text-base sm:text-lg font-bold text-white">Monday Night Football Combined Total Score</h4>
-                    <p class="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-                        Predict the combined total final score for Monday Night Football. If two or more players tie in weekly picks, lowest absolute point delta wins the prize pot!
-                    </p>
+                    <?php if (isset($tbAwayData) && isset($tbHomeData)): ?>
+                        <div class="flex items-center gap-3 my-1.5 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <img src="<?= htmlspecialchars($tbAwayData['logo']) ?>" alt="<?= htmlspecialchars($tbAwayData['name']) ?>" class="w-7 h-7 object-contain">
+                                <span class="font-bold text-white text-base sm:text-lg"><?= htmlspecialchars($tbAwayData['name']) ?></span>
+                            </div>
+                            <span class="text-slate-400 font-semibold text-sm">@</span>
+                            <div class="flex items-center gap-2">
+                                <img src="<?= htmlspecialchars($tbHomeData['logo']) ?>" alt="<?= htmlspecialchars($tbHomeData['name']) ?>" class="w-7 h-7 object-contain">
+                                <span class="font-bold text-white text-base sm:text-lg"><?= htmlspecialchars($tbHomeData['name']) ?></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                            Predict the combined total final score for <strong><?= htmlspecialchars($tbAwayData['name']) ?> @ <?= htmlspecialchars($tbHomeData['name']) ?></strong> (our randomly selected tiebreaker game of the week). If two or more players tie in weekly picks, lowest absolute point delta wins the prize pot!
+                        </p>
+                    <?php else: ?>
+                        <h4 class="text-base sm:text-lg font-bold text-white">Weekly Tiebreaker Combined Total Score</h4>
+                        <p class="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                            Predict the combined total final score for our randomly selected game of the week. Lowest absolute point delta breaks ties!
+                        </p>
+                    <?php endif; ?>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
                     <div class="relative">
@@ -444,7 +466,10 @@ $cashAppUrl = 'https://cash.app/$WallyAtkins';
 
         <!-- Tiebreaker Summary -->
         <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-xs">
-            <span class="text-slate-400 font-semibold">Predicted Monday Night Combined Points:</span>
+            <div>
+                <span class="text-slate-400 font-semibold">Weekly Tiebreaker (Game of the Week):</span>
+                <span class="text-slate-300 block text-[11px]"><?= htmlspecialchars($tbMatchupLabel) ?></span>
+            </div>
             <span id="reviewMnfPoints" class="font-mono text-base font-black text-amber-400">--</span>
         </div>
 
@@ -559,7 +584,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     unpickedCards.forEach(c => c.classList.add('ring-4', 'ring-rose-500', 'animate-pulse'));
                 }
                 if (mnfMissing) {
-                    errorHtml += `<div><strong>Missing Tiebreaker:</strong> Please enter your predicted Monday Night Football combined total points.</div>`;
+                    const tbLabel = <?= json_encode($tbMatchupLabel) ?>;
+                    errorHtml += `<div><strong>Missing Tiebreaker:</strong> Please enter your predicted combined total points for <strong>${tbLabel}</strong>.</div>`;
                     if (mnfContainer) mnfContainer.classList.add('ring-4', 'ring-rose-500', 'animate-pulse');
                 }
 

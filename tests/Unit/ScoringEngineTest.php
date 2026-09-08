@@ -143,4 +143,34 @@ class ScoringEngineTest extends TestCase
         $this->assertSame('not_entered', $byUser['Charlie']['status']);
         $this->assertFalse($byUser['Charlie']['is_alive']);
     }
+
+    public function testRandomDesignatedTiebreakerGameResolution(): void
+    {
+        // Reassign tiebreaker from 103 (SF vs NYJ) to 102 (PHI vs GB, score 34-29 = 63 pts)
+        $this->db->execute("UPDATE games SET is_mnf = 0 WHERE id = 103");
+        $this->db->execute("UPDATE games SET is_mnf = 1 WHERE id = 102");
+
+        // Alice: 3 correct picks, predicted 60 pts -> delta = |60 - 63| = 3
+        $this->db->execute("INSERT INTO pickem_entries (id, user_id, season_year, week_number, mnf_total_points_prediction, payment_status) 
+            VALUES (1, 1, 2026, 1, 60, 'paid')");
+        $this->db->execute("INSERT INTO pickem_picks (entry_id, game_id, selected_team) VALUES 
+            (1, 101, 'KC'), (1, 102, 'PHI'), (1, 103, 'SF')");
+
+        // Bob: 3 correct picks, predicted 65 pts -> delta = |65 - 63| = 2
+        $this->db->execute("INSERT INTO pickem_entries (id, user_id, season_year, week_number, mnf_total_points_prediction, payment_status) 
+            VALUES (2, 2, 2026, 1, 65, 'paid')");
+        $this->db->execute("INSERT INTO pickem_picks (entry_id, game_id, selected_team) VALUES 
+            (2, 101, 'KC'), (2, 102, 'PHI'), (2, 103, 'SF')");
+
+        $standings = $this->engine->getWeeklyStandings(2026, 1);
+
+        // Bob should rank #1 because his delta is 2 (vs Alice's delta 3) for the random tiebreaker game
+        $this->assertSame('Bob', $standings[0]['username']);
+        $this->assertSame(2, $standings[0]['tiebreaker_delta']);
+        $this->assertSame(63, $standings[0]['actual_mnf']);
+
+        $this->assertSame('Alice', $standings[1]['username']);
+        $this->assertSame(3, $standings[1]['tiebreaker_delta']);
+        $this->assertSame(63, $standings[1]['actual_mnf']);
+    }
 }

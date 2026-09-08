@@ -60,8 +60,58 @@ class AdminController
             ['season' => $season, 'week' => $week]
         );
 
+        // 3. Active Weekly Tiebreaker Game
+        $tiebreakerGame = $this->db->queryOne(
+            'SELECT * FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
+            ['season' => $season, 'week' => $week]
+        );
+
         $title = "Commissioner Dashboard — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/admin/payments.php';
+    }
+
+    public function randomizeTiebreaker(): void
+    {
+        $this->requireAdmin();
+
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+
+        $games = $this->db->query(
+            'SELECT id, home_team, away_team FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+
+        if (!empty($games)) {
+            $currentId = $this->db->queryValue(
+                'SELECT id FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
+                ['season' => $season, 'week' => $week]
+            );
+
+            $candidates = array_values(array_filter($games, fn($g) => $g['id'] != $currentId));
+            if (empty($candidates)) {
+                $candidates = $games;
+            }
+
+            $picked = $candidates[array_rand($candidates)];
+            $selectedId = (int) $picked['id'];
+
+            $this->db->execute(
+                'UPDATE games SET is_mnf = 0 WHERE season_year = :season AND week_number = :week',
+                ['season' => $season, 'week' => $week]
+            );
+            $this->db->execute(
+                'UPDATE games SET is_mnf = 1 WHERE id = :id',
+                ['id' => $selectedId]
+            );
+
+            $_SESSION['flash'] = "🎲 Re-rolled tiebreaker game for Week {$week}: {$picked['away_team']} @ {$picked['home_team']}.";
+        } else {
+            $_SESSION['error'] = "No games found for Week {$week} to randomize.";
+        }
+
+        header("Location: /admin/payments?week={$week}&season={$season}");
+        exit;
     }
 
     public function togglePayment(): void

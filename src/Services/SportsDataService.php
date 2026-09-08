@@ -112,7 +112,6 @@ class SportsDataService
                         home_team = :home,
                         away_team = :away,
                         kickoff_time = :kickoff, 
-                        is_mnf = :is_mnf, 
                         home_score = :home_score, 
                         away_score = :away_score, 
                         status = :status 
@@ -121,7 +120,6 @@ class SportsDataService
                         'home' => $homeTeam,
                         'away' => $awayTeam,
                         'kickoff' => $kickoffUtc,
-                        'is_mnf' => $isMnf ? 1 : 0,
                         'home_score' => $homeScore,
                         'away_score' => $awayScore,
                         'status' => $status,
@@ -132,14 +130,13 @@ class SportsDataService
             } else {
                 $this->db->execute(
                     'INSERT INTO games (season_year, week_number, home_team, away_team, kickoff_time, is_mnf, home_score, away_score, status)
-                     VALUES (:season, :week, :home, :away, :kickoff, :is_mnf, :home_score, :away_score, :status)',
+                     VALUES (:season, :week, :home, :away, :kickoff, 0, :home_score, :away_score, :status)',
                     [
                         'season' => $seasonYear,
                         'week' => $weekNumber,
                         'home' => $homeTeam,
                         'away' => $awayTeam,
                         'kickoff' => $kickoffUtc,
-                        'is_mnf' => $isMnf ? 1 : 0,
                         'home_score' => $homeScore,
                         'away_score' => $awayScore,
                         'status' => $status,
@@ -148,6 +145,8 @@ class SportsDataService
                 $synced++;
             }
         }
+
+        $this->ensureTiebreakerSelected($seasonYear, $weekNumber);
 
         return [
             'total_events' => count($events),
@@ -226,7 +225,7 @@ class SportsDataService
             ['CLE', 'DAL', '2026-09-13 20:25:00+00', false],
             ['TB', 'WSH', '2026-09-13 20:25:00+00', false],
             ['DET', 'LAR', '2026-09-14 00:20:00+00', false],
-            ['SF', 'NYJ', '2026-09-15 00:15:00+00', true], // MNF tiebreaker
+            ['SF', 'NYJ', '2026-09-15 00:15:00+00', false],
         ];
 
         $synced = 0;
@@ -248,13 +247,35 @@ class SportsDataService
             } else {
                 $this->db->execute(
                     'INSERT INTO games (season_year, week_number, home_team, away_team, kickoff_time, is_mnf, status)
-                     VALUES (:season, :week, :home, :away, :kickoff, :is_mnf, "scheduled")',
-                    ['season' => $season, 'week' => $week, 'home' => $home, 'away' => $away, 'kickoff' => $kickoff, 'is_mnf' => $isMnf ? 1 : 0]
+                     VALUES (:season, :week, :home, :away, :kickoff, 0, "scheduled")',
+                    ['season' => $season, 'week' => $week, 'home' => $home, 'away' => $away, 'kickoff' => $kickoff]
                 );
                 $synced++;
             }
         }
 
+        $this->ensureTiebreakerSelected($season, $week);
+
         return ['total_events' => count($mockMatchups), 'inserted' => $synced, 'updated' => $updated];
+    }
+
+    public function ensureTiebreakerSelected(int $season, int $week): void
+    {
+        $hasTiebreaker = (int) $this->db->queryValue(
+            'SELECT COUNT(*) FROM games WHERE season_year = :s AND week_number = :w AND is_mnf = 1',
+            ['s' => $season, 'w' => $week]
+        );
+
+        if ($hasTiebreaker === 0) {
+            $games = $this->db->query(
+                'SELECT id FROM games WHERE season_year = :s AND week_number = :w ORDER BY id ASC',
+                ['s' => $season, 'w' => $week]
+            );
+            if (!empty($games)) {
+                $idx = abs(crc32("random_tiebreaker_{$season}_{$week}")) % count($games);
+                $selectedId = (int) $games[$idx]['id'];
+                $this->db->execute('UPDATE games SET is_mnf = 1 WHERE id = :id', ['id' => $selectedId]);
+            }
+        }
     }
 }

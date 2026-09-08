@@ -1,5 +1,11 @@
 <?php
+use WallyFootball\Support\TeamData;
+
 ob_start();
+
+$tbAwayData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['away_team']) : null;
+$tbHomeData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['home_team']) : null;
+$tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData['name']}" : null;
 ?>
 
 <div class="space-y-6">
@@ -53,6 +59,24 @@ ob_start();
         </div>
     </div>
 
+    <?php if ($tbLabel): ?>
+        <!-- Designated Tiebreaker Contest Info -->
+        <div class="px-4 py-3 rounded-xl bg-slate-900/80 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] uppercase">
+                    🎲 Official Tiebreaker
+                </span>
+                <span class="font-bold text-white"><?= htmlspecialchars($tbLabel) ?></span>
+                <?php if ($tiebreakerGame['status'] === 'final'): ?>
+                    <span class="font-mono text-emerald-400 font-bold">(Final: <?= $tiebreakerGame['away_score'] ?> - <?= $tiebreakerGame['home_score'] ?>, Total: <?= (int)$tiebreakerGame['home_score'] + (int)$tiebreakerGame['away_score'] ?> pts)</span>
+                <?php else: ?>
+                    <span class="text-slate-400 italic">(Final score pending)</span>
+                <?php endif; ?>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400">Lowest absolute &Delta; wins ties</span>
+        </div>
+    <?php endif; ?>
+
     <!-- Standings Table -->
     <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-xl">
         <table class="w-full text-left text-sm">
@@ -61,7 +85,7 @@ ob_start();
                     <th class="py-3 px-4 text-center w-12">Rank</th>
                     <th class="py-3 px-4">Participant</th>
                     <th class="py-3 px-4 text-center">Correct Picks</th>
-                    <th class="py-3 px-4 text-center">MNF Pred / Delta</th>
+                    <th class="py-3 px-4 text-center">Tiebreaker Pred / Delta</th>
                     <th class="py-3 px-4 text-right">Payment Status</th>
                 </tr>
             </thead>

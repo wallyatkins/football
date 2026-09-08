@@ -146,6 +146,10 @@ try {
             (new AdminController())->syncSchedule();
             exit;
 
+        case '/admin/tiebreaker/randomize':
+            (new AdminController())->randomizeTiebreaker();
+            exit;
+
         default:
             http_response_code(404);
             $user = $_SESSION['user'] ?? null;
@@ -225,7 +229,7 @@ function renderLandingPage(): void
                 <div class="grid grid-cols-2 gap-3 text-left mb-6">
                     <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
                         <span class="text-xs text-amber-400 font-semibold block uppercase tracking-wider">Weekly Pick'em</span>
-                        <span class="text-xs text-slate-300">Straight-up winners + Monday Night Football tiebreaker points.</span>
+                        <span class="text-xs text-slate-300">Straight-up winners + weekly Game of the Week tiebreaker points.</span>
                     </div>
                     <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
                         <span class="text-xs text-emerald-400 font-semibold block uppercase tracking-wider">Season Survivor</span>

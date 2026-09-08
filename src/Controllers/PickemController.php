@@ -86,6 +86,15 @@ class PickemController
             $game['user_pick'] = $userPicks[$game['id']] ?? null;
         }
 
+        // Find designated tiebreaker game
+        $tiebreakerGame = null;
+        foreach ($games as $g) {
+            if (!empty($g['is_mnf'])) {
+                $tiebreakerGame = $g;
+                break;
+            }
+        }
+
         // Commissioner payment links (exact verified links)
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';
@@ -143,21 +152,22 @@ class PickemController
             }
         }
 
-        // Validate MNF tiebreaker if MNF has not kicked off
-        $mnfMissing = false;
+        // Validate tiebreaker if designated game has not kicked off
+        $tiebreakerMissing = false;
         if ($mnfGame && strtotime($mnfGame['kickoff_time']) > $now) {
             if ($mnfPrediction === null || $mnfPrediction <= 0) {
-                $mnfMissing = true;
+                $tiebreakerMissing = true;
             }
         }
 
-        if ($unpickedCount > 0 || $mnfMissing) {
+        if ($unpickedCount > 0 || $tiebreakerMissing) {
             $reasons = [];
             if ($unpickedCount > 0) {
                 $reasons[] = "select a winner for all {$unpickedCount} remaining game(s)";
             }
-            if ($mnfMissing) {
-                $reasons[] = "enter the Monday Night Football combined total points tiebreaker";
+            if ($tiebreakerMissing) {
+                $tbDesc = $mnfGame ? "{$mnfGame['away_team']} @ {$mnfGame['home_team']}" : "Game of the Week";
+                $reasons[] = "enter the combined total points tiebreaker for {$tbDesc}";
             }
             $_SESSION['error'] = 'Incomplete submission: You must ' . implode(' and ', $reasons) . '.';
             header("Location: /pickem?week={$week}&season={$season}");
@@ -228,6 +238,10 @@ class PickemController
         $user = $_SESSION['user'] ?? null;
         $standings = $this->scoring->getWeeklyStandings($season, $week);
         $pot = $this->scoring->calculateWeeklyPot($season, $week);
+        $tiebreakerGame = $this->db->queryOne(
+            'SELECT * FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
+            ['season' => $season, 'week' => $week]
+        );
 
         $title = "Week {$week} Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/standings.php';
