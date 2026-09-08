@@ -2,6 +2,8 @@
 use WallyFootball\Support\TeamData;
 
 ob_start();
+$isNotEntered = ($survivorStatus === 'not_entered');
+$isAlive = ($survivorStatus === 'alive');
 ?>
 
 <div class="space-y-6">
@@ -41,27 +43,73 @@ ob_start();
         </div>
     </div>
 
-    <!-- Status Banner -->
-    <?php if ($isEliminated): ?>
+    <!-- Survivor Status Banners -->
+    <?php if ($isNotEntered): ?>
+        <!-- Not Entered Banner: Upfront $10 Payment Gate -->
+        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border-2 border-amber-500/40 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div class="flex items-start gap-4">
+                    <div class="p-3 rounded-xl bg-amber-500/15 text-amber-400 text-3xl border border-amber-500/30 shrink-0">
+                        🎟️
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 class="text-lg font-black text-white">Survivor Pool Entry Fee Required ($10.00)</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                                NOT ENTERED
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Survivor requires a <strong>one-time $10.00 entry fee upfront</strong> for the season. Send your $10 stake to Commissioner Wally using any verified channel below. Once verified, your status will become <strong>Alive</strong> and your picks will unlock!
+                        </p>
+                        <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-700/80 text-xs">
+                            <span class="text-slate-400">Payment Memo Note:</span>
+                            <span class="font-mono font-bold text-amber-300 select-all">Survivor - <?= htmlspecialchars($user['username'] ?? 'username') ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verified Payment Action Buttons -->
+                <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008CFF]/20 hover:bg-[#008CFF]/30 border border-[#008CFF]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                        <span>📱</span> Venmo (@WallyAtkins) &rarr;
+                    </a>
+                    <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0079C1]/20 hover:bg-[#0079C1]/30 border border-[#0079C1]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                        <span>💳</span> PayPal (paypal.me/WallyAtkins) &rarr;
+                    </a>
+                    <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                       class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00D632]/20 hover:bg-[#00D632]/30 border border-[#00D632]/50 text-[#4ade80] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                        <span>⚡</span> Cash App ($WallyAtkins) &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    <?php elseif ($isEliminated): ?>
+        <!-- Eliminated Banner -->
         <div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-4 shadow-lg">
             <span class="text-3xl">☠️</span>
             <div>
                 <h3 class="text-base font-black text-rose-300">Eliminated from Survivor Prize Pool</h3>
                 <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    You were knocked out of the Survivor challenge in Week <?= $eliminationWeek ?>. You may continue making picks for pride and tracking, but your entry is inactive in the season-long pot.
+                    You were knocked out of the Survivor challenge in Week <?= $eliminationWeek ?>. Your entry is inactive in the season-long pot.
                 </p>
             </div>
         </div>
+
     <?php else: ?>
-        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <!-- Alive & Active Banner -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div class="flex items-center gap-3.5">
-                <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-2xl border border-emerald-500/20 shrink-0">
+                <div class="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-2xl border border-emerald-500/30 shrink-0">
                     🛡️
                 </div>
                 <div>
                     <h3 class="text-sm font-bold text-white flex items-center gap-2">
                         <span>Survivor Status: Alive &amp; Active</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">ALIVE</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">ALIVE</span>
                     </h3>
                     <p class="text-xs text-slate-400 mt-0.5">Pick 1 straight-up winner. Teams can only be used once per season.</p>
                 </div>
@@ -89,17 +137,14 @@ ob_start();
         $pickedTeamAbbr = $currentPick['selected_team'];
         $pickedTeamData = TeamData::get($pickedTeamAbbr);
         ?>
-        <div class="p-4 rounded-2xl border shadow-lg flex items-center justify-between"
+        <div class="p-5 rounded-2xl border shadow-lg flex items-center justify-between"
              style="border-color: <?= $pickedTeamData['color'] ?>; background: linear-gradient(135deg, <?= $pickedTeamData['color'] ?>25 0%, #090d16 100%);">
-            <div class="flex items-center gap-3.5">
-                <div class="w-12 h-10 flex items-center justify-center">
-                    <?= TeamData::renderHelmet($pickedTeamAbbr, 48, 36) ?>
-                </div>
+            <div class="flex items-center gap-4">
                 <img src="<?= htmlspecialchars($pickedTeamData['logo']) ?>" 
                      alt="<?= htmlspecialchars($pickedTeamData['name']) ?>" 
-                     class="w-10 h-10 object-contain drop-shadow-md">
+                     class="w-14 h-14 object-contain filter drop-shadow-md">
                 <div>
-                    <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Your Locked Week <?= htmlspecialchars((string) $week) ?> Survivor Pick</span>
+                    <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Your Week <?= htmlspecialchars((string) $week) ?> Survivor Pick</span>
                     <span class="text-xl font-black text-white"><?= htmlspecialchars($pickedTeamData['name']) ?></span>
                 </div>
             </div>
@@ -129,14 +174,14 @@ ob_start();
                 $awayTeam = TeamData::get($awayAbbr);
                 $awayColor = $awayTeam['color'];
                 $awayPicked = ($currentTeam === $awayAbbr);
-                $awayDisabled = $isLocked || $awayUsed || $isEliminated;
+                $awayDisabled = $isLocked || $awayUsed || $isEliminated || $isNotEntered;
 
                 // Home Team
                 $homeAbbr = $game['home_team'];
                 $homeTeam = TeamData::get($homeAbbr);
                 $homeColor = $homeTeam['color'];
                 $homePicked = ($currentTeam === $homeAbbr);
-                $homeDisabled = $isLocked || $homeUsed || $isEliminated;
+                $homeDisabled = $isLocked || $homeUsed || $isEliminated || $isNotEntered;
                 ?>
                 <div class="rounded-2xl border border-slate-800/80 bg-slate-900/70 overflow-hidden shadow-lg">
                     <div class="flex items-center justify-between px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 text-xs">
@@ -151,9 +196,9 @@ ob_start();
                     <div class="p-3.5 grid grid-cols-2 gap-3.5" data-game-id="<?= $game['id'] ?>">
                         
                         <!-- Away Team -->
-                        <label class="survivor-card relative flex flex-col p-3 rounded-xl border-2 transition-all select-none
+                        <label class="survivor-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none
                             <?= $awayDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                            style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, #090d16 100%); box-shadow: 0 0 20px {$awayColor}33;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
+                            style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
                             
                             <input type="radio" 
                                    name="selected_team" 
@@ -163,28 +208,25 @@ ob_start();
                                    <?= $awayPicked ? 'checked' : '' ?>
                                    <?= $awayDisabled ? 'disabled' : '' ?>>
 
-                            <div class="flex items-center justify-between mb-2">
+                            <div class="w-full flex items-center justify-between mb-1">
                                 <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Away</span>
                                 <?php if ($awayUsed): ?>
                                     <span class="text-[10px] font-bold text-rose-400 font-mono">BURNED</span>
                                 <?php endif; ?>
                             </div>
 
-                            <div class="flex items-center justify-center gap-2 my-1">
-                                <div class="w-12 h-10 flex items-center justify-center">
-                                    <?= TeamData::renderHelmet($awayAbbr, 48, 36) ?>
-                                </div>
+                            <div class="my-2 h-16 flex items-center justify-center">
                                 <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
                                      alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
-                                     class="w-10 h-10 object-contain drop-shadow-md"
+                                     class="w-14 h-14 object-contain filter drop-shadow-md"
                                      loading="lazy">
                             </div>
 
-                            <div class="text-center mt-1">
+                            <div class="text-center w-full mt-1">
                                 <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block truncate">
                                     <?= htmlspecialchars($awayTeam['name']) ?>
                                 </span>
-                                <span class="text-lg font-black tracking-tight text-white block leading-tight">
+                                <span class="text-base font-black tracking-tight text-white block leading-tight">
                                     <?= htmlspecialchars($awayTeam['nick']) ?>
                                 </span>
                                 <span class="text-xs font-mono font-bold text-slate-500">
@@ -192,17 +234,17 @@ ob_start();
                                 </span>
                             </div>
 
-                            <div class="survivor-badge mt-2 pt-2 border-t border-slate-800/80 text-center <?= $awayPicked ? 'block' : 'hidden' ?>">
-                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
+                            <div class="survivor-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $awayPicked ? 'block' : 'hidden' ?>">
+                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
                                     <span>🛡️</span> SURVIVOR PICK
                                 </span>
                             </div>
                         </label>
 
                         <!-- Home Team -->
-                        <label class="survivor-card relative flex flex-col p-3 rounded-xl border-2 transition-all select-none
+                        <label class="survivor-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none
                             <?= $homeDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                            style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, #090d16 100%); box-shadow: 0 0 20px {$homeColor}33;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
+                            style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
                             
                             <input type="radio" 
                                    name="selected_team" 
@@ -212,28 +254,25 @@ ob_start();
                                    <?= $homePicked ? 'checked' : '' ?>
                                    <?= $homeDisabled ? 'disabled' : '' ?>>
 
-                            <div class="flex items-center justify-between mb-2">
+                            <div class="w-full flex items-center justify-between mb-1">
                                 <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Home</span>
                                 <?php if ($homeUsed): ?>
                                     <span class="text-[10px] font-bold text-rose-400 font-mono">BURNED</span>
                                 <?php endif; ?>
                             </div>
 
-                            <div class="flex items-center justify-center gap-2 my-1">
-                                <div class="w-12 h-10 flex items-center justify-center">
-                                    <?= TeamData::renderHelmet($homeAbbr, 48, 36) ?>
-                                </div>
+                            <div class="my-2 h-16 flex items-center justify-center">
                                 <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
                                      alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
-                                     class="w-10 h-10 object-contain drop-shadow-md"
+                                     class="w-14 h-14 object-contain filter drop-shadow-md"
                                      loading="lazy">
                             </div>
 
-                            <div class="text-center mt-1">
+                            <div class="text-center w-full mt-1">
                                 <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block truncate">
                                     <?= htmlspecialchars($homeTeam['name']) ?>
                                 </span>
-                                <span class="text-lg font-black tracking-tight text-white block leading-tight">
+                                <span class="text-base font-black tracking-tight text-white block leading-tight">
                                     <?= htmlspecialchars($homeTeam['nick']) ?>
                                 </span>
                                 <span class="text-xs font-mono font-bold text-slate-500">
@@ -241,8 +280,8 @@ ob_start();
                                 </span>
                             </div>
 
-                            <div class="survivor-badge mt-2 pt-2 border-t border-slate-800/80 text-center <?= $homePicked ? 'block' : 'hidden' ?>">
-                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[11px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
+                            <div class="survivor-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $homePicked ? 'block' : 'hidden' ?>">
+                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
                                     <span>🛡️</span> SURVIVOR PICK
                                 </span>
                             </div>
@@ -253,25 +292,38 @@ ob_start();
             <?php endforeach; ?>
         </div>
 
-        <?php if (!$isEliminated): ?>
-            <div class="sticky bottom-16 md:bottom-6 z-30 p-4 rounded-2xl bg-slate-900/95 border border-slate-800 backdrop-blur shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-xs text-slate-400">
-                    <span>🛡️</span>
-                    <span>Your pick locks at the chosen game's scheduled kickoff.</span>
-                </div>
+        <!-- Submit Controls -->
+        <div class="sticky bottom-16 md:bottom-6 z-30 p-4 rounded-2xl bg-slate-900/95 border border-slate-800 backdrop-blur shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+                <span>🛡️</span>
+                <?php if ($isNotEntered): ?>
+                    <span class="text-amber-400 font-semibold">Payment required: Send $10 to Commissioner Wally with note "Survivor - <?= htmlspecialchars($user['username'] ?? '') ?>" to unlock picks.</span>
+                <?php elseif ($isEliminated): ?>
+                    <span class="text-rose-400">Eliminated from the season-long prize pool.</span>
+                <?php else: ?>
+                    <span>Your pick locks permanently at the chosen game's scheduled kickoff.</span>
+                <?php endif; ?>
+            </div>
+
+            <?php if ($isNotEntered): ?>
+                <button type="button" disabled
+                        class="w-full sm:w-auto px-8 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed border border-slate-700">
+                    🔒 $10 Payment Verification Required
+                </button>
+            <?php elseif ($isAlive): ?>
                 <button type="submit" 
                         class="w-full sm:w-auto px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2">
                     <span>🛡️</span>
                     <span>Confirm Week <?= htmlspecialchars((string) $week) ?> Survivor Pick</span>
                 </button>
-            </div>
-        <?php endif; ?>
+            <?php endif; ?>
+        </div>
     </form>
 
 </div>
 
 <script>
-// Single selection behavior across entire form
+// Survivor Single-Selection across games
 document.addEventListener('DOMContentLoaded', function () {
     const cards = document.querySelectorAll('.survivor-card');
 
@@ -280,9 +332,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const radio = this.querySelector('.survivor-radio');
             if (!radio || radio.disabled) return;
 
-            // Reset all other survivor cards across the whole page
+            // Reset all cards across the page
             cards.forEach(c => {
-                if (!c.querySelector('.survivor-radio[disabled]')) {
+                const r = c.querySelector('.survivor-radio');
+                if (r && !r.disabled) {
                     c.style.borderColor = '#1e293b';
                     c.style.background = 'rgba(2, 6, 23, 0.7)';
                     c.style.boxShadow = 'none';
@@ -291,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // Highlight chosen team
+            // Highlight selected card
             const color = radio.getAttribute('data-color') || '#10b981';
             this.style.borderColor = color;
             this.style.background = `linear-gradient(135deg, ${color}28 0%, #090d16 100%)`;
@@ -309,4 +362,3 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php
 $content = ob_get_clean();
 require dirname(__DIR__) . '/layout.php';
-

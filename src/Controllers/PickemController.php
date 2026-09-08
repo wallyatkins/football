@@ -102,28 +102,62 @@ class PickemController
             }
         }
 
-        // Ensure or create entry
+        // Check if user entry already exists and is locked
         $entry = $this->db->queryOne(
-            'SELECT id, mnf_total_points_prediction FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',
+            'SELECT id, mnf_total_points_prediction, is_locked FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',
             ['uid' => $user['id'], 'season' => $season, 'week' => $week]
         );
 
+        if ($entry && !empty($entry['is_locked'])) {
+            $_SESSION['error'] = "Your picks for Week {$week} are already locked in and cannot be modified.";
+            header("Location: /pickem?week={$week}&season={$season}");
+            exit;
+        }
+
+        // Validate that all open/unlocked games are picked
+        $unlockedGames = array_filter($games, fn($g) => strtotime($g['kickoff_time']) > $now);
+        $unpickedCount = 0;
+        foreach ($unlockedGames as $g) {
+            $pick = $submittedPicks[$g['id']] ?? null;
+            if (empty($pick) || ($pick !== $g['home_team'] && $pick !== $g['away_team'])) {
+                $unpickedCount++;
+            }
+        }
+
+        // Validate MNF tiebreaker if MNF has not kicked off
+        $mnfMissing = false;
+        if ($mnfGame && strtotime($mnfGame['kickoff_time']) > $now) {
+            if ($mnfPrediction === null || $mnfPrediction <= 0) {
+                $mnfMissing = true;
+            }
+        }
+
+        if ($unpickedCount > 0 || $mnfMissing) {
+            $reasons = [];
+            if ($unpickedCount > 0) {
+                $reasons[] = "select a winner for all {$unpickedCount} remaining game(s)";
+            }
+            if ($mnfMissing) {
+                $reasons[] = "enter the Monday Night Football combined total points tiebreaker";
+            }
+            $_SESSION['error'] = 'Incomplete submission: You must ' . implode(' and ', $reasons) . '.';
+            header("Location: /pickem?week={$week}&season={$season}");
+            exit;
+        }
+
+        // Ensure or update entry as locked
         if (!$entry) {
             $entryId = (int) $this->db->insert(
-                'INSERT INTO pickem_entries (user_id, season_year, week_number, mnf_total_points_prediction, payment_status)
-                 VALUES (:uid, :season, :week, :mnf, "pending")',
+                'INSERT INTO pickem_entries (user_id, season_year, week_number, mnf_total_points_prediction, payment_status, is_locked, locked_at)
+                 VALUES (:uid, :season, :week, :mnf, "pending", 1, CURRENT_TIMESTAMP)',
                 ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'mnf' => $mnfPrediction]
             );
         } else {
             $entryId = (int) $entry['id'];
-            // Only update MNF tiebreaker if MNF has not kicked off
-            $mnfLocked = $mnfGame && strtotime($mnfGame['kickoff_time']) <= $now;
-            if (!$mnfLocked && $mnfPrediction !== null) {
-                $this->db->execute(
-                    'UPDATE pickem_entries SET mnf_total_points_prediction = :mnf WHERE id = :id',
-                    ['mnf' => $mnfPrediction, 'id' => $entryId]
-                );
-            }
+            $this->db->execute(
+                'UPDATE pickem_entries SET mnf_total_points_prediction = :mnf, is_locked = 1, locked_at = CURRENT_TIMESTAMP WHERE id = :id',
+                ['mnf' => $mnfPrediction, 'id' => $entryId]
+            );
         }
 
         // Process submitted picks
@@ -165,7 +199,7 @@ class PickemController
             }
         }
 
-        $_SESSION['flash'] = 'Your picks have been saved successfully!';
+        $_SESSION['flash'] = "Your Week {$week} picks are officially LOCKED IN! Don't forget to send your $10.00 entry fee.";
         header("Location: /pickem?week={$week}&season={$season}");
         exit;
     }

@@ -126,6 +126,22 @@ try {
             (new AdminController())->togglePayment();
             exit;
 
+        case '/admin/lock/toggle':
+            (new AdminController())->toggleLock();
+            exit;
+
+        case '/admin/survivor/toggle':
+            (new AdminController())->toggleSurvivor();
+            exit;
+
+        case '/admin/survivor/eliminate':
+            (new AdminController())->toggleSurvivorElimination();
+            exit;
+
+        case '/admin/survivor/grade':
+            (new AdminController())->gradeSurvivor();
+            exit;
+
         case '/admin/sync':
             (new AdminController())->syncSchedule();
             exit;

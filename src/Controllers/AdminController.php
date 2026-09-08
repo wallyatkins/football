@@ -4,23 +4,30 @@ declare(strict_types=1);
 namespace WallyFootball\Controllers;
 
 use WallyFootball\Database\Connection;
+use WallyFootball\Services\ScoringEngine;
 use WallyFootball\Services\SportsDataService;
 
 class AdminController
 {
     private Connection $db;
     private SportsDataService $sports;
+    private ScoringEngine $scoring;
 
-    public function __construct(?Connection $db = null, ?SportsDataService $sports = null)
-    {
+    public function __construct(
+        ?Connection $db = null, 
+        ?SportsDataService $sports = null,
+        ?ScoringEngine $scoring = null
+    ) {
         $this->db = $db ?? Connection::getInstance();
         $this->sports = $sports ?? new SportsDataService($this->db);
+        $this->scoring = $scoring ?? new ScoringEngine($this->db);
     }
 
     public function payments(int $season, int $week): void
     {
         $admin = $this->requireAdmin();
 
+        // 1. Weekly Pick'em Entries
         $entries = $this->db->query(
             'SELECT e.*, u.username, u.email,
                     (SELECT COUNT(*) FROM pickem_picks WHERE entry_id = e.id) as pick_count,
@@ -33,16 +40,27 @@ class AdminController
             ['season' => $season, 'week' => $week]
         );
 
-        $survivorEntries = $this->db->query(
-            'SELECT s.*, u.username, u.email
-             FROM survivor_picks s
-             JOIN users u ON u.id = s.user_id
-             WHERE s.season_year = :season AND s.week_number = :week
-             ORDER BY s.created_at DESC',
+        // 2. Survivor Pool Roster & Payments (Season-long upfront entries)
+        $survivorRoster = $this->db->query(
+            'SELECT u.id as user_id, u.username, u.email,
+                    se.id as survivor_entry_id, 
+                    COALESCE(se.payment_status, "unpaid") as survivor_payment_status,
+                    COALESCE(se.is_eliminated, 0) as is_eliminated,
+                    se.elimination_week,
+                    se.payment_verified_at,
+                    v.username as verified_by_username,
+                    (SELECT selected_team FROM survivor_picks WHERE user_id = u.id AND season_year = :season AND week_number = :week) as current_week_pick,
+                    (SELECT COUNT(*) FROM survivor_picks WHERE user_id = u.id AND season_year = :season) as total_weeks_picked
+             FROM users u
+             LEFT JOIN survivor_entries se ON se.user_id = u.id AND se.season_year = :season
+             LEFT JOIN users v ON v.id = se.payment_verified_by
+             ORDER BY 
+                CASE WHEN se.payment_status IN ("paid", "exempt") THEN 1 ELSE 2 END,
+                u.username ASC',
             ['season' => $season, 'week' => $week]
         );
 
-        $title = "Admin Payment Dashboard — Wally's NFL Pool";
+        $title = "Commissioner Dashboard — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/admin/payments.php';
     }
 
@@ -50,7 +68,6 @@ class AdminController
     {
         $admin = $this->requireAdmin();
 
-        $type = $_POST['type'] ?? 'pickem'; // 'pickem' or 'survivor'
         $id = (int) ($_POST['id'] ?? 0);
         $newStatus = strtolower(trim((string) ($_POST['status'] ?? 'paid')));
 
@@ -60,21 +77,14 @@ class AdminController
             exit;
         }
 
-        if ($type === 'pickem') {
-            $this->db->execute(
-                'UPDATE pickem_entries SET 
-                    payment_status = :status, 
-                    payment_verified_at = CASE WHEN :status = "paid" THEN CURRENT_TIMESTAMP ELSE NULL END,
-                    payment_verified_by = CASE WHEN :status = "paid" THEN :admin_id ELSE NULL END
-                 WHERE id = :id',
-                ['status' => $newStatus, 'admin_id' => $admin['id'], 'id' => $id]
-            );
-        } else {
-            $this->db->execute(
-                'UPDATE survivor_picks SET payment_status = :status WHERE id = :id',
-                ['status' => $newStatus, 'id' => $id]
-            );
-        }
+        $this->db->execute(
+            'UPDATE pickem_entries SET 
+                payment_status = :status, 
+                payment_verified_at = CASE WHEN :status = "paid" THEN CURRENT_TIMESTAMP ELSE NULL END,
+                payment_verified_by = CASE WHEN :status = "paid" THEN :admin_id ELSE NULL END
+             WHERE id = :id',
+            ['status' => $newStatus, 'admin_id' => $admin['id'], 'id' => $id]
+        );
 
         if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
             header('Content-Type: application/json');
@@ -84,7 +94,113 @@ class AdminController
 
         $season = (int) ($_POST['season_year'] ?? date('Y'));
         $week = (int) ($_POST['week_number'] ?? 1);
+        $_SESSION['flash'] = "Payment status updated to {$newStatus}.";
         header("Location: /admin/payments?week={$week}&season={$season}");
+        exit;
+    }
+
+    public function toggleLock(): void
+    {
+        $this->requireAdmin();
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $lockState = (int) ($_POST['locked'] ?? 0);
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+
+        if ($id > 0) {
+            $this->db->execute(
+                'UPDATE pickem_entries SET is_locked = :locked, locked_at = CASE WHEN :locked = 1 THEN CURRENT_TIMESTAMP ELSE NULL END WHERE id = :id',
+                ['locked' => $lockState, 'id' => $id]
+            );
+            $_SESSION['flash'] = ($lockState === 1) ? 'Picks locked for this user.' : 'Picks UNLOCKED! User can now modify their picks.';
+        }
+
+        header("Location: /admin/payments?week={$week}&season={$season}");
+        exit;
+    }
+
+    public function toggleSurvivor(): void
+    {
+        $admin = $this->requireAdmin();
+
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+        $newStatus = strtolower(trim((string) ($_POST['status'] ?? 'paid')));
+
+        if ($userId <= 0 || !in_array($newStatus, ['paid', 'unpaid', 'exempt'], true)) {
+            header("Location: /admin/payments?week={$week}&season={$season}#survivor");
+            exit;
+        }
+
+        $entry = $this->db->queryOne(
+            'SELECT id FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+            ['uid' => $userId, 'season' => $season]
+        );
+
+        if ($entry) {
+            $this->db->execute(
+                'UPDATE survivor_entries SET 
+                    payment_status = :status,
+                    payment_verified_at = CASE WHEN :status = "paid" THEN CURRENT_TIMESTAMP ELSE NULL END,
+                    payment_verified_by = CASE WHEN :status = "paid" THEN :admin_id ELSE NULL END
+                 WHERE id = :id',
+                ['status' => $newStatus, 'admin_id' => $admin['id'], 'id' => $entry['id']]
+            );
+        } else {
+            $this->db->execute(
+                'INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated, payment_verified_at, payment_verified_by)
+                 VALUES (:uid, :season, :status, 0, CASE WHEN :status = "paid" THEN CURRENT_TIMESTAMP ELSE NULL END, :admin_id)',
+                ['uid' => $userId, 'season' => $season, 'status' => $newStatus, 'admin_id' => $admin['id']]
+            );
+        }
+
+        $_SESSION['flash'] = "Survivor $10 payment status updated to {$newStatus}.";
+        header("Location: /admin/payments?week={$week}&season={$season}#survivor");
+        exit;
+    }
+
+    public function toggleSurvivorElimination(): void
+    {
+        $this->requireAdmin();
+
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+        $eliminate = (int) ($_POST['eliminate'] ?? 1);
+
+        if ($userId > 0) {
+            if ($eliminate === 1) {
+                $this->db->execute(
+                    'UPDATE survivor_entries SET is_eliminated = 1, elimination_week = :week WHERE user_id = :uid AND season_year = :season',
+                    ['week' => $week, 'uid' => $userId, 'season' => $season]
+                );
+                $_SESSION['flash'] = "User eliminated from Survivor in Week {$week}.";
+            } else {
+                $this->db->execute(
+                    'UPDATE survivor_entries SET is_eliminated = 0, elimination_week = NULL WHERE user_id = :uid AND season_year = :season',
+                    ['uid' => $userId, 'season' => $season]
+                );
+                $_SESSION['flash'] = "User revived in Survivor pool!";
+            }
+        }
+
+        header("Location: /admin/payments?week={$week}&season={$season}#survivor");
+        exit;
+    }
+
+    public function gradeSurvivor(): void
+    {
+        $this->requireAdmin();
+
+        $season = (int) ($_POST['season_year'] ?? date('Y'));
+        $week = (int) ($_POST['week_number'] ?? 1);
+
+        $eliminatedCount = $this->scoring->gradeSurvivorWeek($season, $week);
+        $_SESSION['flash'] = "Survivor Week {$week} graded! {$eliminatedCount} player(s) eliminated based on final game scores.";
+
+        header("Location: /admin/payments?week={$week}&season={$season}#survivor");
         exit;
     }
 

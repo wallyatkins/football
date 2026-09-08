@@ -206,6 +206,12 @@ class ScoringEngine
                     'UPDATE survivor_picks SET is_eliminated = 1 WHERE id = :id',
                     ['id' => $p['id']]
                 );
+                // Also update survivor_entries season record
+                $this->db->execute(
+                    'UPDATE survivor_entries SET is_eliminated = 1, elimination_week = :week 
+                     WHERE user_id = :uid AND season_year = :season AND is_eliminated = 0',
+                    ['week' => $week, 'uid' => $p['user_id'], 'season' => $season]
+                );
                 $eliminated++;
             }
         }
@@ -218,7 +224,14 @@ class ScoringEngine
      */
     public function getSurvivorStandings(int $season): array
     {
-        $users = $this->db->query('SELECT id, username, email FROM users ORDER BY username ASC');
+        $users = $this->db->query(
+            'SELECT u.id, u.username, u.email, se.payment_status as survivor_payment_status, 
+                    se.is_eliminated as entry_eliminated, se.elimination_week as entry_elim_week
+             FROM users u
+             LEFT JOIN survivor_entries se ON se.user_id = u.id AND se.season_year = :season
+             ORDER BY u.username ASC',
+            ['season' => $season]
+        );
         $result = [];
 
         foreach ($users as $user) {
@@ -230,6 +243,7 @@ class ScoringEngine
                 ['uid' => $user['id'], 'season' => $season]
             );
 
+            $isPaid = in_array($user['survivor_payment_status'] ?? '', ['paid', 'exempt'], true);
             $isEliminated = false;
             $eliminationWeek = null;
             $teamsUsed = [];
@@ -244,12 +258,26 @@ class ScoringEngine
                 }
             }
 
+            if (!empty($user['entry_eliminated'])) {
+                $isEliminated = true;
+                if ($eliminationWeek === null && !empty($user['entry_elim_week'])) {
+                    $eliminationWeek = (int) $user['entry_elim_week'];
+                }
+            }
+
+            $status = 'not_entered';
+            if ($isPaid) {
+                $status = $isEliminated ? 'eliminated' : 'alive';
+            }
+
             $result[] = [
                 'user_id' => $user['id'],
                 'username' => $user['username'],
                 'email' => $user['email'],
-                'is_alive' => !$isEliminated && count($picks) > 0,
-                'is_eliminated' => $isEliminated,
+                'status' => $status,
+                'is_paid' => $isPaid,
+                'is_alive' => ($status === 'alive'),
+                'is_eliminated' => ($status === 'eliminated'),
                 'elimination_week' => $eliminationWeek,
                 'picks_count' => count($picks),
                 'teams_used' => $teamsUsed,
@@ -257,14 +285,22 @@ class ScoringEngine
             ];
         }
 
-        // Sort: Alive players first, then by elimination week descending
+        // Sort: 1) Alive, 2) Eliminated (latest week first), 3) Not Entered
         usort($result, function ($a, $b) {
-            if ($a['is_alive'] !== $b['is_alive']) {
-                return $a['is_alive'] ? -1 : 1;
+            $statusOrder = ['alive' => 1, 'eliminated' => 2, 'not_entered' => 3];
+            $orderA = $statusOrder[$a['status']] ?? 4;
+            $orderB = $statusOrder[$b['status']] ?? 4;
+
+            if ($orderA !== $orderB) {
+                return $orderA <=> $orderB;
             }
-            if ($a['elimination_week'] !== $b['elimination_week']) {
-                return ($b['elimination_week'] ?? 0) <=> ($a['elimination_week'] ?? 0);
+
+            if ($a['status'] === 'eliminated' && $b['status'] === 'eliminated') {
+                if ($a['elimination_week'] !== $b['elimination_week']) {
+                    return ($b['elimination_week'] ?? 0) <=> ($a['elimination_week'] ?? 0);
+                }
             }
+
             return strcmp($a['username'], $b['username']);
         });
 

@@ -46,16 +46,18 @@ ob_start();
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-center">
-                                <?php if ($row['is_alive']): ?>
+                                <?php if (($row['status'] ?? '') === 'alive'): ?>
                                     <span class="inline-flex items-center gap-1 text-[11px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                                         🛡️ Alive
                                     </span>
-                                <?php elseif ($row['is_eliminated']): ?>
+                                <?php elseif (($row['status'] ?? '') === 'eliminated'): ?>
                                     <span class="inline-flex items-center gap-1 text-[11px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
                                         ☠️ Out (Wk <?= $row['elimination_week'] ?>)
                                     </span>
                                 <?php else: ?>
-                                    <span class="text-xs text-slate-600 font-mono">No Picks</span>
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                        Not Entered
+                                    </span>
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-300">

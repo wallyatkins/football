@@ -27,13 +27,32 @@ class SurvivorController
     {
         $user = $this->requireAuth();
 
-        // Check if user is eliminated
-        $eliminatedRecord = $this->db->queryOne(
-            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
+        // Check survivor upfront entry status
+        $survivorEntry = $this->db->queryOne(
+            'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
             ['uid' => $user['id'], 'season' => $season]
         );
-        $isEliminated = ($eliminatedRecord !== null);
-        $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : null;
+
+        $isPaid = $survivorEntry && in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true);
+        $isEliminated = false;
+        $eliminationWeek = null;
+
+        if (!$isPaid) {
+            $survivorStatus = 'not_entered';
+        } else {
+            // Check if eliminated
+            $eliminatedRecord = $this->db->queryOne(
+                'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            if ($eliminatedRecord || !empty($survivorEntry['is_eliminated'])) {
+                $isEliminated = true;
+                $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : (int) ($survivorEntry['elimination_week'] ?? 1);
+                $survivorStatus = 'eliminated';
+            } else {
+                $survivorStatus = 'alive';
+            }
+        }
 
         // Get all teams used by this user in previous weeks
         $usedPicks = $this->db->query(
@@ -70,6 +89,10 @@ class SurvivorController
             $g['away_used'] = in_array($g['away_team'], $usedTeams, true);
         }
 
+        $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
+        $payPalUrl = 'https://paypal.me/WallyAtkins';
+        $cashAppUrl = 'https://cash.app/$WallyAtkins';
+
         $title = "Week {$week} Survivor — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/survivor/index.php';
     }
@@ -88,18 +111,30 @@ class SurvivorController
             exit;
         }
 
-        // 1. Verify user is not already eliminated
+        // 1. Verify user has paid $10 entry fee upfront
+        $survivorEntry = $this->db->queryOne(
+            'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+
+        if (!$survivorEntry || !in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true)) {
+            $_SESSION['error'] = 'You must pay the $10.00 Survivor entry fee and have it verified by Commissioner Wally before making picks.';
+            header("Location: /survivor?week={$week}&season={$season}");
+            exit;
+        }
+
+        // 2. Verify user is not already eliminated
         $eliminated = $this->db->queryOne(
             'SELECT id FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1',
             ['uid' => $user['id'], 'season' => $season]
         );
-        if ($eliminated) {
+        if ($eliminated || !empty($survivorEntry['is_eliminated'])) {
             $_SESSION['error'] = 'You have already been eliminated from this season\'s Survivor pool.';
             header("Location: /survivor?week={$week}&season={$season}");
             exit;
         }
 
-        // 2. Verify team has NOT been used in an earlier week
+        // 3. Verify team has NOT been used in an earlier week
         $previouslyUsed = $this->db->queryOne(
             'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND selected_team = :team AND week_number != :week',
             ['uid' => $user['id'], 'season' => $season, 'team' => $selectedTeam, 'week' => $week]
@@ -110,7 +145,7 @@ class SurvivorController
             exit;
         }
 
-        // 3. Verify game has not kicked off yet
+        // 4. Verify game has not kicked off yet
         $game = $this->db->queryOne(
             'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week AND (home_team = :team OR away_team = :team)',
             ['season' => $season, 'week' => $week, 'team' => $selectedTeam]
@@ -122,7 +157,7 @@ class SurvivorController
             exit;
         }
 
-        // 4. Upsert pick
+        // 5. Upsert pick
         $existing = $this->db->queryOne(
             'SELECT id FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND week_number = :week',
             ['uid' => $user['id'], 'season' => $season, 'week' => $week]
@@ -136,7 +171,7 @@ class SurvivorController
         } else {
             $this->db->execute(
                 'INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
-                 VALUES (:uid, :season, :week, :team, 0, "pending")',
+                 VALUES (:uid, :season, :week, :team, 0, "paid")',
                 ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam]
             );
         }

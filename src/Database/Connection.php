@@ -141,5 +141,38 @@ class Connection
                 }
             }
         }
+
+        // Ensure survivor_entries table exists
+        try {
+            $this->pdo->query('SELECT 1 FROM survivor_entries LIMIT 1');
+        } catch (\Throwable) {
+            $survivorMigration = dirname(__DIR__, 2) . '/db/migrations/002_survivor_and_locks.sql';
+            if (file_exists($survivorMigration)) {
+                $sql = file_get_contents($survivorMigration);
+                if ($sql) {
+                    $this->pdo->exec($sql);
+                }
+            }
+        }
+
+        // Ensure pickem_entries has is_locked and locked_at columns
+        try {
+            $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $cols = array_column($this->pdo->query("PRAGMA table_info(pickem_entries)")->fetchAll(PDO::FETCH_ASSOC), "name");
+                if (!in_array('is_locked', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE pickem_entries ADD COLUMN is_locked BOOLEAN DEFAULT 0;");
+                }
+                if (!in_array('locked_at', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE pickem_entries ADD COLUMN locked_at TIMESTAMP WITH TIME ZONE NULL;");
+                }
+            } else {
+                // Postgres
+                $this->pdo->exec("ALTER TABLE pickem_entries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT FALSE;");
+                $this->pdo->exec("ALTER TABLE pickem_entries ADD COLUMN IF NOT EXISTS locked_at TIMESTAMP WITH TIME ZONE NULL;");
+            }
+        } catch (\Throwable) {
+            // Ignore if table doesn't exist yet
+        }
     }
 }

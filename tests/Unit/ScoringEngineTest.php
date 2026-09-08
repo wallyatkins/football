@@ -114,4 +114,33 @@ class ScoringEngineTest extends TestCase
         $this->assertEquals(0, $alicePick['is_eliminated']);
         $this->assertEquals(1, $bobPick['is_eliminated']);
     }
+
+    public function testSurvivorStandingsNotEnteredStatus(): void
+    {
+        // Alice has paid $10 upfront entry fee
+        $this->db->execute("INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+            VALUES (1, 2026, 'paid', 0)");
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+            VALUES (1, 2026, 1, 'KC', 0, 'paid')");
+
+        // Bob has NOT paid entry fee
+        // Charlie has NOT paid entry fee
+
+        $standings = $this->engine->getSurvivorStandings(2026);
+
+        // Find Alice, Bob, Charlie in standings
+        $byUser = [];
+        foreach ($standings as $s) {
+            $byUser[$s['username']] = $s;
+        }
+
+        $this->assertSame('alive', $byUser['Alice']['status']);
+        $this->assertTrue($byUser['Alice']['is_alive']);
+
+        $this->assertSame('not_entered', $byUser['Bob']['status']);
+        $this->assertFalse($byUser['Bob']['is_alive']);
+
+        $this->assertSame('not_entered', $byUser['Charlie']['status']);
+        $this->assertFalse($byUser['Charlie']['is_alive']);
+    }
 }
