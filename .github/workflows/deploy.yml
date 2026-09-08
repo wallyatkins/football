@@ -26,12 +26,18 @@ jobs:
           php-version: '8.3'
           extensions: pdo_pgsql, pdo_sqlite, mbstring, json, curl
 
+      - name: Install test dependencies
+        run: composer install --prefer-dist --no-progress
+
       - name: Validate Composer configuration
         run: composer validate --strict
 
       - name: Check PHP Syntax (Lint)
         run: |
-          find public src -type f -name "*.php" 2>/dev/null -exec php -l {} + || true
+          find public src tests -type f -name "*.php" 2>/dev/null -exec php -l {} +
+
+      - name: Run Test Suite
+        run: ./vendor/bin/phpunit
 
   deploy:
     name: Deploy to Bluehost
@@ -50,6 +56,15 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, pdo_sqlite, mbstring, json, curl
+
+      - name: Install production dependencies
+        run: composer install --no-dev --prefer-dist --no-progress --optimize-autoloader
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -70,3 +85,5 @@ jobs:
             **/.env*
             **/error_log*
             **/*.sqlite*
+            **/.phpunit*
+            **/phpunit.xml*

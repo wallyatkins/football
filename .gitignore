@@ -1,12 +1,15 @@
 /vendor/
 /.phpunit.cache/
+/.phpunit.result.cache
 /.php-cs-fixer.cache
 /.php-cs-fixer.dist.php
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+data/*.sqlite*
 .env
 .env.*
 !.env.example
 error_log
 .DS_Store
+

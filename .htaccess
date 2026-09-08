@@ -1,0 +1,22 @@
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php83___lsphp .php .php8 .phtml
+</IfModule>
+
+DirectoryIndex public/index.php
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+RewriteRule ^(?:bin|config|data|db|docs|src|storage|templates|tests|vendor)(?:/|$) - [F,L]
+RewriteRule ^(?:\.env|\.git|composer\.(?:json|lock)|Dockerfile|Makefile|phpstan\.neon\.dist|phpunit\.xml\.dist|README\.md|SECURITY\.md)$ - [F,L]
+
+RewriteRule ^$ public/index.php [QSA,L]
+
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ public/index.php [QSA,L]
+
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+RewriteRule ^(.+)$ public/$1 [QSA,L]

@@ -28,9 +28,15 @@ jobs:
           php-version: ${{ matrix.php-version }}
           extensions: pdo_sqlite, pdo_pgsql, mbstring, json, curl
 
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
       - name: Validate Composer configuration
         run: composer validate --strict
 
       - name: Check PHP Syntax (Lint)
         run: |
-          find public src tests -type f -name "*.php" 2>/dev/null -exec php -l {} + || true
+          find public src tests -type f -name "*.php" 2>/dev/null -exec php -l {} +
+
+      - name: Run Test Suite
+        run: ./vendor/bin/phpunit

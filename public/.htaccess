@@ -1,15 +1,11 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-
-    # Redirect to HTTPS
-    RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-    # Handle Front Controller
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.php [QSA,L]
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php83___lsphp .php .php8 .phtml
 </IfModule>
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
 
 # Security Headers
 <IfModule mod_headers.c>
@@ -19,9 +15,5 @@
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# Block sensitive files
-<FilesMatch "\.(sqlite|db|log|env|json|lock|md|git.*)$">
-    Require all denied
-</FilesMatch>
-
 Options -Indexes
+
