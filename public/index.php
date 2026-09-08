@@ -99,7 +99,7 @@ try {
             renderLandingPage();
             exit;
 
-        // --- Authentication ---
+            // --- Authentication ---
         case '/auth/login':
             (new AuthController())->login();
             exit;
@@ -112,7 +112,7 @@ try {
             (new AuthController())->logout();
             exit;
 
-        // --- Pick'em Pool ---
+            // --- Pick'em Pool ---
         case '/pickem':
             if ($method === 'POST') {
                 (new PickemController())->save();
@@ -129,7 +129,7 @@ try {
             (new PickemController())->standings($season, $week);
             exit;
 
-        // --- Survivor Pool ---
+            // --- Survivor Pool ---
         case '/survivor':
             if ($method === 'POST') {
                 (new SurvivorController())->save();
@@ -146,7 +146,7 @@ try {
             (new SurvivorController())->standings($season);
             exit;
 
-        // --- Commissioner Admin ---
+            // --- Commissioner Admin ---
         case '/admin':
         case '/admin/payments':
             (new AdminController())->payments($season, $week);

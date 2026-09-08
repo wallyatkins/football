@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace WallyFootball\Services;
@@ -146,7 +147,7 @@ class ScoringEngine
     {
         $standings = $this->getWeeklyStandings($season, $week);
 
-        $verifiedEntries = array_filter($standings, fn($s) => $s['is_paid']);
+        $verifiedEntries = array_filter($standings, fn ($s) => $s['is_paid']);
         $totalPot = count($verifiedEntries) * $entryStake;
 
         $winners = [];

@@ -1,10 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace WallyFootball\Database;
 
 use PDO;
-use PDOException;
 
 class Connection
 {
@@ -246,7 +246,7 @@ class Connection
                     continue;
                 }
 
-                $tiebreakers = array_filter($weekGames, fn($g) => !empty($g['is_mnf']));
+                $tiebreakers = array_filter($weekGames, fn ($g) => !empty($g['is_mnf']));
                 $count = count($tiebreakers);
 
                 $isLegacyMnf = false;
@@ -261,7 +261,7 @@ class Connection
 
                 if ($count === 0 || $count > 1 || $isLegacyMnf) {
                     $seedStr = "random_tiebreaker_{$season}_{$week}";
-                    $candidates = array_values(array_filter($weekGames, function($g) {
+                    $candidates = array_values(array_filter($weekGames, function ($g) {
                         $kickoff = new \DateTimeImmutable($g['kickoff_time']);
                         $kickoffEt = $kickoff->setTimezone(new \DateTimeZone('America/New_York'));
                         return !($kickoffEt->format('N') === '1' && (int)$kickoffEt->format('G') >= 17);

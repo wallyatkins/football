@@ -1,10 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace WallyFootball\Controllers;
 
-use DateTimeImmutable;
 use WallyFootball\Database\Connection;
+use WallyFootball\Services\NotificationService;
 use WallyFootball\Services\ScoringEngine;
 use WallyFootball\Services\SportsDataService;
 
@@ -13,15 +14,18 @@ class PickemController
     private Connection $db;
     private SportsDataService $sports;
     private ScoringEngine $scoring;
+    private NotificationService $notifier;
 
     public function __construct(
         ?Connection $db = null,
         ?SportsDataService $sports = null,
-        ?ScoringEngine $scoring = null
+        ?ScoringEngine $scoring = null,
+        ?NotificationService $notifier = null
     ) {
         $this->db = $db ?? Connection::getInstance();
         $this->sports = $sports ?? new SportsDataService($this->db);
         $this->scoring = $scoring ?? new ScoringEngine($this->db);
+        $this->notifier = $notifier ?? new NotificationService();
     }
 
     public function index(int $season, int $week): void
@@ -143,7 +147,7 @@ class PickemController
         }
 
         // Validate that all open/unlocked games are picked
-        $unlockedGames = array_filter($games, fn($g) => strtotime($g['kickoff_time']) > $now);
+        $unlockedGames = array_filter($games, fn ($g) => strtotime($g['kickoff_time']) > $now);
         $unpickedCount = 0;
         foreach ($unlockedGames as $g) {
             $pick = $submittedPicks[$g['id']] ?? null;
@@ -226,6 +230,18 @@ class PickemController
                     ['eid' => $entryId, 'gid' => $gameId, 'team' => $selectedTeam]
                 );
             }
+        }
+
+        try {
+            $this->notifier->notifyPicksSubmitted(
+                $user['username'] ?? 'Player',
+                $week,
+                $season,
+                $mnfPrediction,
+                count($submittedPicks)
+            );
+        } catch (\Throwable) {
+            // Notification failures should never disrupt player experience
         }
 
         $_SESSION['flash'] = "Your Week {$week} picks are officially LOCKED IN! Don't forget to send your $10.00 entry fee.";

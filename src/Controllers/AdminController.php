@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace WallyFootball\Controllers;
@@ -14,7 +15,7 @@ class AdminController
     private ScoringEngine $scoring;
 
     public function __construct(
-        ?Connection $db = null, 
+        ?Connection $db = null,
         ?SportsDataService $sports = null,
         ?ScoringEngine $scoring = null
     ) {
@@ -89,7 +90,7 @@ class AdminController
                 ['season' => $season, 'week' => $week]
             );
 
-            $candidates = array_values(array_filter($games, fn($g) => $g['id'] != $currentId));
+            $candidates = array_values(array_filter($games, fn ($g) => $g['id'] != $currentId));
             if (empty($candidates)) {
                 $candidates = $games;
             }

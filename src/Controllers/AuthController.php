@@ -1,9 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 namespace WallyFootball\Controllers;
 
-use RuntimeException;
 use WallyFootball\Auth\WallyAuthClient;
 use WallyFootball\Database\Connection;
 
