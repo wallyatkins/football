@@ -42,6 +42,25 @@ class PickemController
             );
         }
 
+        // Deduplicate in memory as an ironclad safety check against identical matchups
+        $uniqueGames = [];
+        $seenMatchups = [];
+        foreach ($games as $g) {
+            $h = \WallyFootball\Support\TeamData::normalize($g['home_team']);
+            $a = \WallyFootball\Support\TeamData::normalize($g['away_team']);
+            $teams = [$h, $a];
+            sort($teams);
+            $key = $teams[0] . '_' . $teams[1];
+            if (isset($seenMatchups[$key])) {
+                continue;
+            }
+            $seenMatchups[$key] = true;
+            $g['home_team'] = $h;
+            $g['away_team'] = $a;
+            $uniqueGames[] = $g;
+        }
+        $games = $uniqueGames;
+
         // Get user entry
         $entry = $this->db->queryOne(
             'SELECT * FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',

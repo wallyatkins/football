@@ -174,5 +174,66 @@ class Connection
         } catch (\Throwable) {
             // Ignore if table doesn't exist yet
         }
+
+        // Deduplicate and normalize games in database
+        try {
+            $aliases = ['LA' => 'LAR', 'STL' => 'LAR', 'WSH' => 'WAS', 'JAC' => 'JAX', 'OAK' => 'LV', 'SD' => 'LAC'];
+            foreach ($aliases as $old => $new) {
+                $this->pdo->exec("UPDATE games SET home_team = '{$new}' WHERE home_team = '{$old}'");
+                $this->pdo->exec("UPDATE games SET away_team = '{$new}' WHERE away_team = '{$old}'");
+                $this->pdo->exec("UPDATE pickem_picks SET selected_team = '{$new}' WHERE selected_team = '{$old}'");
+                $this->pdo->exec("UPDATE survivor_picks SET selected_team = '{$new}' WHERE selected_team = '{$old}'");
+            }
+
+            $games = $this->pdo->query("SELECT id, season_year, week_number, home_team, away_team FROM games ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
+            $seenMatchups = [];
+            $seenTeams = [];
+            $toDelete = [];
+            $idRemap = [];
+
+            foreach ($games as $g) {
+                $teams = [$g['home_team'], $g['away_team']];
+                sort($teams);
+                $matchupKey = $g['season_year'] . '_' . $g['week_number'] . '_' . $teams[0] . '_' . $teams[1];
+                $teamAKey = $g['season_year'] . '_' . $g['week_number'] . '_' . $teams[0];
+                $teamBKey = $g['season_year'] . '_' . $g['week_number'] . '_' . $teams[1];
+
+                if (isset($seenMatchups[$matchupKey])) {
+                    $dupId = (int) $g['id'];
+                    $toDelete[] = $dupId;
+                    $idRemap[$dupId] = $seenMatchups[$matchupKey];
+                } elseif (isset($seenTeams[$teamAKey]) || isset($seenTeams[$teamBKey])) {
+                    $dupId = (int) $g['id'];
+                    $toDelete[] = $dupId;
+                    $primary = $seenTeams[$teamAKey] ?? ($seenTeams[$teamBKey] ?? null);
+                    if ($primary) {
+                        $idRemap[$dupId] = $primary;
+                    }
+                } else {
+                    $seenMatchups[$matchupKey] = (int) $g['id'];
+                    $seenTeams[$teamAKey] = (int) $g['id'];
+                    $seenTeams[$teamBKey] = (int) $g['id'];
+                }
+            }
+
+            foreach ($idRemap as $dupId => $primaryId) {
+                $picks = $this->pdo->query("SELECT id, entry_id FROM pickem_picks WHERE game_id = {$dupId}")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($picks as $p) {
+                    $hasPrimary = $this->pdo->query("SELECT id FROM pickem_picks WHERE entry_id = {$p['entry_id']} AND game_id = {$primaryId}")->fetch();
+                    if (!$hasPrimary) {
+                        $this->pdo->exec("UPDATE pickem_picks SET game_id = {$primaryId} WHERE id = {$p['id']}");
+                    } else {
+                        $this->pdo->exec("DELETE FROM pickem_picks WHERE id = {$p['id']}");
+                    }
+                }
+            }
+
+            if (!empty($toDelete)) {
+                $delList = implode(',', $toDelete);
+                $this->pdo->exec("DELETE FROM games WHERE id IN ({$delList})");
+            }
+        } catch (\Throwable) {
+            // Ignore if tables not yet ready
+        }
     }
 }

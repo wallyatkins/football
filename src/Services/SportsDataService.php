@@ -86,13 +86,18 @@ class SportsDataService
                 }
             }
 
-            if (!$homeTeam || !$awayTeam) {
+            $homeTeam = \WallyFootball\Support\TeamData::normalize($homeTeam);
+            $awayTeam = \WallyFootball\Support\TeamData::normalize($awayTeam);
+
+            if (!$homeTeam || !$awayTeam || $homeTeam === $awayTeam) {
                 continue;
             }
 
-            // Check if game already exists
+            // Check if game already exists (in either orientation)
             $existing = $this->db->queryOne(
-                'SELECT id FROM games WHERE season_year = :season AND week_number = :week AND home_team = :home AND away_team = :away',
+                'SELECT id FROM games 
+                 WHERE season_year = :season AND week_number = :week 
+                   AND ((home_team = :home AND away_team = :away) OR (home_team = :away AND away_team = :home))',
                 [
                     'season' => $seasonYear,
                     'week' => $weekNumber,
@@ -104,6 +109,8 @@ class SportsDataService
             if ($existing) {
                 $this->db->execute(
                     'UPDATE games SET 
+                        home_team = :home,
+                        away_team = :away,
                         kickoff_time = :kickoff, 
                         is_mnf = :is_mnf, 
                         home_score = :home_score, 
@@ -111,6 +118,8 @@ class SportsDataService
                         status = :status 
                      WHERE id = :id',
                     [
+                        'home' => $homeTeam,
+                        'away' => $awayTeam,
                         'kickoff' => $kickoffUtc,
                         'is_mnf' => $isMnf ? 1 : 0,
                         'home_score' => $homeScore,
@@ -224,8 +233,13 @@ class SportsDataService
         $updated = 0;
 
         foreach ($mockMatchups as [$home, $away, $kickoff, $isMnf]) {
+            $home = \WallyFootball\Support\TeamData::normalize($home);
+            $away = \WallyFootball\Support\TeamData::normalize($away);
+
             $existing = $this->db->queryOne(
-                'SELECT id FROM games WHERE season_year = :season AND week_number = :week AND home_team = :home AND away_team = :away',
+                'SELECT id FROM games 
+                 WHERE season_year = :season AND week_number = :week 
+                   AND ((home_team = :home AND away_team = :away) OR (home_team = :away AND away_team = :home))',
                 ['season' => $season, 'week' => $week, 'home' => $home, 'away' => $away]
             );
 

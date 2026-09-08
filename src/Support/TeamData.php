@@ -8,13 +8,19 @@ class TeamData
     private static ?array $teams = null;
 
     private static array $aliases = [
+        'LA'  => 'LAR',
+        'STL' => 'LAR',
         'WSH' => 'WAS',
         'JAC' => 'JAX',
-        'LAR' => 'LA',
         'OAK' => 'LV',
         'SD'  => 'LAC',
-        'STL' => 'LAR',
     ];
+
+    public static function normalize(string $abbr): string
+    {
+        $abbr = strtoupper(trim($abbr));
+        return self::$aliases[$abbr] ?? $abbr;
+    }
 
     public static function load(): array
     {
