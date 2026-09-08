@@ -67,11 +67,12 @@ class PickemController
             $game['user_pick'] = $userPicks[$game['id']] ?? null;
         }
 
-        // Commissioner handles
-        $venmoHandle = getenv('COMMISSIONER_VENMO') ?: 'Wally-Atkins';
-        $cashAppHandle = getenv('COMMISSIONER_CASHAPP') ?: 'WallyAtkins';
+        // Commissioner payment links (exact verified links)
+        $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
+        $payPalUrl = 'https://paypal.me/WallyAtkins';
+        $cashAppUrl = 'https://cash.app/$WallyAtkins';
 
-        $title = "Week {$week} Pick'em — Atkins NFL Pool";
+        $title = "Week {$week} Pick'em — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/grid.php';
     }
 
@@ -175,7 +176,7 @@ class PickemController
         $standings = $this->scoring->getWeeklyStandings($season, $week);
         $pot = $this->scoring->calculateWeeklyPot($season, $week);
 
-        $title = "Week {$week} Standings — Atkins NFL Pool";
+        $title = "Week {$week} Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/standings.php';
     }
 

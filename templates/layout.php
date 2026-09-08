@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($title ?? 'Atkins NFL Pool') ?></title>
+    <title><?= htmlspecialchars($title ?? "Wally's NFL Pool") ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -21,7 +21,7 @@
             <div class="flex items-center gap-6">
                 <a href="/" class="flex items-center gap-2.5 group">
                     <span class="text-2xl group-hover:scale-110 transition-transform">🏈</span>
-                    <span class="font-bold tracking-tight text-white text-base sm:text-lg">Atkins NFL Pool</span>
+                    <span class="font-black tracking-tight text-white text-base sm:text-lg">Wally's NFL Pool</span>
                 </a>
 
                 <nav class="hidden md:flex items-center gap-1">
@@ -109,7 +109,7 @@
     </main>
 
     <footer class="hidden md:block border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        <p>&copy; <?= date('Y') ?> Atkins NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
+        <p>&copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
     </footer>
 
 </body>

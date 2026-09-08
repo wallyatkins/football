@@ -133,7 +133,7 @@ try {
         default:
             http_response_code(404);
             $user = $_SESSION['user'] ?? null;
-            $title = '404 - Not Found — Atkins NFL Pool';
+            $title = "404 - Not Found — Wally's NFL Pool";
             ob_start();
             ?>
             <div class="max-w-md mx-auto my-12 text-center p-8 bg-slate-900/60 border border-slate-800 rounded-2xl">
@@ -152,7 +152,7 @@ try {
 } catch (\Throwable $e) {
     http_response_code(500);
     $user = $_SESSION['user'] ?? null;
-    $title = '500 - Application Error — Atkins NFL Pool';
+    $title = "500 - Application Error — Wally's NFL Pool";
     ob_start();
     ?>
     <div class="max-w-lg mx-auto my-12 p-8 bg-rose-950/20 border border-rose-800/40 rounded-2xl text-left">
@@ -182,14 +182,14 @@ function renderLandingPage(): void
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NFL Pool — football.wallyatkins.com</title>
+        <title>Wally's NFL Pool — football.wallyatkins.com</title>
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
         <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">🏈</span>
-                <span class="font-bold tracking-tight text-lg text-white">Atkins NFL Pool</span>
+                <span class="font-black tracking-tight text-lg text-white">Wally's NFL Pool</span>
                 <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30">Pick'em &amp; Survivor</span>
             </div>
             <div class="flex items-center gap-4">
@@ -202,9 +202,9 @@ function renderLandingPage(): void
                 <div class="inline-flex p-3 rounded-xl bg-amber-500/10 text-amber-400 text-3xl mb-4 border border-amber-500/20">
                     🏈
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">NFL Pick'em &amp; Survivor Pool</h1>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">Wally's NFL Pool</h1>
                 <p class="text-slate-400 text-sm sm:text-base mb-6 leading-relaxed">
-                    Welcome to the private Atkins family &amp; friends NFL straight Pick'em and season-long Survivor pool. Authentication is verified via WallyAuth SSO.
+                    Welcome to the private NFL straight Pick'em and season-long Survivor pool. Authentication is verified via WallyAuth SSO.
                 </p>
                 <div class="grid grid-cols-2 gap-3 text-left mb-6">
                     <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
@@ -223,7 +223,7 @@ function renderLandingPage(): void
         </main>
 
         <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
-            &copy; <?= date('Y') ?> wallyatkins.com &bull; Powered by WallyAuth SSO &bull; Built with BMAD
+            &copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="underline hover:text-slate-400">wallyatkins.com</a> &bull; Powered by WallyAuth SSO
         </footer>
     </body>
     </html>

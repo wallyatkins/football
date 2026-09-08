@@ -42,7 +42,7 @@ class AdminController
             ['season' => $season, 'week' => $week]
         );
 
-        $title = "Admin Payment Dashboard — Atkins NFL Pool";
+        $title = "Admin Payment Dashboard — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/admin/payments.php';
     }
 

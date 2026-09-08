@@ -70,7 +70,7 @@ class SurvivorController
             $g['away_used'] = in_array($g['away_team'], $usedTeams, true);
         }
 
-        $title = "Week {$week} Survivor — Atkins NFL Pool";
+        $title = "Week {$week} Survivor — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/survivor/index.php';
     }
 
@@ -151,7 +151,7 @@ class SurvivorController
         $user = $_SESSION['user'] ?? null;
         $standings = $this->scoring->getSurvivorStandings($season);
 
-        $title = "Survivor Standings — Atkins NFL Pool";
+        $title = "Survivor Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/survivor/standings.php';
     }
 
