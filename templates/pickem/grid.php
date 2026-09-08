@@ -52,6 +52,14 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 </a>
             <?php endif; ?>
 
+            <!-- How It Works Modal Button -->
+            <button type="button" 
+                    id="btnOpenHowItWorks"
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 shadow-sm">
+                <span>💡</span>
+                <span>How It Works</span>
+            </button>
+
             <?php if (!empty($isCommissioner)): ?>
                 <a href="/admin/payments?week=<?= $week ?>&season=<?= $season ?>" 
                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-900/60 border border-purple-500/40 text-purple-300 hover:bg-purple-800 hover:text-white transition flex items-center gap-1.5 shadow-sm">
@@ -498,6 +506,81 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
     </div>
 </div>
 
+<!-- Pick'em How It Works Modal -->
+<div id="howItWorksModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 text-xl border border-amber-500/30">🎯</span>
+                <div>
+                    <h3 class="text-lg font-black text-white">How Pick'em Works</h3>
+                    <span class="text-xs text-slate-400">Weekly Straight-Up Pool Rules</span>
+                </div>
+            </div>
+            <button type="button" id="btnCloseHowItWorksX" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
+        </div>
+
+        <!-- Content (Scrollable) -->
+        <div class="p-5 overflow-y-auto space-y-3.5 text-xs">
+            
+            <!-- Rule 1: Weekly Straight-Up Picks -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-blue-500/15 text-blue-400 font-black text-sm shrink-0">1</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Pick Straight-Up Winners</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        For every game in the week's slate, pick which team will win straight-up (no point spreads). Each correct selection earns <strong>1 point</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 2: $10 Entry Fee -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 font-black text-sm shrink-0">2</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Weekly $10.00 Entry Stake</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Entry is $10 per week. Send your stake directly to Commissioner Wally via Venmo (<span class="text-sky-400 font-bold font-mono">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-emerald-400 font-bold font-mono">$WallyAtkins</span>). 100% of collected stakes fund that week's cash pot!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 3: Tiebreaker Question -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-amber-500/15 text-amber-400 font-black text-sm shrink-0">3</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Game of the Week Tiebreaker</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Each week features a designated <strong>Game of the Week Tiebreaker</strong>. Predict the combined total final score (e.g. 48). If players tie with the same number of wins, the player with the lowest absolute point difference wins the prize pot!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 4: Lockout & Lock-in -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-purple-500/15 text-purple-400 font-black text-sm shrink-0">4</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Review, Submit &amp; Lock-In</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Select all games and enter your tiebreaker prediction. Click <strong>Review &amp; Submit</strong> to inspect your choices before locking them in. Games also individually lock at official kickoff time.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex justify-end">
+            <button type="button" id="btnCloseHowItWorks" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow">
+                Got It, Let's Play!
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('pickemForm');
@@ -512,6 +595,35 @@ document.addEventListener('DOMContentLoaded', function () {
     const mnfContainer = document.getElementById('mnfTiebreakerContainer');
     const reviewPicksList = document.getElementById('reviewPicksList');
     const reviewMnfPoints = document.getElementById('reviewMnfPoints');
+
+    // How It Works Modal elements
+    const howItWorksModal = document.getElementById('howItWorksModal');
+    const btnOpenHowItWorks = document.getElementById('btnOpenHowItWorks');
+    const btnCloseHowItWorks = document.getElementById('btnCloseHowItWorks');
+    const btnCloseHowItWorksX = document.getElementById('btnCloseHowItWorksX');
+
+    function openHowItWorks() {
+        if (howItWorksModal) {
+            howItWorksModal.classList.remove('hidden');
+            howItWorksModal.classList.add('flex');
+        }
+    }
+
+    function closeHowItWorks() {
+        if (howItWorksModal) {
+            howItWorksModal.classList.add('hidden');
+            howItWorksModal.classList.remove('flex');
+        }
+    }
+
+    if (btnOpenHowItWorks) btnOpenHowItWorks.addEventListener('click', openHowItWorks);
+    if (btnCloseHowItWorks) btnCloseHowItWorks.addEventListener('click', closeHowItWorks);
+    if (btnCloseHowItWorksX) btnCloseHowItWorksX.addEventListener('click', closeHowItWorks);
+    if (howItWorksModal) {
+        howItWorksModal.addEventListener('click', function (e) {
+            if (e.target === howItWorksModal) closeHowItWorks();
+        });
+    }
 
     // 1. Dynamic selection & radio button handling
     const matchups = document.querySelectorAll('.matchup-card');
@@ -675,6 +787,14 @@ document.addEventListener('DOMContentLoaded', function () {
             form.submit();
         });
     }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeHowItWorks();
+        }
+    });
 });
 </script>
 

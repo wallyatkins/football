@@ -40,6 +40,14 @@ $isAlive = ($survivorStatus === 'alive');
                     Week <?= $week + 1 ?> &rarr;
                 </a>
             <?php endif; ?>
+
+            <!-- How It Works Modal Button -->
+            <button type="button" 
+                    id="btnOpenSurvivorHowItWorks"
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 shadow-sm">
+                <span>💡</span>
+                <span>How It Works</span>
+            </button>
         </div>
     </div>
 
@@ -322,6 +330,92 @@ $isAlive = ($survivorStatus === 'alive');
 
 </div>
 
+<!-- Survivor How It Works Modal -->
+<div id="survivorHowItWorksModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-xl border border-emerald-500/30">🛡️</span>
+                <div>
+                    <h3 class="text-lg font-black text-white">How Survivor Works</h3>
+                    <span class="text-xs text-slate-400">NFL Eliminator Pool Rules</span>
+                </div>
+            </div>
+            <button type="button" id="btnCloseSurvivorHowItWorksX" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
+        </div>
+
+        <!-- Content (Scrollable) -->
+        <div class="p-5 overflow-y-auto space-y-3.5 text-xs">
+            
+            <!-- Rule 1: One Pick Per Week -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 font-black text-sm shrink-0">1</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Pick 1 Winner Each Week</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Each week, select exactly <strong>one NFL team</strong> you believe will win their game outright (straight-up, no point spreads).
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 2: The Golden Rule (No Repeats) -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-rose-500/15 text-rose-400 font-black text-sm shrink-0">2</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">The Golden Rule: Pick Each Team Once</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        You can only pick each NFL team <strong>ONCE</strong> during the entire season. Once you choose a team, they are burned (<span class="text-rose-400 font-semibold">BURNED</span>) and cannot be selected again in future weeks. Plan your season-long strategy carefully!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 3: Survive & Advance -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-amber-500/15 text-amber-400 font-black text-sm shrink-0">3</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Survive &amp; Advance</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        If your selected team wins, you survive and advance to the next week. If your team <strong>loses or ties</strong>, you are permanently eliminated from the pool.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 4: One-Time Season Entry Fee -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-blue-500/15 text-blue-400 font-black text-sm shrink-0">4</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">One-Time $10 Season Stake</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Entry is a one-time $10 fee for the entire season. Send your stake to Commissioner Wally via Venmo (<span class="text-sky-400 font-bold font-mono">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-emerald-400 font-bold font-mono">$WallyAtkins</span>). The last remaining player wins the entire Survivor prize pot!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rule 5: Lockout Times -->
+            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                <span class="p-2 rounded-lg bg-purple-500/15 text-purple-400 font-black text-sm shrink-0">5</span>
+                <div>
+                    <strong class="text-white text-sm block mb-0.5">Game Kickoff Lockout</strong>
+                    <p class="text-slate-300 leading-relaxed">
+                        Your pick locks in when your selected game reaches its scheduled kickoff time. Until kickoff, you can adjust your pick for unplayed games.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex justify-end">
+            <button type="button" id="btnCloseSurvivorHowItWorks" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow">
+                Got It, Let's Survive!
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <script>
 // Survivor Single-Selection across games
 document.addEventListener('DOMContentLoaded', function () {
@@ -355,6 +449,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
             radio.checked = true;
         });
+    });
+
+    // Survivor How It Works Modal
+    const survivorModal = document.getElementById('survivorHowItWorksModal');
+    const btnOpenSurvivorModal = document.getElementById('btnOpenSurvivorHowItWorks');
+    const btnCloseSurvivorModal = document.getElementById('btnCloseSurvivorHowItWorks');
+    const btnCloseSurvivorModalX = document.getElementById('btnCloseSurvivorHowItWorksX');
+
+    function openSurvivorModal() {
+        if (survivorModal) {
+            survivorModal.classList.remove('hidden');
+            survivorModal.classList.add('flex');
+        }
+    }
+
+    function closeSurvivorModal() {
+        if (survivorModal) {
+            survivorModal.classList.add('hidden');
+            survivorModal.classList.remove('flex');
+        }
+    }
+
+    if (btnOpenSurvivorModal) btnOpenSurvivorModal.addEventListener('click', openSurvivorModal);
+    if (btnCloseSurvivorModal) btnCloseSurvivorModal.addEventListener('click', closeSurvivorModal);
+    if (btnCloseSurvivorModalX) btnCloseSurvivorModalX.addEventListener('click', closeSurvivorModal);
+    if (survivorModal) {
+        survivorModal.addEventListener('click', function (e) {
+            if (e.target === survivorModal) closeSurvivorModal();
+        });
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSurvivorModal();
     });
 });
 </script>
