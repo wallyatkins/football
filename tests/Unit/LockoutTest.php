@@ -45,4 +45,27 @@ class LockoutTest extends TestCase
         $this->assertTrue(in_array('admin', $allowedRoles, true));
         $this->assertFalse(in_array('player', $allowedRoles, true));
     }
+
+    public function testGameListProcessingPreservesUniqueTailGame(): void
+    {
+        $games = [
+            ['id' => 15, 'home_team' => 'DET', 'away_team' => 'LAR', 'kickoff_time' => '2026-09-14 00:20:00+00'],
+            ['id' => 16, 'home_team' => 'SF', 'away_team' => 'NYJ', 'kickoff_time' => '2026-09-15 00:15:00+00'],
+        ];
+
+        $now = time();
+        $userPicks = [];
+        foreach ($games as $idx => $g) {
+            $kickoff = strtotime($g['kickoff_time']);
+            $games[$idx]['is_locked'] = ($kickoff <= $now);
+            $games[$idx]['user_pick'] = $userPicks[$g['id']] ?? null;
+        }
+
+        $rendered = [];
+        foreach ($games as $game) {
+            $rendered[] = $game['id'];
+        }
+
+        $this->assertSame([15, 16], $rendered, 'The final game must not be overwritten by by-reference foreach mutation.');
+    }
 }

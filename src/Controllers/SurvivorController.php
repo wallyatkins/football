@@ -101,11 +101,11 @@ class SurvivorController
         $games = $uniqueGames;
 
         $now = time();
-        foreach ($games as &$g) {
+        foreach ($games as $idx => $g) {
             $kickoff = strtotime($g['kickoff_time']);
-            $g['is_locked'] = ($kickoff <= $now);
-            $g['home_used'] = in_array($g['home_team'], $usedTeams, true);
-            $g['away_used'] = in_array($g['away_team'], $usedTeams, true);
+            $games[$idx]['is_locked'] = ($kickoff <= $now);
+            $games[$idx]['home_used'] = in_array($g['home_team'], $usedTeams, true);
+            $games[$idx]['away_used'] = in_array($g['away_team'], $usedTeams, true);
         }
 
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';

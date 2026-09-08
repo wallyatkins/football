@@ -80,10 +80,10 @@ class PickemController
 
         // Check lock status per game
         $now = time();
-        foreach ($games as &$game) {
-            $kickoff = strtotime($game['kickoff_time']);
-            $game['is_locked'] = ($kickoff <= $now);
-            $game['user_pick'] = $userPicks[$game['id']] ?? null;
+        foreach ($games as $idx => $g) {
+            $kickoff = strtotime($g['kickoff_time']);
+            $games[$idx]['is_locked'] = ($kickoff <= $now);
+            $games[$idx]['user_pick'] = $userPicks[$g['id']] ?? null;
         }
 
         // Find designated tiebreaker game
