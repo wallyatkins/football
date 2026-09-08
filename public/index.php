@@ -63,12 +63,38 @@ try {
     switch ($uri) {
         case '/healthz':
             header('Content-Type: application/json');
+            $dbReport = [];
+            try {
+                $db = WallyFootball\Database\Connection::getInstance();
+                $pdo = $db->getPdo();
+                $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+                $games = $db->query('SELECT id, season_year, week_number, home_team, away_team, kickoff_time, is_mnf, status FROM games WHERE season_year = :s AND week_number = :w ORDER BY id ASC', ['s' => $season, 'w' => $week]);
+                $allWeek1Matchups = $db->query('SELECT id, season_year, week_number, home_team, away_team FROM games ORDER BY id ASC');
+                $users = $db->query('SELECT id, username, email, role FROM users');
+                $entries = $db->query('SELECT id, user_id, season_year, week_number, mnf_total_points_prediction, is_locked FROM pickem_entries');
+                $picks = $db->query('SELECT id, entry_id, game_id, selected_team FROM pickem_picks');
+                $dbReport = [
+                    'driver' => $driver,
+                    'games_count' => count($games),
+                    'games' => $games,
+                    'all_games_count' => count($allWeek1Matchups),
+                    'users' => $users,
+                    'entries' => $entries,
+                    'picks_count' => count($picks),
+                ];
+            } catch (\Throwable $e) {
+                $dbReport = [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ];
+            }
             echo json_encode([
                 'status' => 'healthy',
                 'app' => 'football.wallyatkins.com',
                 'timestamp' => time(),
-                'version' => '1.0.0',
-            ]);
+                'version' => '1.0.2',
+                'db' => $dbReport,
+            ], JSON_PRETTY_PRINT);
             exit;
 
         case '/':
