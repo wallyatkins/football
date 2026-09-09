@@ -28,13 +28,47 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --turf-bg: #091f11;
+            --turf-img: url('/assets/field-turf.svg');
+            --card-surface: rgba(15, 23, 42, 0.85);
+            --card-surface-border: #1e293b;
+            --picked-end: #090d16;
+            --matchup-card-bg: rgba(15, 23, 42, 0.85);
+            --matchup-header-bg: rgba(2, 6, 23, 0.75);
+            --matchup-border: rgba(51, 65, 85, 0.8);
+            --tiebreaker-bg: rgba(15, 23, 42, 0.95);
+            --input-bg: #020617;
+            --input-border: #334155;
+            --input-text: #ffffff;
+            --bottom-bar-bg: rgba(15, 23, 42, 0.95);
+            --bottom-bar-border: #1e293b;
+        }
+
+        html[data-theme="light"] {
+            --turf-bg: #1c562d;
+            --turf-img: url('/assets/field-turf-light.svg');
+            --card-surface: #ffffff;
+            --card-surface-border: #cbd5e1;
+            --picked-end: #ffffff;
+            --matchup-card-bg: #ffffff;
+            --matchup-header-bg: #f8fafc;
+            --matchup-border: #cbd5e1;
+            --tiebreaker-bg: #ffffff;
+            --input-bg: #f8fafc;
+            --input-border: #cbd5e1;
+            --input-text: #0f172a;
+            --bottom-bar-bg: rgba(255, 255, 255, 0.97);
+            --bottom-bar-border: #e2e8f0;
+        }
+
         body { font-family: 'Inter', sans-serif; transition: background-color 0.2s, color 0.2s; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Subdued Stadium Turf Field Background */
+        /* Stadium Turf Field Background */
         body.football-field {
-            background-color: #06140a;
-            background-image: url('/assets/field-turf.svg');
+            background-color: var(--turf-bg);
+            background-image: var(--turf-img);
             background-repeat: repeat-y;
             background-position: top center;
             background-size: 1400px 2500px;
@@ -47,10 +81,24 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
             }
         }
 
-        /* Light Mode Theme Overrides */
+        /* Card and Matchup Surface Defaults */
+        .matchup-card, .game-row-card {
+            background-color: var(--matchup-card-bg);
+            border-color: var(--matchup-border);
+        }
+        .matchup-header-bar {
+            background-color: var(--matchup-header-bg);
+            border-color: var(--matchup-border);
+        }
+        .team-card, .survivor-card {
+            border-color: var(--card-surface-border);
+            background-color: var(--card-surface);
+        }
+
+        /* Light Mode Overrides */
         html[data-theme="light"] body.football-field {
-            background-color: #f1f8f3 !important;
-            background-image: linear-gradient(rgba(248, 250, 252, 0.90), rgba(248, 250, 252, 0.90)), url('/assets/field-turf.svg') !important;
+            background-color: var(--turf-bg) !important;
+            background-image: var(--turf-img) !important;
             color: #0f172a !important;
         }
         html[data-theme="light"] body {
@@ -62,12 +110,79 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
             background-color: rgba(255, 255, 255, 0.95) !important;
             border-color: #e2e8f0 !important;
         }
+        html[data-theme="light"] .matchup-card,
+        html[data-theme="light"] .game-row-card {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+        }
+        html[data-theme="light"] .matchup-header-bar {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+            color: #475569 !important;
+        }
+        html[data-theme="light"] .team-card:not(.is-picked),
+        html[data-theme="light"] .survivor-card:not(.is-picked) {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+        }
+        html[data-theme="light"] #mnfTiebreakerContainer {
+            background-color: #ffffff !important;
+            background-image: linear-gradient(135deg, rgba(254, 243, 199, 0.5), #ffffff) !important;
+            border-color: rgba(245, 158, 11, 0.5) !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08) !important;
+        }
+        html[data-theme="light"] #mnfTotalPointsInput {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        html[data-theme="light"] .prelock-banner,
+        html[data-theme="light"] .locked-banner,
+        html[data-theme="light"] .survivor-banner-free,
+        html[data-theme="light"] .survivor-banner-cash,
+        html[data-theme="light"] .survivor-pick-locked-banner {
+            background: #ffffff !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08) !important;
+        }
+        html[data-theme="light"] .sticky.bottom-16,
+        html[data-theme="light"] .sticky.md\:bottom-6 {
+            background-color: rgba(255, 255, 255, 0.96) !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.08) !important;
+        }
+        html[data-theme="light"] .fixed.inset-0 > div {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            color: #0f172a !important;
+        }
+        html[data-theme="light"] .fixed.inset-0 .border-b,
+        html[data-theme="light"] .fixed.inset-0 .border-t {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+        html[data-theme="light"] table {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+        html[data-theme="light"] thead tr {
+            background-color: #f1f5f9 !important;
+            color: #475569 !important;
+        }
+        html[data-theme="light"] tbody tr {
+            border-color: #e2e8f0 !important;
+        }
+        html[data-theme="light"] tbody tr:hover {
+            background-color: #f8fafc !important;
+        }
         html[data-theme="light"] .bg-slate-950,
         html[data-theme="light"] .bg-slate-950\/90,
         html[data-theme="light"] .bg-slate-950\/80,
         html[data-theme="light"] .bg-slate-950\/70,
         html[data-theme="light"] .bg-slate-950\/60 {
-            background-color: #ffffff !important;
+            background-color: #f8fafc !important;
         }
         html[data-theme="light"] .bg-slate-900,
         html[data-theme="light"] .bg-slate-900\/95,
@@ -94,6 +209,18 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         }
         html[data-theme="light"] .text-white {
             color: #0f172a !important;
+        }
+        html[data-theme="light"] button.text-white,
+        html[data-theme="light"] a.text-white,
+        html[data-theme="light"] button[class*="bg-emerald-"],
+        html[data-theme="light"] button[class*="bg-rose-"],
+        html[data-theme="light"] button[class*="bg-blue-"],
+        html[data-theme="light"] a[class*="bg-emerald-"],
+        html[data-theme="light"] a[class*="bg-rose-"],
+        html[data-theme="light"] a[class*="bg-blue-"],
+        html[data-theme="light"] .pick-badge span,
+        html[data-theme="light"] .survivor-badge span.text-white {
+            color: #ffffff !important;
         }
         html[data-theme="light"] .text-slate-100,
         html[data-theme="light"] .text-slate-200 {

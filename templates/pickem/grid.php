@@ -102,7 +102,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
     <!-- User Pick Lock & Payment Callout -->
     <?php if ($isUserLocked): ?>
-        <div class="p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl space-y-4">
+        <div class="locked-banner p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl space-y-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
                 <div class="flex items-start gap-4">
                     <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 text-3xl border border-emerald-500/30 shrink-0">
@@ -159,7 +159,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
     <?php else: ?>
         <!-- Pre-Lock Reminder Banner -->
-        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/30 shadow-xl space-y-3">
+        <div class="prelock-banner p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/30 shadow-xl space-y-3">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start gap-3.5">
                     <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 text-2xl border border-amber-500/20 shrink-0">
@@ -252,7 +252,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                      data-home-name="<?= htmlspecialchars($homeTeam['name']) ?>">
                     
                     <!-- Matchup Broadcast Header -->
-                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 text-xs">
+                    <div class="matchup-header-bar flex items-center justify-between px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 text-xs">
                         <div class="flex items-center gap-2 text-slate-400">
                             <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
                             <?php if ($isMnf): ?>
@@ -280,10 +280,10 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                     <div class="p-3.5 grid grid-cols-2 gap-3.5">
                         
                         <!-- Away Team Card -->
-                        <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group
+                        <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group <?= $awayPicked ? 'is-picked' : '' ?>
                             <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.02]' ?>
                             <?= $hasPick && !$awayPicked ? 'opacity-40' : 'opacity-100' ?>"
-                            style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
+                            style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>">
                             
                             <input type="radio" 
                                    name="picks[<?= $game['id'] ?>]" 
@@ -337,10 +337,10 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         </label>
 
                         <!-- Home Team Card -->
-                        <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group
+                        <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group <?= $homePicked ? 'is-picked' : '' ?>
                             <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.02]' ?>
                             <?= $hasPick && !$homePicked ? 'opacity-40' : 'opacity-100' ?>"
-                            style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>">
+                            style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>">
                             
                             <input type="radio" 
                                    name="picks[<?= $game['id'] ?>]" 
@@ -667,8 +667,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Reset siblings
                 labels.forEach(l => {
-                    l.style.borderColor = '#1e293b';
-                    l.style.background = 'rgba(2, 6, 23, 0.7)';
+                    l.classList.remove('is-picked');
+                    l.style.borderColor = 'var(--card-surface-border)';
+                    l.style.background = 'var(--card-surface)';
                     l.style.boxShadow = 'none';
                     l.classList.add('opacity-40');
                     l.classList.remove('opacity-100');
@@ -678,8 +679,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Highlight selected
                 const color = radio.getAttribute('data-color') || '#10b981';
+                this.classList.add('is-picked');
                 this.style.borderColor = color;
-                this.style.background = `linear-gradient(135deg, ${color}28 0%, #090d16 100%)`;
+                this.style.background = `linear-gradient(135deg, ${color}28 0%, var(--picked-end) 100%)`;
                 this.style.boxShadow = `0 0 22px ${color}40`;
                 this.classList.remove('opacity-40');
                 this.classList.add('opacity-100');

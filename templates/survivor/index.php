@@ -97,8 +97,8 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
             $pickedTeamAbbr = $currentPick['selected_team'];
             $pickedTeamData = TeamData::get($pickedTeamAbbr);
             ?>
-            <div class="p-6 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                 style="border-color: <?= $pickedTeamData['color'] ?>; background: linear-gradient(135deg, <?= $pickedTeamData['color'] ?>28 0%, #090d16 100%);">
+            <div class="survivor-pick-locked-banner p-6 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                 style="border-color: <?= $pickedTeamData['color'] ?>; background: linear-gradient(135deg, <?= $pickedTeamData['color'] ?>28 0%, var(--picked-end) 100%);">
                 <div class="flex items-center gap-4">
                     <img src="<?= htmlspecialchars($pickedTeamData['logo']) ?>" 
                          alt="<?= htmlspecialchars($pickedTeamData['name']) ?>" 
@@ -133,7 +133,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 
         <?php elseif ($isCashEligible): ?>
             <!-- Alive & Cash Verified Banner (Pre-selection) -->
-            <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="survivor-banner-cash p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div class="flex items-center gap-3.5">
                     <div class="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-2xl border border-emerald-500/30 shrink-0">
                         🛡️
@@ -165,7 +165,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 
         <?php else: ?>
             <!-- Alive & Free Tier Banner (Pre-selection) -->
-            <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-amber-500/40 shadow-xl space-y-4">
+            <div class="survivor-banner-free p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-amber-500/40 shadow-xl space-y-4">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
                     <div class="flex items-start gap-4">
                         <div class="p-3 rounded-xl bg-amber-500/15 text-amber-400 text-3xl border border-amber-500/30 shrink-0">
@@ -280,9 +280,9 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 
                     $matchupTitle = "{$awayTeam['name']} @ {$homeTeam['name']}";
                     ?>
-                    <div class="rounded-2xl border border-slate-800/80 bg-slate-900/80 overflow-hidden shadow-xl">
+                    <div class="matchup-card rounded-2xl border border-slate-800/80 bg-slate-900/80 overflow-hidden shadow-xl">
                         <!-- Game Row Header -->
-                        <div class="flex items-center justify-between px-5 py-3 bg-slate-950/80 border-b border-slate-800/80 text-xs">
+                        <div class="matchup-header-bar flex items-center justify-between px-5 py-3 bg-slate-950/80 border-b border-slate-800/80 text-xs">
                             <div class="flex items-center gap-2.5">
                                 <span class="font-mono text-[11px] text-slate-400 font-semibold"><?= htmlspecialchars($kickoffEt) ?></span>
                                 <span class="text-slate-600">&bull;</span>
@@ -303,9 +303,9 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                         <div class="p-4 grid grid-cols-2 gap-4" data-game-id="<?= $game['id'] ?>">
                             
                             <!-- Away Team -->
-                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none
+                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none <?= $awayPicked ? 'is-picked' : '' ?>
                                 <?= $awayDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                                style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>"
+                                style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>"
                                 data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
                                 data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
                                 data-nick="<?= htmlspecialchars($awayTeam['nick']) ?>"
@@ -362,9 +362,9 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                             </label>
 
                             <!-- Home Team -->
-                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none
+                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none <?= $homePicked ? 'is-picked' : '' ?>
                                 <?= $homeDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                                style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, #090d16 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: #1e293b; background: rgba(2, 6, 23, 0.7);" ?>"
+                                style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>"
                                 data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
                                 data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
                                 data-nick="<?= htmlspecialchars($homeTeam['nick']) ?>"
@@ -508,7 +508,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
         <div class="p-6 space-y-5 overflow-y-auto">
             
             <!-- Selected Team Showcase Card -->
-            <div id="confirmTeamCard" class="p-4 rounded-xl border flex items-center gap-4 shadow-lg" style="border-color: #10b981; background: rgba(16, 185, 129, 0.1);">
+            <div id="confirmTeamCard" class="p-4 rounded-xl border flex items-center gap-4 shadow-lg" style="border-color: #10b981; background: var(--card-surface);">
                 <img id="confirmTeamLogo" src="" alt="Team Logo" class="w-16 h-16 object-contain filter drop-shadow-md">
                 <div>
                     <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider block">Your Selected Winner</span>
@@ -685,8 +685,9 @@ document.addEventListener('DOMContentLoaded', function () {
             cards.forEach(c => {
                 const r = c.querySelector('.survivor-radio');
                 if (r && !r.disabled) {
-                    c.style.borderColor = '#1e293b';
-                    c.style.background = 'rgba(2, 6, 23, 0.7)';
+                    c.classList.remove('is-picked');
+                    c.style.borderColor = 'var(--card-surface-border)';
+                    c.style.background = 'var(--card-surface)';
                     c.style.boxShadow = 'none';
                     const badge = c.querySelector('.survivor-badge');
                     if (badge) badge.classList.add('hidden');
@@ -695,8 +696,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Highlight selected card
             const color = radio.getAttribute('data-color') || '#10b981';
+            this.classList.add('is-picked');
             this.style.borderColor = color;
-            this.style.background = `linear-gradient(135deg, ${color}28 0%, #090d16 100%)`;
+            this.style.background = `linear-gradient(135deg, ${color}28 0%, var(--picked-end) 100%)`;
             this.style.boxShadow = `0 0 22px ${color}40`;
 
             const badge = this.querySelector('.survivor-badge');
@@ -730,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (confirmTeamKickoff) confirmTeamKickoff.textContent = 'Kickoff: ' + teamKickoff;
             if (confirmTeamCard) {
                 confirmTeamCard.style.borderColor = teamColor;
-                confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, #090d16 100%)`;
+                confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, var(--card-surface) 100%)`;
             }
             if (btnFinalConfirmText) {
                 btnFinalConfirmText.textContent = `Yes, Lock In ${teamNick} (Final)`;
