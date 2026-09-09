@@ -283,46 +283,18 @@ class Connection
                 $this->pdo->exec("DELETE FROM games WHERE id IN ({$delList})");
             }
 
-            // Ensure each week has a randomly assigned tiebreaker game (not Monday Night Football)
+            // Ensure each week has exactly one tiebreaker game: Monday Night Football (or latest kickoff game of the week)
             $weeks = $this->pdo->query("SELECT DISTINCT season_year, week_number FROM games")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($weeks as $w) {
                 $season = (int) $w['season_year'];
                 $week = (int) $w['week_number'];
 
-                $weekGames = $this->pdo->query(
-                    "SELECT id, kickoff_time, is_mnf, home_team, away_team FROM games WHERE season_year = {$season} AND week_number = {$week} ORDER BY id ASC"
-                )->fetchAll(PDO::FETCH_ASSOC);
-                if (empty($weekGames)) {
-                    continue;
-                }
+                $latestGame = $this->pdo->query(
+                    "SELECT id FROM games WHERE season_year = {$season} AND week_number = {$week} ORDER BY kickoff_time DESC, id DESC LIMIT 1"
+                )->fetch(PDO::FETCH_ASSOC);
 
-                $tiebreakers = array_filter($weekGames, fn ($g) => !empty($g['is_mnf']));
-                $count = count($tiebreakers);
-
-                $isLegacyMnf = false;
-                if ($count === 1) {
-                    $current = reset($tiebreakers);
-                    $kickoff = new \DateTimeImmutable($current['kickoff_time']);
-                    $kickoffEt = $kickoff->setTimezone(new \DateTimeZone('America/New_York'));
-                    if (($kickoffEt->format('N') === '1' && (int)$kickoffEt->format('G') >= 17) || ($current['home_team'] === 'SF' && $current['away_team'] === 'NYJ')) {
-                        $isLegacyMnf = true;
-                    }
-                }
-
-                if ($count === 0 || $count > 1 || $isLegacyMnf) {
-                    $seedStr = "random_tiebreaker_{$season}_{$week}";
-                    $candidates = array_values(array_filter($weekGames, function ($g) {
-                        $kickoff = new \DateTimeImmutable($g['kickoff_time']);
-                        $kickoffEt = $kickoff->setTimezone(new \DateTimeZone('America/New_York'));
-                        return !($kickoffEt->format('N') === '1' && (int)$kickoffEt->format('G') >= 17);
-                    }));
-                    if (empty($candidates)) {
-                        $candidates = $weekGames;
-                    }
-
-                    $idx = abs(crc32($seedStr)) % count($candidates);
-                    $selectedId = (int) $candidates[$idx]['id'];
-
+                if ($latestGame) {
+                    $selectedId = (int) $latestGame['id'];
                     $this->pdo->exec("UPDATE games SET is_mnf = 0 WHERE season_year = {$season} AND week_number = {$week}");
                     $this->pdo->exec("UPDATE games SET is_mnf = 1 WHERE id = {$selectedId}");
                 }
