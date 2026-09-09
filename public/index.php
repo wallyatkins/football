@@ -53,6 +53,7 @@ if (file_exists($envFile)) {
 
 use WallyFootball\Controllers\AdminController;
 use WallyFootball\Controllers\AuthController;
+use WallyFootball\Controllers\FantasyController;
 use WallyFootball\Controllers\PickemController;
 use WallyFootball\Controllers\SurvivorController;
 
@@ -144,6 +145,20 @@ try {
 
         case '/survivor/standings':
             (new SurvivorController())->standings($season);
+            exit;
+
+            // --- Fantasy Dynasty Vault ---
+        case '/fantasy':
+        case '/fantasy/vault':
+            (new FantasyController())->vault();
+            exit;
+
+        case '/fantasy/rivalry':
+            (new FantasyController())->rivalry();
+            exit;
+
+        case '/fantasy/seasons':
+            (new FantasyController())->seasons();
             exit;
 
             // --- Commissioner Admin ---

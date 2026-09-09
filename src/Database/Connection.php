@@ -155,6 +155,41 @@ class Connection
             }
         }
 
+        // Ensure fantasy_franchises table exists
+        try {
+            $this->pdo->query('SELECT 1 FROM fantasy_franchises LIMIT 1');
+        } catch (\Throwable) {
+            $vaultMigration = dirname(__DIR__, 2) . '/db/migrations/003_fantasy_vault.sql';
+            if (file_exists($vaultMigration)) {
+                $sql = file_get_contents($vaultMigration);
+                if ($sql) {
+                    if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                        $sql = str_replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY', $sql);
+                        $sql = str_replace('BOOLEAN DEFAULT 0', 'BOOLEAN DEFAULT FALSE', $sql);
+                    }
+                    $this->pdo->exec($sql);
+                }
+            }
+        }
+
+        // Auto-seed fantasy vault data if table is empty and not in unit testing
+        if (!defined('PHPUNIT_COMPOSER_INSTALL') && getenv('APP_ENV') !== 'testing') {
+            try {
+                $franchiseCount = (int) $this->pdo->query('SELECT count(*) FROM fantasy_franchises')->fetchColumn();
+                if ($franchiseCount === 0) {
+                    $seedFile = dirname(__DIR__, 2) . '/data/fantasy_seed.sql';
+                    if (file_exists($seedFile)) {
+                        $seedSql = file_get_contents($seedFile);
+                        if ($seedSql) {
+                            $this->pdo->exec($seedSql);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Non-blocking fallback
+            }
+        }
+
         // Ensure pickem_entries has is_locked and locked_at columns
         try {
             $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

@@ -40,6 +40,9 @@ $user = $user ?? $_SESSION['user'] ?? null;
                     <a href="/survivor/standings" class="px-3 py-1.5 text-sm font-medium rounded-lg <?= str_contains($_SERVER['REQUEST_URI'] ?? '', '/survivor/standings') ? 'bg-slate-800 text-emerald-400 font-semibold' : 'text-slate-300 hover:text-white hover:bg-slate-800/50' ?> transition">
                         Survivor Leaderboard
                     </a>
+                    <a href="/fantasy/vault" class="px-3 py-1.5 text-sm font-medium rounded-lg <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/fantasy') ? 'bg-slate-800 text-amber-400 font-semibold border border-amber-500/30' : 'text-slate-300 hover:text-white hover:bg-slate-800/50' ?> transition flex items-center gap-1.5">
+                        <span>🏛️</span> Dynasty Vault
+                    </a>
                     <?php
                     $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
                     if ($isCommissioner): ?>
@@ -85,6 +88,10 @@ $user = $user ?? $_SESSION['user'] ?? null;
         <a href="/survivor" class="flex flex-col items-center gap-0.5 text-[11px] <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/survivor') && !str_contains($_SERVER['REQUEST_URI'] ?? '', 'standings') ? 'text-emerald-400 font-bold' : 'text-slate-400' ?>">
             <span>🛡️</span>
             <span>Survivor</span>
+        </a>
+        <a href="/fantasy/vault" class="flex flex-col items-center gap-0.5 text-[11px] <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/fantasy') ? 'text-amber-400 font-bold' : 'text-slate-400' ?>">
+            <span>🏛️</span>
+            <span>Vault</span>
         </a>
         <?php if (!empty($isCommissioner)): ?>
             <a href="/admin/payments" class="flex flex-col items-center gap-0.5 text-[11px] <?= str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/admin') ? 'text-purple-300 font-bold' : 'text-slate-400 hover:text-purple-300' ?>">
