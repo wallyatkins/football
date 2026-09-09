@@ -77,29 +77,47 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
         </div>
     <?php endif; ?>
 
+    <!-- Tier Filter Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-800 pb-2">
+        <button type="button" onclick="filterPickem('all')" id="pickem-tab-all"
+                class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition shadow-sm">
+            All Entrants (<?= count($standings) ?>)
+        </button>
+        <button type="button" onclick="filterPickem('cash')" id="pickem-tab-cash"
+                class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            🟢 Cash Prize Pool ($) (<?= $pot['verified_entries_count'] ?>)
+        </button>
+        <button type="button" onclick="filterPickem('free')" id="pickem-tab-free"
+                class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            🎮 Free / For Fun (<?= $pot['total_entries_count'] - $pot['verified_entries_count'] ?>)
+        </button>
+    </div>
+
     <!-- Standings Table -->
     <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-xl">
-        <table class="w-full text-left text-sm">
+        <table class="w-full text-left text-sm" id="pickemTable">
             <thead>
                 <tr class="border-b border-slate-800 bg-slate-900/80 text-[11px] font-mono uppercase tracking-wider text-slate-400">
                     <th class="py-3 px-4 text-center w-12">Rank</th>
                     <th class="py-3 px-4">Participant</th>
+                    <th class="py-3 px-4 text-center">Play Mode</th>
                     <th class="py-3 px-4 text-center">Correct Picks</th>
                     <th class="py-3 px-4 text-center">Tiebreaker Pred / Delta</th>
-                    <th class="py-3 px-4 text-right">Payment Status</th>
+                    <th class="py-3 px-4 text-right">Cash Prize Status</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
                 <?php if (empty($standings)): ?>
                     <tr>
-                        <td colspan="5" class="py-8 text-center text-slate-500 italic">No entries recorded for Week <?= htmlspecialchars((string) $week) ?> yet.</td>
+                        <td colspan="6" class="py-8 text-center text-slate-500 italic">No entries recorded for Week <?= htmlspecialchars((string) $week) ?> yet.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($standings as $row): ?>
                         <?php
                         $isWinner = in_array($row['username'], array_column($pot['winners'] ?? [], 'username'), true);
                         ?>
-                        <tr class="transition <?= $isWinner ? 'bg-amber-500/10 hover:bg-amber-500/15' : 'hover:bg-slate-800/30' ?>">
+                        <tr class="transition pickem-row <?= $isWinner ? 'bg-amber-500/10 hover:bg-amber-500/15' : 'hover:bg-slate-800/30' ?>"
+                            data-tier="<?= $row['is_paid'] ? 'cash' : 'free' ?>">
                             <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-300">
                                 <?= $isWinner ? '👑' : '#' . $row['rank'] ?>
                             </td>
@@ -107,6 +125,17 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
                                 <?= htmlspecialchars($row['username']) ?>
                                 <?php if (($user['id'] ?? 0) === $row['user_id']): ?>
                                     <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">You</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <?php if ($row['is_paid']): ?>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        🟢 Cash ($10)
+                                    </span>
+                                <?php else: ?>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                        🎮 Free / Fun
+                                    </span>
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">
@@ -123,13 +152,17 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-right">
-                                <?php if ($row['is_paid']): ?>
+                                <?php if ($isWinner): ?>
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/50 animate-pulse">
+                                        👑 Cash Winner
+                                    </span>
+                                <?php elseif ($row['is_paid']): ?>
                                     <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                        ✓ Verified
+                                        ✓ Cash Verified
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                        ⏱️ Pending
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                        🎮 Bragging Rights
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -141,6 +174,27 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
     </div>
 
 </div>
+
+<script>
+function filterPickem(tier) {
+    document.querySelectorAll('.pickem-tab').forEach(el => {
+        el.className = 'pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition';
+    });
+    const activeBtn = document.getElementById('pickem-tab-' + tier);
+    if (activeBtn) {
+        activeBtn.className = 'pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition shadow-sm';
+    }
+
+    const rows = document.querySelectorAll('.pickem-row');
+    rows.forEach(row => {
+        if (tier === 'all' || row.dataset.tier === tier) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
 
 <?php
 $content = ob_get_clean();

@@ -174,4 +174,59 @@ class ScoringEngineTest extends TestCase
         $this->assertSame(3, $standings[1]['tiebreaker_delta']);
         $this->assertSame(63, $standings[1]['actual_mnf']);
     }
+
+    public function testSurvivorFreeTierPlayAndCashPotIsolation(): void
+    {
+        // Alice: Verified Paid ($10), Picked KC (won) -> Alive, Cash Eligible
+        $this->db->execute("INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+            VALUES (1, 2026, 'paid', 0)");
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+            VALUES (1, 2026, 1, 'KC', 0, 'paid')");
+
+        // Bob: Free Tier (unpaid), Picked KC (won) -> Alive, Free Tier
+        $this->db->execute("INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+            VALUES (2, 2026, 'unpaid', 0)");
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+            VALUES (2, 2026, 1, 'KC', 0, 'unpaid')");
+
+        // Charlie: Free Tier (unpaid), Picked BAL (lost) -> Eliminated, Free Tier
+        $this->db->execute("INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated, elimination_week)
+            VALUES (3, 2026, 'unpaid', 1, 1)");
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+            VALUES (3, 2026, 1, 'BAL', 1, 'unpaid')");
+
+        $standings = $this->engine->getSurvivorStandings(2026);
+        $byUser = [];
+        foreach ($standings as $s) {
+            $byUser[$s['username']] = $s;
+        }
+
+        // Alice: Alive and Cash
+        $this->assertSame('alive', $byUser['Alice']['status']);
+        $this->assertTrue($byUser['Alice']['is_alive']);
+        $this->assertTrue($byUser['Alice']['is_cash_eligible']);
+        $this->assertSame('cash', $byUser['Alice']['tier']);
+
+        // Bob: Alive and Free
+        $this->assertSame('alive', $byUser['Bob']['status']);
+        $this->assertTrue($byUser['Bob']['is_alive']);
+        $this->assertFalse($byUser['Bob']['is_cash_eligible']);
+        $this->assertSame('free', $byUser['Bob']['tier']);
+
+        // Charlie: Eliminated and Free
+        $this->assertSame('eliminated', $byUser['Charlie']['status']);
+        $this->assertTrue($byUser['Charlie']['is_eliminated']);
+        $this->assertFalse($byUser['Charlie']['is_cash_eligible']);
+        $this->assertSame('free', $byUser['Charlie']['tier']);
+
+        // Check Survivor Pot calculation
+        $pot = $this->engine->calculateSurvivorPot(2026, 10.0);
+        $this->assertEquals(10.0, $pot['total_pot'], 'Only Alice ($10) should be in the cash pot');
+        $this->assertSame(1, $pot['cash_entries_count']);
+        $this->assertSame(2, $pot['free_entries_count']);
+        $this->assertSame(1, $pot['alive_cash_count']);
+        $this->assertSame(1, $pot['alive_free_count']);
+        $this->assertCount(1, $pot['active_cash_contenders']);
+        $this->assertSame('Alice', $pot['active_cash_contenders'][0]['username']);
+    }
 }

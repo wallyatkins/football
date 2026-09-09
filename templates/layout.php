@@ -56,12 +56,23 @@ $user = $user ?? $_SESSION['user'] ?? null;
             <div class="flex items-center gap-3">
                 <?php if (!empty($user)): ?>
                     <div class="flex items-center gap-2.5">
+                        <?php if (!empty($user['picture']) || !empty($user['avatar_url'])): ?>
+                            <img src="<?= htmlspecialchars($user['picture'] ?? $user['avatar_url']) ?>" 
+                                 alt="<?= htmlspecialchars($user['username'] ?? 'User') ?>" 
+                                 class="w-7 h-7 rounded-full object-cover border border-slate-700">
+                        <?php endif; ?>
                         <div class="hidden sm:flex flex-col text-right">
                             <span class="text-xs font-semibold text-white leading-tight"><?= htmlspecialchars($user['username'] ?? 'Player') ?></span>
                             <span class="text-[10px] font-mono <?= $isCommissioner ? 'text-purple-400 font-bold' : 'text-slate-400' ?>">
                                 <?= $isCommissioner ? '👑 Commissioner' : 'Player' ?>
                             </span>
                         </div>
+                        <a href="https://auth.wallyatkins.com/account?return_url=https://football.wallyatkins.com" 
+                           class="px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 rounded-lg transition flex items-center gap-1.5"
+                           title="Manage your WallyAuth profile, avatar, username, password, phone, and carrier">
+                            <span>⚙️</span>
+                            <span class="hidden md:inline">Account</span>
+                        </a>
                         <a href="/auth/logout" class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-900/50 rounded-lg transition">
                             Sign Out
                         </a>

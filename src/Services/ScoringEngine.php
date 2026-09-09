@@ -101,6 +101,8 @@ class ScoringEngine
                 'email' => $entry['email'],
                 'payment_status' => $entry['payment_status'],
                 'is_paid' => $isPaid,
+                'tier' => $isPaid ? 'cash' : 'free',
+                'is_cash_eligible' => $isPaid,
                 'correct_picks' => $correctCount,
                 'total_graded' => $gradedCount,
                 'pending_picks' => $pendingCount,
@@ -266,8 +268,10 @@ class ScoringEngine
                 }
             }
 
-            $status = 'not_entered';
-            if ($isPaid) {
+            $hasEntered = $isPaid || !empty($picks) || !empty($user['survivor_payment_status']);
+            if (!$hasEntered) {
+                $status = 'not_entered';
+            } else {
                 $status = $isEliminated ? 'eliminated' : 'alive';
             }
 
@@ -277,6 +281,8 @@ class ScoringEngine
                 'email' => $user['email'],
                 'status' => $status,
                 'is_paid' => $isPaid,
+                'tier' => $isPaid ? 'cash' : 'free',
+                'is_cash_eligible' => $isPaid,
                 'is_alive' => ($status === 'alive'),
                 'is_eliminated' => ($status === 'eliminated'),
                 'elimination_week' => $eliminationWeek,
@@ -306,5 +312,33 @@ class ScoringEngine
         });
 
         return $result;
+    }
+
+    /**
+     * Calculate Pot and Contenders for Survivor Pool
+     */
+    public function calculateSurvivorPot(int $season, float $entryStake = 10.0): array
+    {
+        $standings = $this->getSurvivorStandings($season);
+        $cashEntries = array_filter($standings, fn ($s) => $s['is_paid']);
+        $totalPot = count($cashEntries) * $entryStake;
+
+        $aliveCash = array_filter($cashEntries, fn ($s) => $s['is_alive']);
+        $eliminatedCash = array_filter($cashEntries, fn ($s) => $s['is_eliminated']);
+
+        $freeEntries = array_filter($standings, fn ($s) => !$s['is_paid'] && $s['status'] !== 'not_entered');
+        $aliveFree = array_filter($freeEntries, fn ($s) => $s['is_alive']);
+
+        return [
+            'total_pot' => $totalPot,
+            'entry_stake' => $entryStake,
+            'cash_entries_count' => count($cashEntries),
+            'free_entries_count' => count($freeEntries),
+            'total_active_count' => count($cashEntries) + count($freeEntries),
+            'alive_cash_count' => count($aliveCash),
+            'alive_free_count' => count($aliveFree),
+            'active_cash_contenders' => array_values($aliveCash),
+            'active_free_contenders' => array_values($aliveFree),
+        ];
     }
 }

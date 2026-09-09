@@ -42,21 +42,17 @@ class SurvivorController
         $isEliminated = false;
         $eliminationWeek = null;
 
-        if (!$isPaid) {
-            $survivorStatus = 'not_entered';
+        // Check if eliminated
+        $eliminatedRecord = $this->db->queryOne(
+            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        if ($eliminatedRecord || !empty($survivorEntry['is_eliminated'])) {
+            $isEliminated = true;
+            $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : (int) ($survivorEntry['elimination_week'] ?? 1);
+            $survivorStatus = 'eliminated';
         } else {
-            // Check if eliminated
-            $eliminatedRecord = $this->db->queryOne(
-                'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
-                ['uid' => $user['id'], 'season' => $season]
-            );
-            if ($eliminatedRecord || !empty($survivorEntry['is_eliminated'])) {
-                $isEliminated = true;
-                $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : (int) ($survivorEntry['elimination_week'] ?? 1);
-                $survivorStatus = 'eliminated';
-            } else {
-                $survivorStatus = 'alive';
-            }
+            $survivorStatus = 'alive';
         }
 
         // Get all teams used by this user in previous weeks
@@ -135,16 +131,21 @@ class SurvivorController
             exit;
         }
 
-        // 1. Verify user has paid $10 entry fee upfront
+        // 1. Get or initialize survivor entry
         $survivorEntry = $this->db->queryOne(
             'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
             ['uid' => $user['id'], 'season' => $season]
         );
 
-        if (!$survivorEntry || !in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true)) {
-            $_SESSION['error'] = 'You must pay the $10.00 Survivor entry fee and have it verified by Commissioner Wally before making picks.';
-            header("Location: /survivor?week={$week}&season={$season}");
-            exit;
+        if (!$survivorEntry) {
+            $this->db->execute(
+                "INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+                 VALUES (:uid, :season, 'unpaid', 0)",
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            $isPaid = false;
+        } else {
+            $isPaid = in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true);
         }
 
         // 2. Verify user is not already eliminated
@@ -187,16 +188,17 @@ class SurvivorController
             ['uid' => $user['id'], 'season' => $season, 'week' => $week]
         );
 
+        $paymentStatus = $isPaid ? 'paid' : 'unpaid';
         if ($existing) {
             $this->db->execute(
-                'UPDATE survivor_picks SET selected_team = :team WHERE id = :id',
-                ['team' => $selectedTeam, 'id' => $existing['id']]
+                'UPDATE survivor_picks SET selected_team = :team, payment_status = :ps WHERE id = :id',
+                ['team' => $selectedTeam, 'ps' => $paymentStatus, 'id' => $existing['id']]
             );
         } else {
             $this->db->execute(
                 "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
-                 VALUES (:uid, :season, :week, :team, 0, 'paid')",
-                ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam]
+                 VALUES (:uid, :season, :week, :team, 0, :ps)",
+                ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam, 'ps' => $paymentStatus]
             );
         }
 
@@ -211,7 +213,11 @@ class SurvivorController
             // Notification failures should never disrupt player experience
         }
 
-        $_SESSION['flash'] = "Your Survivor pick of {$selectedTeam} for Week {$week} is locked in!";
+        if ($isPaid) {
+            $_SESSION['flash'] = "Your Survivor pick of {$selectedTeam} for Week {$week} is locked in! (Cash Prize Pool 🟢)";
+        } else {
+            $_SESSION['flash'] = "Your Survivor pick of {$selectedTeam} for Week {$week} is locked in! (Playing For Fun 🎮 — Send $10 to Wally to enter the Cash Prize Pool)";
+        }
         header("Location: /survivor?week={$week}&season={$season}");
         exit;
     }
@@ -220,6 +226,7 @@ class SurvivorController
     {
         $user = $_SESSION['user'] ?? null;
         $standings = $this->scoring->getSurvivorStandings($season);
+        $pot = $this->scoring->calculateSurvivorPot($season);
 
         $title = "Survivor Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/survivor/standings.php';

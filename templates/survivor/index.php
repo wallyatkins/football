@@ -2,8 +2,8 @@
 use WallyFootball\Support\TeamData;
 
 ob_start();
-$isNotEntered = ($survivorStatus === 'not_entered');
-$isAlive = ($survivorStatus === 'alive');
+$isAlive = !$isEliminated;
+$isCashEligible = (bool) $isPaid;
 ?>
 
 <div class="space-y-6">
@@ -14,6 +14,15 @@ $isAlive = ($survivorStatus === 'alive');
             <div class="flex items-center gap-2 mb-1.5">
                 <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">Survivor Pool</span>
                 <span class="text-xs text-slate-400">Season <?= htmlspecialchars((string) $season) ?></span>
+                <?php if ($isCashEligible): ?>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
+                        🟢 Cash Prize Eligible
+                    </span>
+                <?php else: ?>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                        🎮 Free / For Fun
+                    </span>
+                <?php endif; ?>
             </div>
             <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
                 <span>Week <?= htmlspecialchars((string) $week) ?> Selection</span>
@@ -52,23 +61,71 @@ $isAlive = ($survivorStatus === 'alive');
     </div>
 
     <!-- Survivor Status Banners -->
-    <?php if ($isNotEntered): ?>
-        <!-- Not Entered Banner: Upfront $10 Payment Gate -->
-        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border-2 border-amber-500/40 shadow-xl space-y-4">
+    <?php if ($isEliminated): ?>
+        <!-- Eliminated Banner -->
+        <div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-4 shadow-lg">
+            <span class="text-3xl">☠️</span>
+            <div>
+                <h3 class="text-base font-black text-rose-300">Eliminated from Survivor Pool</h3>
+                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                    You were knocked out of the Survivor challenge in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>. Your season run has ended.
+                </p>
+            </div>
+        </div>
+
+    <?php elseif ($isCashEligible): ?>
+        <!-- Alive & Cash Verified Banner -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-2xl border border-emerald-500/30 shrink-0">
+                    🛡️
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h3 class="text-sm font-bold text-white">Status: Alive &amp; Cash Prize Eligible</h3>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">ALIVE</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40">💰 CASH CONTENDER</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">Your $10 entry stake is verified by Commissioner Wally. Pick 1 winner below to stay alive!</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Burned Teams:</span>
+                <?php if (empty($usedTeams)): ?>
+                    <span class="text-xs text-slate-500 italic">None yet (all 32 teams open)</span>
+                <?php else: ?>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <?php foreach ($usedTeams as $ut): ?>
+                            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-rose-400 border border-rose-900/40 line-through">
+                                <?= htmlspecialchars($ut) ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+    <?php else: ?>
+        <!-- Alive & Free Tier (Playing For Fun) Banner with Upgrade Option -->
+        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 border border-amber-500/40 shadow-xl space-y-4">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
                 <div class="flex items-start gap-4">
                     <div class="p-3 rounded-xl bg-amber-500/15 text-amber-400 text-3xl border border-amber-500/30 shrink-0">
-                        🎟️
+                        🎮
                     </div>
                     <div>
                         <div class="flex items-center gap-2.5 flex-wrap">
-                            <h2 class="text-lg font-black text-white">Survivor Pool Entry Fee Required ($10.00)</h2>
+                            <h2 class="text-lg font-black text-white">Playing For Fun (Free Tier) — Status: Alive!</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                ALIVE
+                            </span>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                                NOT ENTERED
+                                FREE / FUN POOL
                             </span>
                         </div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Survivor requires a <strong>one-time $10.00 entry fee upfront</strong> for the season. Send your $10 stake to Commissioner Wally using any verified channel below. Once verified, your status will become <strong>Alive</strong> and your picks will unlock!
+                            You are active and can submit your survivor pick below to compete for bragging rights! 
+                            <strong>Want to play for the Cash Prize pot?</strong> Send your $10 season stake to Commissioner Wally below with your username. Once verified, your status upgrades to the Cash Prize Pool!
                         </p>
                         <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-700/80 text-xs">
                             <span class="text-slate-400">Payment Memo Note:</span>
@@ -93,43 +150,16 @@ $isAlive = ($survivorStatus === 'alive');
                     </a>
                 </div>
             </div>
-        </div>
 
-    <?php elseif ($isEliminated): ?>
-        <!-- Eliminated Banner -->
-        <div class="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-4 shadow-lg">
-            <span class="text-3xl">☠️</span>
-            <div>
-                <h3 class="text-base font-black text-rose-300">Eliminated from Survivor Prize Pool</h3>
-                <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                    You were knocked out of the Survivor challenge in Week <?= $eliminationWeek ?>. Your entry is inactive in the season-long pot.
-                </p>
-            </div>
-        </div>
-
-    <?php else: ?>
-        <!-- Alive & Active Banner -->
-        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-2xl border border-emerald-500/30 shrink-0">
-                    🛡️
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                        <span>Survivor Status: Alive &amp; Active</span>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">ALIVE</span>
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Pick 1 straight-up winner. Teams can only be used once per season.</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Burned Teams:</span>
+            <!-- Burned Teams display for free tier -->
+            <div class="pt-3 border-t border-slate-800 flex items-center gap-2 flex-wrap text-xs">
+                <span class="font-mono uppercase tracking-wider text-slate-400">Your Burned Teams:</span>
                 <?php if (empty($usedTeams)): ?>
-                    <span class="text-xs text-slate-500 italic">None yet (all 32 teams open)</span>
+                    <span class="text-slate-500 italic">None yet (all 32 teams open)</span>
                 <?php else: ?>
                     <div class="flex items-center gap-1.5 flex-wrap">
                         <?php foreach ($usedTeams as $ut): ?>
-                            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-rose-400 border border-rose-900/40 line-through">
+                            <span class="font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-rose-400 border border-rose-900/40 line-through">
                                 <?= htmlspecialchars($ut) ?>
                             </span>
                         <?php endforeach; ?>
@@ -304,25 +334,34 @@ $isAlive = ($survivorStatus === 'alive');
         <div class="sticky bottom-16 md:bottom-6 z-30 p-4 rounded-2xl bg-slate-900/95 border border-slate-800 backdrop-blur shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-2 text-xs text-slate-400">
                 <span>🛡️</span>
-                <?php if ($isNotEntered): ?>
-                    <span class="text-amber-400 font-semibold">Payment required: Send $10 to Commissioner Wally with note "Survivor - <?= htmlspecialchars($user['username'] ?? '') ?>" to unlock picks.</span>
-                <?php elseif ($isEliminated): ?>
-                    <span class="text-rose-400">Eliminated from the season-long prize pool.</span>
+                <?php if ($isEliminated): ?>
+                    <span class="text-rose-400 font-semibold">Eliminated from the season-long pool in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>.</span>
+                <?php elseif ($isCashEligible): ?>
+                    <span class="text-emerald-400 font-semibold">🟢 Cash Prize Contender: Pick locks at chosen game's scheduled kickoff.</span>
                 <?php else: ?>
-                    <span>Your pick locks permanently at the chosen game's scheduled kickoff.</span>
+                    <span class="text-amber-400 font-semibold">🎮 Playing For Fun: Pick locks at kickoff. (Send $10 to Wally anytime to upgrade to Cash Pot!)</span>
                 <?php endif; ?>
             </div>
 
-            <?php if ($isNotEntered): ?>
+            <?php if ($isEliminated): ?>
                 <button type="button" disabled
                         class="w-full sm:w-auto px-8 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed border border-slate-700">
-                    🔒 $10 Payment Verification Required
+                    ☠️ Pool Run Ended
                 </button>
-            <?php elseif ($isAlive): ?>
+            <?php else: ?>
                 <button type="submit" 
                         class="w-full sm:w-auto px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2">
                     <span>🛡️</span>
                     <span>Confirm Week <?= htmlspecialchars((string) $week) ?> Survivor Pick</span>
+                    <?php if ($isCashEligible): ?>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-400/50 text-emerald-300">
+                            $10 CASH
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 border border-amber-400/50 text-amber-300">
+                            FREE / FUN
+                        </span>
+                    <?php endif; ?>
                 </button>
             <?php endif; ?>
         </div>
@@ -382,13 +421,14 @@ $isAlive = ($survivorStatus === 'alive');
                 </div>
             </div>
 
-            <!-- Rule 4: One-Time Season Entry Fee -->
+            <!-- Rule 4: Two Ways to Play (Free or Cash Prize) -->
             <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="p-2 rounded-lg bg-blue-500/15 text-blue-400 font-black text-sm shrink-0">4</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">One-Time $10 Season Stake</strong>
+                    <strong class="text-white text-sm block mb-0.5">Two Ways to Play: Free or Cash Prize Pool</strong>
                     <p class="text-slate-300 leading-relaxed">
-                        Entry is a one-time $10 fee for the entire season. Send your stake to Commissioner Wally via Venmo (<span class="text-sky-400 font-bold font-mono">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-emerald-400 font-bold font-mono">$WallyAtkins</span>). The last remaining player wins the entire Survivor prize pot!
+                        <strong>🎮 Playing For Fun (Free):</strong> Everyone can make weekly picks and compete on the leaderboard for bragging rights at zero cost!<br>
+                        <strong>💰 Cash Prize Pool ($10.00 Stake):</strong> Send your $10 stake to Commissioner Wally via Venmo (<span class="text-sky-400 font-bold font-mono">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-emerald-400 font-bold font-mono">$WallyAtkins</span>). The last remaining cash-verified player wins the entire cash pot!
                     </p>
                 </div>
             </div>
