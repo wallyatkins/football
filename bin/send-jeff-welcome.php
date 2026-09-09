@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-$recipientEmail = 'jeff.parrish@hughchurch.com';
+$recipientEmail = 'jeff.parrish@hotmail.com';
 $recipientName = 'Jeff Parrish';
 $fromEmail = 'football@wallyatkins.com';
 $fromName = "Wally Atkins";
