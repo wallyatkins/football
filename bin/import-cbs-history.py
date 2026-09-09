@@ -78,6 +78,21 @@ for r in t_averages.find_all('tr')[1:]:
             float(tds[2]) if tds[2] else None
         )
 
+team_contacts = {
+    1: ('Archetypo', 'Wally Atkins', 'wallyatkins@gmail.com'),
+    2: ('No Sweat', 'Aidan Feather, Richie Richardson', 'aidanfeather757@gmail.com, harold.richardson@me.com'),
+    3: ('Wonder Twins', 'Tamara Atkins', 'tamarapatkins@gmail.com'),
+    4: ('Injuries R Us', 'Allen Baugh, Heath Atkins', 'allen.baugh@yahoo.com, heath.d.atkins@gmail.com'),
+    5: ('cocoa is too tuff for u', 'Divyesh Vallabh, Joshua Matlis', 'deevallabh23@yahoo.com, joshua.matlis@cesjds.org'),
+    6: ('Wicked Noles', 'Alexander Vazquez', 'bases1616@gmail.com'),
+    7: ('Schadenfreude', 'Joseph Findley', 'whitehootie@yahoo.com'),
+    8: ('Viridis Bay Packers', 'Jerry King, Logan Atkins', 'gerald.king@l-3com.com, m.logan.atkins@gmail.com'),
+    9: ('Drunken Squids', 'Chris Yates', 'roundn3rd@gmail.com'),
+    10: ('BUCBALL', 'brian bretzius', 'bretzius@hotmail.com'),
+    11: ('Single With Children', 'Kevin Feather', 'kevinfeather@hotmail.com, kwfeather@yahoo.com'),
+    12: ('Mazies Gang', 'michaux early', 'mecoastie13@gmail.com'),
+}
+
 # Insert Franchises
 franchises = {}
 for r in t_alltime.find_all('tr')[1:]:
@@ -86,15 +101,16 @@ for r in t_alltime.find_all('tr')[1:]:
     if a:
         m = re.search(r'/history/team-overview/(\d+)', a['href'])
         fid = int(m.group(1))
-        team_name = tds[0]
-        titles_count = titles_by_name.get(team_name, (0, [], fid))[0]
-        avg_finish, avg_pts_yr = averages_by_name.get(team_name, (None, None))
-        mgr = tds[7] if len(tds) > 7 else ''
+        historical_name = tds[0]
+        team_name, mgr, contacts = team_contacts.get(fid, (historical_name, tds[7] if len(tds) > 7 else '', ''))
+        titles_count = titles_by_name.get(historical_name, (0, [], fid))[0]
+        avg_finish, avg_pts_yr = averages_by_name.get(historical_name, (None, None))
         
         franchises[fid] = {
             'id': fid,
             'name': team_name,
             'managers': mgr,
+            'contact_emails': contacts,
             'wins': int(tds[1]),
             'losses': int(tds[2]),
             'ties': int(tds[3]),
@@ -108,13 +124,13 @@ for r in t_alltime.find_all('tr')[1:]:
 
         cur.execute("""
             INSERT INTO fantasy_franchises 
-            (id, current_name, current_managers, wins, losses, ties, win_pct, points_for, points_against, titles_count, avg_finish, avg_pts_year)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (fid, team_name, mgr, franchises[fid]['wins'], franchises[fid]['losses'], franchises[fid]['ties'], franchises[fid]['pct'], franchises[fid]['pf'], franchises[fid]['pa'], titles_count, avg_finish, avg_pts_yr))
+            (id, current_name, current_managers, wins, losses, ties, win_pct, points_for, points_against, titles_count, avg_finish, avg_pts_year, contact_emails)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (fid, team_name, mgr, franchises[fid]['wins'], franchises[fid]['losses'], franchises[fid]['ties'], franchises[fid]['pct'], franchises[fid]['pf'], franchises[fid]['pa'], titles_count, avg_finish, avg_pts_yr, contacts))
 
         sql_statements.append(
-            f"INSERT INTO fantasy_franchises (id, current_name, current_managers, wins, losses, ties, win_pct, points_for, points_against, titles_count, avg_finish, avg_pts_year) "
-            f"VALUES ({fid}, {escape_sql(team_name)}, {escape_sql(mgr)}, {franchises[fid]['wins']}, {franchises[fid]['losses']}, {franchises[fid]['ties']}, {franchises[fid]['pct']}, {franchises[fid]['pf']}, {franchises[fid]['pa']}, {titles_count}, {avg_finish or 'NULL'}, {avg_pts_yr or 'NULL'});"
+            f"INSERT INTO fantasy_franchises (id, current_name, current_managers, wins, losses, ties, win_pct, points_for, points_against, titles_count, avg_finish, avg_pts_year, contact_emails) "
+            f"VALUES ({fid}, {escape_sql(team_name)}, {escape_sql(mgr)}, {franchises[fid]['wins']}, {franchises[fid]['losses']}, {franchises[fid]['ties']}, {franchises[fid]['pct']}, {franchises[fid]['pf']}, {franchises[fid]['pa']}, {titles_count}, {avg_finish or 'NULL'}, {avg_pts_yr or 'NULL'}, {escape_sql(contacts)});"
         )
 
 print(f"Inserted {len(franchises)} franchises.")

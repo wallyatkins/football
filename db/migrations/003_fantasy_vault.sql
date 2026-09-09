@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS fantasy_franchises (
     titles_count INT DEFAULT 0,
     avg_finish REAL DEFAULT NULL,
     avg_pts_year REAL DEFAULT NULL,
+    contact_emails TEXT DEFAULT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

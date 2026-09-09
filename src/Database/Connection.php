@@ -172,6 +172,21 @@ class Connection
             }
         }
 
+        // Ensure fantasy_franchises has contact_emails column
+        try {
+            $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $cols = array_column($this->pdo->query("PRAGMA table_info(fantasy_franchises)")->fetchAll(PDO::FETCH_ASSOC), "name");
+                if (!in_array('contact_emails', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE fantasy_franchises ADD COLUMN contact_emails TEXT DEFAULT NULL;");
+                }
+            } else {
+                $this->pdo->exec("ALTER TABLE fantasy_franchises ADD COLUMN IF NOT EXISTS contact_emails TEXT DEFAULT NULL;");
+            }
+        } catch (\Throwable) {
+            // Non-blocking
+        }
+
         // Auto-seed fantasy vault data if table is empty and not in unit testing
         if (!defined('PHPUNIT_COMPOSER_INSTALL') && getenv('APP_ENV') !== 'testing') {
             try {
