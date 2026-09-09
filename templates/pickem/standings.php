@@ -20,16 +20,52 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
             <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Week <?= htmlspecialchars((string) $week) ?> Standings</h1>
         </div>
 
-        <!-- Week Nav Buttons -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
-            <?php for ($w = 1; $w <= 18; $w++): ?>
-                <a href="/pickem/standings?week=<?= $w ?>&season=<?= $season ?>" 
-                   class="px-3 py-1 text-xs font-bold rounded-lg transition <?= $w === $week ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' ?>">
-                    W<?= $w ?>
-                </a>
-            <?php endfor; ?>
+        <!-- Single-Week Focus Action Bar -->
+        <div class="flex items-center gap-2">
+            <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5">
+                <span>🏆</span> Week <?= $week ?> Leaderboard
+            </span>
+            <a href="/fantasy/vault?tab=pools" 
+               class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
+               title="View historical results in the Dynasty Vault">
+                <span>🏛️</span>
+                <span class="hidden sm:inline">Historical Vault</span>
+            </a>
+            <a href="/pickem" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition">
+                &larr; Make Picks
+            </a>
         </div>
     </div>
+
+    <!-- Week Champion Congratulatory Banner (Displayed when all games in week are final) -->
+    <?php if (!empty($isWeekComplete) && !empty($pot['winners'])): ?>
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-emerald-500/20 border-2 border-amber-400/60 shadow-2xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3.5 rounded-2xl bg-amber-500/25 text-amber-300 text-3xl border border-amber-400/50 shrink-0 shadow-lg">
+                        🏆
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                Week <?= $week ?> Official Champion<?= count($pot['winners']) > 1 ? 's' : '' ?>
+                            </span>
+                            <span class="text-xs font-mono text-emerald-400 font-bold">Week Complete</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-1">
+                            Congratulations <?= implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $pot['winners'])) ?>! 🎉
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            Victory with <strong class="text-amber-300"><?= $pot['winners'][0]['correct_picks'] ?></strong> correct picks!
+                            <?php if (!empty($pot['total_pot']) && $pot['total_pot'] > 0): ?>
+                                Cash Prize: <strong class="font-mono text-emerald-300">$<?= number_format($pot['payout_per_winner'], 2) ?></strong><?= $pot['is_split'] ? ' (Split Pot)' : '' ?>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <!-- Pot Overview Card -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

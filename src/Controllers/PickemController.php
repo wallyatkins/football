@@ -99,6 +99,22 @@ class PickemController
             }
         }
 
+        // Determine if week is fully complete (all games played & final)
+        $isWeekComplete = count($games) > 0;
+        foreach ($games as $g) {
+            if ($g['status'] !== 'final') {
+                $isWeekComplete = false;
+                break;
+            }
+        }
+
+        $potInfo = null;
+        $weeklyWinners = [];
+        if ($isWeekComplete) {
+            $potInfo = $this->scoring->calculateWeeklyPot($season, $week);
+            $weeklyWinners = $potInfo['winners'] ?? [];
+        }
+
         // Commissioner payment links (exact verified links)
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';
@@ -258,6 +274,18 @@ class PickemController
             'SELECT * FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
             ['season' => $season, 'week' => $week]
         );
+
+        $games = $this->db->query(
+            'SELECT id, status FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+        $isWeekComplete = count($games) > 0;
+        foreach ($games as $g) {
+            if ($g['status'] !== 'final') {
+                $isWeekComplete = false;
+                break;
+            }
+        }
 
         $title = "Week {$week} Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/standings.php';

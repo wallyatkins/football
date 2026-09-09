@@ -37,8 +37,15 @@ class SportsDataService
         $events = $data['events'] ?? ($data['content']['sbData']['events'] ?? []);
 
         if (empty($events)) {
-            // Fallback to offline schedule seed if live feed is unavailable
-            return $this->seedOfflineWeek($seasonYear, $weekNumber);
+            $errorMsg = "CRITICAL ALERT: NFL schedule sync failed for Season {$seasonYear} Week {$weekNumber}. Official ESPN feed returned 0 events.";
+            error_log($errorMsg);
+            try {
+                $notifier = new NotificationService();
+                $notifier->sendSms($errorMsg, "CRITICAL: NFL Schedule Sync Failed");
+            } catch (\Throwable) {
+                // Non-blocking notification error
+            }
+            throw new RuntimeException($errorMsg);
         }
 
         $synced = 0;
@@ -269,97 +276,29 @@ class SportsDataService
         return $json;
     }
 
-    private function seedOfflineWeek(int $season, int $week): array
+    public function syncSeason(int $season = 2026): array
     {
-        // Verified 2026 NFL Regular Season Official Schedule (16 games / week)
-        $official2026Schedule = [
-            1 => [
-                ['SEA', 'NE', '2026-09-10 00:20:00+00', false], // Kickoff: Wed Sep 9 8:20 PM ET (Tonight!)
-                ['LAR', 'SF', '2026-09-11 00:35:00+00', false], // Thu Sep 10 8:35 PM ET
-                ['CIN', 'TB', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['DET', 'NO', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['TEN', 'NYJ', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['IND', 'BAL', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['PIT', 'ATL', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['CAR', 'CHI', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['JAX', 'CLE', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['HOU', 'BUF', '2026-09-13 17:00:00+00', false], // Sun Sep 13 1:00 PM ET
-                ['LV', 'MIA', '2026-09-13 20:25:00+00', false], // Sun Sep 13 4:25 PM ET
-                ['MIN', 'GB', '2026-09-13 20:25:00+00', false], // Sun Sep 13 4:25 PM ET
-                ['PHI', 'WAS', '2026-09-13 20:25:00+00', false], // Sun Sep 13 4:25 PM ET
-                ['LAC', 'ARI', '2026-09-13 20:25:00+00', false], // Sun Sep 13 4:25 PM ET
-                ['NYG', 'DAL', '2026-09-14 00:20:00+00', false], // Sun Sep 13 8:20 PM ET (SNF)
-                ['KC', 'DEN', '2026-09-15 00:15:00+00', true],   // Mon Sep 14 8:15 PM ET (MNF Tiebreaker)
-            ],
+        $summary = [
+            'synced_weeks' => 0,
+            'total_events' => 0,
+            'inserted' => 0,
+            'updated' => 0,
+            'errors' => [],
         ];
 
-        $matchups = $official2026Schedule[$week] ?? [];
-        if (empty($matchups)) {
-            return ['total_events' => 0, 'inserted' => 0, 'updated' => 0];
-        }
-
-        $synced = 0;
-        $updated = 0;
-        $officialKeys = [];
-
-        foreach ($matchups as [$home, $away, $kickoff, $isMnf]) {
-            $home = \WallyFootball\Support\TeamData::normalize($home);
-            $away = \WallyFootball\Support\TeamData::normalize($away);
-
-            $teams = [$home, $away];
-            sort($teams);
-            $key = $teams[0] . '_' . $teams[1];
-            $officialKeys[$key] = true;
-
-            $existing = $this->db->queryOne(
-                'SELECT id FROM games 
-                 WHERE season_year = :season AND week_number = :week 
-                   AND ((home_team = :home AND away_team = :away) OR (home_team = :away AND away_team = :home))',
-                ['season' => $season, 'week' => $week, 'home' => $home, 'away' => $away]
-            );
-
-            if ($existing) {
-                $this->db->execute(
-                    'UPDATE games SET 
-                        home_team = :home,
-                        away_team = :away,
-                        kickoff_time = :kickoff, 
-                        is_mnf = :is_mnf
-                     WHERE id = :id',
-                    ['home' => $home, 'away' => $away, 'kickoff' => $kickoff, 'is_mnf' => $isMnf ? 1 : 0, 'id' => $existing['id']]
-                );
-                $updated++;
-            } else {
-                $this->db->execute(
-                    'INSERT INTO games (season_year, week_number, home_team, away_team, kickoff_time, is_mnf, status)
-                     VALUES (:season, :week, :home, :away, :kickoff, :is_mnf, "scheduled")',
-                    ['season' => $season, 'week' => $week, 'home' => $home, 'away' => $away, 'kickoff' => $kickoff, 'is_mnf' => $isMnf ? 1 : 0]
-                );
-                $synced++;
+        for ($w = 1; $w <= 18; $w++) {
+            try {
+                $res = $this->syncWeek($season, $w);
+                $summary['synced_weeks']++;
+                $summary['total_events'] += ($res['total_events'] ?? 0);
+                $summary['inserted'] += ($res['inserted'] ?? 0);
+                $summary['updated'] += ($res['updated'] ?? 0);
+            } catch (\Throwable $e) {
+                $summary['errors'][$w] = $e->getMessage();
             }
         }
 
-        // Purge obsolete games
-        $existingGames = $this->db->query(
-            'SELECT id, home_team, away_team FROM games WHERE season_year = :s AND week_number = :w',
-            ['s' => $season, 'w' => $week]
-        );
-        foreach ($existingGames as $eg) {
-            $h = \WallyFootball\Support\TeamData::normalize($eg['home_team']);
-            $a = \WallyFootball\Support\TeamData::normalize($eg['away_team']);
-            $t = [$h, $a];
-            sort($t);
-            $k = $t[0] . '_' . $t[1];
-            if (!isset($officialKeys[$k])) {
-                $this->db->execute('DELETE FROM pickem_picks WHERE game_id = :gid', ['gid' => $eg['id']]);
-                $this->db->execute('DELETE FROM games WHERE id = :id', ['id' => $eg['id']]);
-            }
-        }
-
-        $this->deduplicateWeek($season, $week);
-        $this->ensureTiebreakerSelected($season, $week);
-
-        return ['total_events' => count($matchups), 'inserted' => $synced, 'updated' => $updated];
+        return $summary;
     }
 
     public function deduplicateWeek(int $season, int $week): void

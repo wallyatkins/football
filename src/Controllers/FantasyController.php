@@ -20,6 +20,11 @@ class FantasyController
      */
     public function vault(): void
     {
+        if (($_GET['tab'] ?? '') === 'pools') {
+            $this->poolArchives();
+            return;
+        }
+
         $sortBy = $_GET['sort'] ?? 'titles';
         $hallOfFame = $this->vault->getHallOfFame();
         $leaderboard = $this->vault->getAllTimeLeaderboard($sortBy);
@@ -28,6 +33,55 @@ class FantasyController
 
         $title = "Dynasty Vault | 20-Year League History";
         require dirname(__DIR__, 2) . '/templates/fantasy/vault.php';
+    }
+
+    /**
+     * Pick'em and Survivor Historical Archives
+     */
+    public function poolArchives(): void
+    {
+        $season = isset($_GET['season']) ? (int) $_GET['season'] : (int) (getenv('NFL_CURRENT_SEASON') ?: date('Y'));
+        $db = \WallyFootball\Database\Connection::getInstance();
+        $scoring = new \WallyFootball\Services\ScoringEngine($db);
+
+        // Find all weeks with games
+        $availableWeeks = $db->query(
+            'SELECT DISTINCT week_number FROM games WHERE season_year = :season ORDER BY week_number ASC',
+            ['season' => $season]
+        );
+        $weeksList = array_column($availableWeeks, 'week_number');
+
+        $completedWeeks = [];
+        foreach ($weeksList as $w) {
+            $w = (int) $w;
+            $games = $db->query(
+                'SELECT id, status FROM games WHERE season_year = :season AND week_number = :w',
+                ['season' => $season, 'w' => $w]
+            );
+            $allFinal = count($games) > 0;
+            foreach ($games as $g) {
+                if ($g['status'] !== 'final') {
+                    $allFinal = false;
+                    break;
+                }
+            }
+            if ($allFinal) {
+                $pot = $scoring->calculateWeeklyPot($season, $w);
+                $completedWeeks[] = [
+                    'week' => $w,
+                    'games_count' => count($games),
+                    'pot' => $pot,
+                    'winners' => $pot['winners'] ?? [],
+                ];
+            }
+        }
+
+        // Survivor records
+        $survivorPot = $scoring->calculateSurvivorPot($season);
+        $survivorStandings = $scoring->getSurvivorStandings($season);
+
+        $title = "Pick'em & Survivor Archives | Dynasty Vault";
+        require dirname(__DIR__, 2) . '/templates/fantasy/pool_archive.php';
     }
 
     /**

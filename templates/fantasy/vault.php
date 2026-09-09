@@ -22,7 +22,7 @@ $sortBy = $_GET['sort'] ?? 'titles';
         </div>
 
         <!-- Navigation Tabs -->
-        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800">
+        <div class="flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800 flex-wrap">
             <a href="/fantasy/vault" class="px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-black shadow-sm transition">
                 🏆 Hall of Fame
             </a>
@@ -31,6 +31,9 @@ $sortBy = $_GET['sort'] ?? 'titles';
             </a>
             <a href="/fantasy/seasons" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
                 📅 Season Explorer
+            </a>
+            <a href="/fantasy/vault?tab=pools" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                📜 Pool Archives
             </a>
         </div>
     </div>

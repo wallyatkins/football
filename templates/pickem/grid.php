@@ -34,23 +34,17 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             </h1>
         </div>
 
-        <!-- Subtle Week Switcher -->
+        <!-- Single-Week Focus Action Bar -->
         <div class="flex items-center gap-2">
-            <?php if ($week > 1): ?>
-                <a href="/pickem?week=<?= $week - 1 ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                    &larr; Week <?= $week - 1 ?>
-                </a>
-            <?php endif; ?>
-            <span class="px-3 py-1.5 text-xs font-bold font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm">
-                Week <?= $week ?>
+            <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5">
+                <span>🎯</span> Active Week <?= $week ?>
             </span>
-            <?php if ($week < 18): ?>
-                <a href="/pickem?week=<?= $week + 1 ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                    Week <?= $week + 1 ?> &rarr;
-                </a>
-            <?php endif; ?>
+            <a href="/fantasy/vault?tab=pools" 
+               class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
+               title="View historical results in the Dynasty Vault">
+                <span>🏛️</span>
+                <span class="hidden sm:inline">Archives</span>
+            </a>
 
             <!-- How It Works Modal Button -->
             <button type="button" 
@@ -69,6 +63,39 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- Week Champion Congratulatory Banner (Displayed when all games in week are final) -->
+    <?php if (!empty($isWeekComplete) && !empty($weeklyWinners)): ?>
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-emerald-500/20 border-2 border-amber-400/60 shadow-2xl relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3.5 rounded-2xl bg-amber-500/25 text-amber-300 text-3xl border border-amber-400/50 shrink-0 shadow-lg">
+                        🏆
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                Week <?= $week ?> Official Champion<?= count($weeklyWinners) > 1 ? 's' : '' ?>
+                            </span>
+                            <span class="text-xs font-mono text-emerald-400 font-bold">Week Complete</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-1">
+                            Congratulations <?= implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $weeklyWinners)) ?>! 🎉
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            Top Score: <strong class="text-amber-300"><?= $weeklyWinners[0]['correct_picks'] ?></strong> correct picks
+                            <?php if (!empty($potInfo['total_pot']) && $potInfo['total_pot'] > 0): ?>
+                                &bull; Cash Payout: <strong class="font-mono text-emerald-300">$<?= number_format($potInfo['payout_per_winner'], 2) ?></strong><?= $potInfo['is_split'] ? ' (Split Pot)' : '' ?>
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                </div>
+                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shrink-0">
+                    View Final Standings &rarr;
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <!-- User Pick Lock & Payment Callout -->
     <?php if ($isUserLocked): ?>

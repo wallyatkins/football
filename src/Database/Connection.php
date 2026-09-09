@@ -187,6 +187,21 @@ class Connection
             // Non-blocking
         }
 
+        // Ensure users has avatar_url column
+        try {
+            $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $cols = array_column($this->pdo->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC), "name");
+                if (!in_array('avatar_url', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) DEFAULT NULL;");
+                }
+            } else {
+                $this->pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT NULL;");
+            }
+        } catch (\Throwable) {
+            // Non-blocking
+        }
+
         // Auto-seed fantasy vault data if table is empty and not in unit testing
         if (!defined('PHPUNIT_COMPOSER_INSTALL') && getenv('APP_ENV') !== 'testing') {
             try {

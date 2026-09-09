@@ -225,8 +225,26 @@ class ScoringEngine
     /**
      * Get season survivor standings
      */
-    public function getSurvivorStandings(int $season): array
+    public function getSurvivorStandings(int $season, ?int $viewingUserId = null, ?int $currentWeek = null): array
     {
+        if ($currentWeek === null) {
+            $currentWeek = (int) (getenv('NFL_CURRENT_WEEK') ?: 1);
+        }
+
+        // Check which games for the current week have already started
+        $games = $this->db->query(
+            'SELECT home_team, away_team, kickoff_time, status FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $currentWeek]
+        );
+        $now = time();
+        $unlockedTeams = [];
+        foreach ($games as $g) {
+            if (strtotime($g['kickoff_time']) <= $now || in_array($g['status'], ['in_progress', 'final'], true)) {
+                $unlockedTeams[$g['home_team']] = true;
+                $unlockedTeams[$g['away_team']] = true;
+            }
+        }
+
         $users = $this->db->query(
             'SELECT u.id, u.username, u.email, se.payment_status as survivor_payment_status, 
                     se.is_eliminated as entry_eliminated, se.elimination_week as entry_elim_week
@@ -250,15 +268,31 @@ class ScoringEngine
             $isEliminated = false;
             $eliminationWeek = null;
             $teamsUsed = [];
+            $isViewer = ($viewingUserId !== null && (int)$user['id'] === $viewingUserId);
+            $processedPicks = [];
 
             foreach ($picks as $p) {
-                $teamsUsed[] = $p['selected_team'];
+                $pWeek = (int) $p['week_number'];
+                $isCurrentWeek = ($pWeek >= $currentWeek);
+                $hasStarted = isset($unlockedTeams[$p['selected_team']]);
+
+                // Mask current week pick for other users if game has not kicked off yet
+                if ($isCurrentWeek && !$isViewer && !$hasStarted) {
+                    $p['display_team'] = '🔒 Hidden';
+                    $p['is_hidden'] = true;
+                } else {
+                    $p['display_team'] = $p['selected_team'];
+                    $p['is_hidden'] = false;
+                    $teamsUsed[] = $p['selected_team'];
+                }
+
                 if ($p['is_eliminated']) {
                     $isEliminated = true;
                     if ($eliminationWeek === null) {
-                        $eliminationWeek = (int) $p['week_number'];
+                        $eliminationWeek = $pWeek;
                     }
                 }
+                $processedPicks[] = $p;
             }
 
             if (!empty($user['entry_eliminated'])) {
@@ -288,7 +322,7 @@ class ScoringEngine
                 'elimination_week' => $eliminationWeek,
                 'picks_count' => count($picks),
                 'teams_used' => $teamsUsed,
-                'history' => $picks,
+                'history' => $processedPicks,
             ];
         }
 

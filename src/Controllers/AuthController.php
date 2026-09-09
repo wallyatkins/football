@@ -69,18 +69,22 @@ class AuthController
                 || in_array(strtolower($username), ['wallyatkins', 'wally'], true);
             $role = $isCommissioner ? 'commissioner' : 'player';
 
+            $avatarUrl = $claims['picture'] ?? ($claims['avatar_url'] ?? null);
+
             // Upsert user in local database
-            $user = $this->db->queryOne('SELECT id, role FROM users WHERE oidc_sub = :sub', ['sub' => $sub]);
+            $user = $this->db->queryOne('SELECT id, role, avatar_url FROM users WHERE oidc_sub = :sub', ['sub' => $sub]);
             if ($user) {
+                $effectiveAvatar = $avatarUrl ?: ($user['avatar_url'] ?? null);
                 $this->db->execute(
-                    'UPDATE users SET username = :name, email = :email, role = :role WHERE id = :id',
-                    ['name' => $username, 'email' => $email, 'role' => $role, 'id' => $user['id']]
+                    'UPDATE users SET username = :name, email = :email, role = :role, avatar_url = :av WHERE id = :id',
+                    ['name' => $username, 'email' => $email, 'role' => $role, 'av' => $effectiveAvatar, 'id' => $user['id']]
                 );
                 $userId = (int) $user['id'];
             } else {
+                $effectiveAvatar = $avatarUrl;
                 $userId = (int) $this->db->insert(
-                    'INSERT INTO users (oidc_sub, username, email, role) VALUES (:sub, :name, :email, :role)',
-                    ['sub' => $sub, 'name' => $username, 'email' => $email, 'role' => $role]
+                    'INSERT INTO users (oidc_sub, username, email, role, avatar_url) VALUES (:sub, :name, :email, :role, :av)',
+                    ['sub' => $sub, 'name' => $username, 'email' => $email, 'role' => $role, 'av' => $effectiveAvatar]
                 );
             }
 
@@ -90,6 +94,8 @@ class AuthController
                 'username' => $username,
                 'email' => $email,
                 'role' => $role,
+                'picture' => $effectiveAvatar,
+                'avatar_url' => $effectiveAvatar,
             ];
 
             header('Location: /pickem');

@@ -32,23 +32,17 @@ $isCashEligible = (bool) $isPaid;
             </h1>
         </div>
 
-        <!-- Subtle Week Switcher -->
+        <!-- Single-Week Focus Action Bar -->
         <div class="flex items-center gap-2">
-            <?php if ($week > 1): ?>
-                <a href="/survivor?week=<?= $week - 1 ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                    &larr; Week <?= $week - 1 ?>
-                </a>
-            <?php endif; ?>
-            <span class="px-3 py-1.5 text-xs font-bold font-mono rounded-lg bg-emerald-500 text-slate-950 shadow-sm">
-                Week <?= $week ?>
+            <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-emerald-500 text-slate-950 shadow-sm flex items-center gap-1.5">
+                <span>🛡️</span> Active Week <?= $week ?>
             </span>
-            <?php if ($week < 18): ?>
-                <a href="/survivor?week=<?= $week + 1 ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1">
-                    Week <?= $week + 1 ?> &rarr;
-                </a>
-            <?php endif; ?>
+            <a href="/fantasy/vault?tab=pools" 
+               class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
+               title="View historical results in the Dynasty Vault">
+                <span>🏛️</span>
+                <span class="hidden sm:inline">Archives</span>
+            </a>
 
             <!-- How It Works Modal Button -->
             <button type="button" 

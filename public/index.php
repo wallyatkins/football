@@ -153,6 +153,11 @@ try {
             (new FantasyController())->vault();
             exit;
 
+        case '/fantasy/pools':
+        case '/fantasy/archives':
+            (new FantasyController())->poolArchives();
+            exit;
+
         case '/fantasy/rivalry':
             (new FantasyController())->rivalry();
             exit;

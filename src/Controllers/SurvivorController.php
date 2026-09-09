@@ -225,7 +225,9 @@ class SurvivorController
     public function standings(int $season): void
     {
         $user = $_SESSION['user'] ?? null;
-        $standings = $this->scoring->getSurvivorStandings($season);
+        $viewingUserId = !empty($user['id']) ? (int) $user['id'] : null;
+        $currentWeek = (int) (getenv('NFL_CURRENT_WEEK') ?: 1);
+        $standings = $this->scoring->getSurvivorStandings($season, $viewingUserId, $currentWeek);
         $pot = $this->scoring->calculateSurvivorPot($season);
 
         $title = "Survivor Standings — Wally's NFL Pool";

@@ -13,7 +13,13 @@ ob_start();
             </div>
             <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Survivor Leaderboard</h1>
         </div>
-        <div>
+        <div class="flex items-center gap-2">
+            <a href="/fantasy/vault?tab=pools" 
+               class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
+               title="View historical results in the Dynasty Vault">
+                <span>🏛️</span>
+                <span>Historical Vault</span>
+            </a>
             <a href="/survivor" class="px-4 py-2 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition">
                 &larr; Make Weekly Pick
             </a>
@@ -118,9 +124,15 @@ ob_start();
                                 <?php else: ?>
                                     <div class="flex items-center gap-1.5 flex-wrap">
                                         <?php foreach ($row['history'] as $h): ?>
-                                            <span class="text-xs font-mono px-2 py-0.5 rounded border <?= $h['is_eliminated'] ? 'bg-rose-950/40 border-rose-800/60 text-rose-300 line-through' : 'bg-slate-800 border-slate-700 text-emerald-400' ?>">
-                                                <span class="text-[10px] text-slate-400 mr-1">W<?= $h['week_number'] ?>:</span><?= htmlspecialchars($h['selected_team']) ?>
-                                            </span>
+                                            <?php if (!empty($h['is_hidden'])): ?>
+                                                <span class="text-xs font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-500 flex items-center gap-1" title="Hidden until game kickoff">
+                                                    <span class="text-[10px] text-slate-600">W<?= $h['week_number'] ?>:</span><span>🔒 Hidden</span>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-xs font-mono px-2 py-0.5 rounded border <?= $h['is_eliminated'] ? 'bg-rose-950/40 border-rose-800/60 text-rose-300 line-through' : 'bg-slate-800 border-slate-700 text-emerald-400' ?>">
+                                                    <span class="text-[10px] text-slate-400 mr-1">W<?= $h['week_number'] ?>:</span><?= htmlspecialchars($h['display_team'] ?? $h['selected_team']) ?>
+                                                </span>
+                                            <?php endif; ?>
                                         <?php endforeach; ?>
                                     </div>
                                 <?php endif; ?>

@@ -229,4 +229,38 @@ class ScoringEngineTest extends TestCase
         $this->assertCount(1, $pot['active_cash_contenders']);
         $this->assertSame('Alice', $pot['active_cash_contenders'][0]['username']);
     }
+
+    public function testSurvivorCurrentWeekPickMaskingForOpponents(): void
+    {
+        // Add a future game in week 2 that has not kicked off yet
+        $this->db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
+            (201, 2026, 2, 'BUF', 'MIA', '2026-09-15 20:15:00', 'scheduled')");
+
+        // Alice (user 1) picks BUF for week 2
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+            VALUES (1, 2026, 2, 'BUF', 0, 'paid')");
+
+        // Bob (user 2) views standings for week 2
+        // Alice's week 2 pick should be HIDDEN from Bob
+        $standingsForBob = $this->engine->getSurvivorStandings(2026, 2, 2);
+        $aliceRowForBob = array_values(array_filter($standingsForBob, fn($s) => $s['user_id'] === 1))[0];
+        $this->assertSame('🔒 Hidden', $aliceRowForBob['history'][0]['display_team']);
+        $this->assertTrue($aliceRowForBob['history'][0]['is_hidden']);
+        $this->assertNotContains('BUF', $aliceRowForBob['teams_used'], 'Unstarted pick should not appear in opponent teams_used');
+
+        // Alice (user 1) views her own standings for week 2
+        // Alice should see her own pick 'BUF'
+        $standingsForAlice = $this->engine->getSurvivorStandings(2026, 1, 2);
+        $aliceRowForAlice = array_values(array_filter($standingsForAlice, fn($s) => $s['user_id'] === 1))[0];
+        $this->assertSame('BUF', $aliceRowForAlice['history'][0]['display_team']);
+        $this->assertFalse($aliceRowForAlice['history'][0]['is_hidden']);
+        $this->assertContains('BUF', $aliceRowForAlice['teams_used']);
+
+        // Now simulate game kickoff: status = 'in_progress'
+        $this->db->execute("UPDATE games SET status = 'in_progress' WHERE id = 201");
+        $standingsAfterKickoff = $this->engine->getSurvivorStandings(2026, 2, 2);
+        $aliceRowAfterKickoff = array_values(array_filter($standingsAfterKickoff, fn($s) => $s['user_id'] === 1))[0];
+        $this->assertSame('BUF', $aliceRowAfterKickoff['history'][0]['display_team'], 'Kickoff unlocks pick visibility');
+        $this->assertFalse($aliceRowAfterKickoff['history'][0]['is_hidden']);
+    }
 }
