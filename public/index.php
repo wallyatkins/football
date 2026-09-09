@@ -60,6 +60,26 @@ use WallyFootball\Controllers\SurvivorController;
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
+// Static asset handler
+if (str_starts_with($uri, '/assets/')) {
+    $assetFile = __DIR__ . $uri;
+    if (file_exists($assetFile)) {
+        $ext = pathinfo($assetFile, PATHINFO_EXTENSION);
+        $mimes = [
+            'svg' => 'image/svg+xml',
+            'css' => 'text/css',
+            'js'  => 'application/javascript',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'ico' => 'image/x-icon',
+        ];
+        header('Content-Type: ' . ($mimes[$ext] ?? 'application/octet-stream'));
+        header('Cache-Control: public, max-age=86400');
+        readfile($assetFile);
+        exit;
+    }
+}
+
 // Default season and week
 $season = isset($_GET['season']) ? (int) $_GET['season'] : (int) (getenv('NFL_CURRENT_SEASON') ?: date('Y'));
 $week = isset($_GET['week']) ? (int) $_GET['week'] : (int) (getenv('NFL_CURRENT_WEEK') ?: 1);

@@ -64,6 +64,9 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
     </div>
 
+    <!-- Center Column Gridiron Layout (One Game Per Row) -->
+    <div class="max-w-3xl mx-auto space-y-6">
+
     <!-- Week Champion Congratulatory Banner (Displayed when all games in week are final) -->
     <?php if (!empty($isWeekComplete) && !empty($weeklyWinners)): ?>
         <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-emerald-500/20 border-2 border-amber-400/60 shadow-2xl relative overflow-hidden">
@@ -212,7 +215,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         <input type="hidden" name="season_year" value="<?= htmlspecialchars((string) $season) ?>">
         <input type="hidden" name="week_number" value="<?= htmlspecialchars((string) $week) ?>">
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="space-y-6">
             <?php foreach ($games as $game): ?>
                 <?php
                 $isKickoffLocked = (bool) $game['is_locked'];
@@ -473,6 +476,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
 
     </form>
+    </div>
 
 </div>
 

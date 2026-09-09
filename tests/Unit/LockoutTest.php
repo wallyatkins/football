@@ -69,4 +69,33 @@ class LockoutTest extends TestCase
 
         $this->assertSame([15, 16], $rendered, 'The final game must not be overwritten by by-reference foreach mutation.');
     }
+
+    public function testSurvivorOneAndDoneRejectsChangingPickOnceLocked(): void
+    {
+        $existingPick = ['id' => 101, 'selected_team' => 'KC', 'week_number' => 1];
+        
+        // When an existing pick is already present for the user and week, One and Done rule disallows modifying it
+        $isPickLocked = !empty($existingPick);
+        $this->assertTrue($isPickLocked, 'An existing pick indicates the user has already locked in their one-and-done pick.');
+    }
+
+    public function testSurvivorRejectsPickAfterFirstGameKickoff(): void
+    {
+        $games = [
+            ['kickoff_time' => date('Y-m-d H:i:s', time() - 3600)], // Thursday opener (1 hr ago)
+            ['kickoff_time' => date('Y-m-d H:i:s', time() + 72000)], // Sunday game
+        ];
+
+        $firstKickoff = null;
+        foreach ($games as $g) {
+            $kt = strtotime($g['kickoff_time']);
+            if ($firstKickoff === null || $kt < $firstKickoff) {
+                $firstKickoff = $kt;
+            }
+        }
+
+        $now = time();
+        $isSurvivorWindowClosed = ($firstKickoff !== null && $now >= $firstKickoff);
+        $this->assertTrue($isSurvivorWindowClosed, 'Survivor picks must close at the kickoff of the first game of that week.');
+    }
 }

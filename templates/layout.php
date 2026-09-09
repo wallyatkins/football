@@ -31,7 +31,28 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         body { font-family: 'Inter', sans-serif; transition: background-color 0.2s, color 0.2s; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
+        /* Subdued Stadium Turf Field Background */
+        body.football-field {
+            background-color: #06140a;
+            background-image: url('/assets/field-turf.svg');
+            background-repeat: repeat-y;
+            background-position: top center;
+            background-size: 1400px 2500px;
+            background-attachment: scroll;
+        }
+
+        @media (max-width: 640px) {
+            body.football-field {
+                background-size: 900px 2500px;
+            }
+        }
+
         /* Light Mode Theme Overrides */
+        html[data-theme="light"] body.football-field {
+            background-color: #f1f8f3 !important;
+            background-image: linear-gradient(rgba(248, 250, 252, 0.90), rgba(248, 250, 252, 0.90)), url('/assets/field-turf.svg') !important;
+            color: #0f172a !important;
+        }
         html[data-theme="light"] body {
             background-color: #f8fafc !important;
             color: #0f172a !important;
@@ -95,7 +116,7 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+<body class="football-field text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
 
     <!-- Global Top Navigation -->
     <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
