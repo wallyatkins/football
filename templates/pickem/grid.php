@@ -291,22 +291,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 $homePicked = ($userPick === $homeAbbr);
 
                 $hasPick = $awayPicked || $homePicked;
-                ?>
-                <div class="matchup-card rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg <?= $isMnf ? 'border-amber-500/60 bg-slate-900/90 ring-1 ring-amber-500/30' : 'border-slate-800/80 bg-slate-900/70' ?>"
-                     data-game-id="<?= $game['id'] ?>"
-                     data-unlocked="<?= $cardDisabled ? 'false' : 'true' ?>"
-                     data-away-abbr="<?= htmlspecialchars($awayAbbr) ?>"
-                     data-away-name="<?= htmlspecialchars($awayTeam['name']) ?>"
-                     data-home-abbr="<?= htmlspecialchars($homeAbbr) ?>"
-                     data-home-name="<?= htmlspecialchars($homeTeam['name']) ?>">
-                    
-                    <!-- Matchup Broadcast Header -->
-                    <div class="matchup-header-bar flex items-center justify-between px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 text-xs">
-                        <div class="flex items-center gap-2 text-slate-400">
-                            <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
-                            <?php if ($isMnf): ?>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                    ⭐ Official Tiebreaker Game
+
                 $isCorrectAway = ($isFinal && $awayPicked && ($game['pick_result'] ?? '') === 'correct');
                 $isIncorrectAway = ($isFinal && $awayPicked && ($game['pick_result'] ?? '') === 'incorrect');
                 $isCorrectHome = ($isFinal && $homePicked && ($game['pick_result'] ?? '') === 'correct');
