@@ -210,6 +210,55 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
     </div>
 
+    <!-- User's Live Performance Scorecard (When any game is final or user has submitted) -->
+    <?php if (!empty($userGradedCount) && $userGradedCount > 0): ?>
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-700/80 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="p-3 rounded-2xl bg-amber-500/15 text-amber-400 text-2xl border border-amber-500/30 shrink-0">
+                    📊
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base font-bold text-white">Your Week <?= $week ?> Pick'em Performance</h3>
+                        <span class="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                            Live Grading
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        <?= $userGradedCount ?> of <?= count($games) ?> games graded &bull; Current Accuracy: <strong class="text-amber-300 font-mono"><?= $userGradedCount > 0 ? round(($userCorrectCount / $userGradedCount) * 100) : 0 ?>%</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2.5 font-mono flex-wrap">
+                <div class="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-2 shadow-sm">
+                    <span class="text-lg font-black">✓</span>
+                    <div>
+                        <span class="text-base font-black"><?= $userCorrectCount ?></span>
+                        <span class="text-[10px] uppercase block text-emerald-400/80">Correct</span>
+                    </div>
+                </div>
+                <div class="px-3.5 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center gap-2 shadow-sm">
+                    <span class="text-lg font-black">✗</span>
+                    <div>
+                        <span class="text-base font-black"><?= $userIncorrectCount ?></span>
+                        <span class="text-[10px] uppercase block text-rose-400/80">Missed</span>
+                    </div>
+                </div>
+                <div class="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 flex items-center gap-2 shadow-sm">
+                    <span class="text-lg">⏳</span>
+                    <div>
+                        <span class="text-base font-black"><?= $userPendingCount ?></span>
+                        <span class="text-[10px] uppercase block text-slate-400">Pending</span>
+                    </div>
+                </div>
+                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow flex items-center gap-1.5">
+                    <span>🏆</span>
+                    <span>Standings</span>
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Pick'em Form -->
     <form action="/pickem/save" method="POST" id="pickemForm" class="space-y-6">
         <input type="hidden" name="season_year" value="<?= htmlspecialchars((string) $season) ?>">
@@ -258,12 +307,66 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             <?php if ($isMnf): ?>
                                 <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
                                     ⭐ Official Tiebreaker Game
+                $isCorrectAway = ($isFinal && $awayPicked && ($game['pick_result'] ?? '') === 'correct');
+                $isIncorrectAway = ($isFinal && $awayPicked && ($game['pick_result'] ?? '') === 'incorrect');
+                $isCorrectHome = ($isFinal && $homePicked && ($game['pick_result'] ?? '') === 'correct');
+                $isIncorrectHome = ($isFinal && $homePicked && ($game['pick_result'] ?? '') === 'incorrect');
+
+                $awayCardStyle = "";
+                if ($isCorrectAway) {
+                    $awayCardStyle = "border-color: #10b981; background: linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 0 24px rgba(16,185,129,0.35);";
+                } elseif ($isIncorrectAway) {
+                    $awayCardStyle = "border-color: #f43f5e; background: linear-gradient(135deg, rgba(244,63,94,0.18) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 0 20px rgba(244,63,94,0.3);";
+                } elseif ($awayPicked) {
+                    $awayCardStyle = "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}40;";
+                } else {
+                    $awayCardStyle = "border-color: var(--card-surface-border); background: var(--card-surface);";
+                }
+
+                $homeCardStyle = "";
+                if ($isCorrectHome) {
+                    $homeCardStyle = "border-color: #10b981; background: linear-gradient(135deg, rgba(16,185,129,0.22) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 0 24px rgba(16,185,129,0.35);";
+                } elseif ($isIncorrectHome) {
+                    $homeCardStyle = "border-color: #f43f5e; background: linear-gradient(135deg, rgba(244,63,94,0.18) 0%, rgba(15,23,42,0.95) 100%); box-shadow: 0 0 20px rgba(244,63,94,0.3);";
+                } elseif ($homePicked) {
+                    $homeCardStyle = "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}40;";
+                } else {
+                    $homeCardStyle = "border-color: var(--card-surface-border); background: var(--card-surface);";
+                }
+                ?>
+                <div class="matchup-card rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg <?= $isMnf ? 'border-amber-500/60 bg-slate-900/90 ring-1 ring-amber-500/30' : 'border-slate-800/80 bg-slate-900/70' ?>"
+                     data-game-id="<?= $game['id'] ?>"
+                     data-unlocked="<?= $cardDisabled ? 'false' : 'true' ?>"
+                     data-away-abbr="<?= htmlspecialchars($awayAbbr) ?>"
+                     data-away-name="<?= htmlspecialchars($awayTeam['name']) ?>"
+                     data-home-abbr="<?= htmlspecialchars($homeAbbr) ?>"
+                     data-home-name="<?= htmlspecialchars($homeTeam['name']) ?>">
+                    
+                    <!-- Matchup Broadcast Header -->
+                    <div class="matchup-header-bar flex items-center justify-between px-4 py-2.5 bg-slate-950/70 border-b border-slate-800/80 text-xs">
+                        <div class="flex items-center gap-2 text-slate-400">
+                            <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
+                            <?php if ($isMnf): ?>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
+                                    ⭐ Official Tiebreaker Game
                                 </span>
                             <?php endif; ?>
                         </div>
                         <div>
                             <?php if ($isFinal): ?>
-                                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">FINAL</span>
+                                <?php if (($game['pick_result'] ?? '') === 'correct'): ?>
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-black bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm flex items-center gap-1">
+                                        <span>✓</span>
+                                        <span>CORRECT (+1)</span>
+                                    </span>
+                                <?php elseif (($game['pick_result'] ?? '') === 'incorrect'): ?>
+                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-black bg-rose-500/25 text-rose-300 border border-rose-500/50 shadow-sm flex items-center gap-1">
+                                        <span>✗</span>
+                                        <span>MISSED (0)</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">FINAL</span>
+                                <?php endif; ?>
                             <?php elseif ($inProgress): ?>
                                 <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">LIVE</span>
                             <?php elseif ($isKickoffLocked): ?>
@@ -283,7 +386,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group <?= $awayPicked ? 'is-picked' : '' ?>
                             <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.02]' ?>
                             <?= $hasPick && !$awayPicked ? 'opacity-40' : 'opacity-100' ?>"
-                            style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>">
+                            style="<?= $awayCardStyle ?>">
                             
                             <input type="radio" 
                                    name="picks[<?= $game['id'] ?>]" 
@@ -298,7 +401,12 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                             <!-- Top: Away Tag & Score -->
                             <div class="w-full flex items-center justify-between mb-1">
-                                <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Away</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Away</span>
+                                    <?php if ($isFinal && ($game['winning_team'] ?? '') === $awayAbbr): ?>
+                                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-black uppercase border border-emerald-500/30">🏆 WINNER</span>
+                                    <?php endif; ?>
+                                </div>
                                 <?php if ($game['away_score'] !== null): ?>
                                     <span class="text-base font-mono font-black <?= $isFinal && $game['away_score'] > $game['home_score'] ? 'text-emerald-400' : 'text-slate-300' ?>">
                                         <?= (int) $game['away_score'] ?>
@@ -329,10 +437,22 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                             <!-- Picked Indicator Badge -->
                             <div class="pick-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $awayPicked ? 'block' : 'hidden' ?>">
-                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isUserLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
-                                    <span><?= $isUserLocked ? '🔒' : '✓' ?></span>
-                                    <span><?= $isUserLocked ? 'LOCKED IN PICK' : 'YOUR PICK' ?></span>
-                                </span>
+                                <?php if ($isCorrectAway): ?>
+                                    <span class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
+                                        <span>✓</span>
+                                        <span>CORRECT PICK (+1)</span>
+                                    </span>
+                                <?php elseif ($isIncorrectAway): ?>
+                                    <span class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-950 border border-rose-500/60 text-rose-200 shadow-md">
+                                        <span>✗</span>
+                                        <span>MISSED PICK (0)</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isUserLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
+                                        <span><?= $isUserLocked ? '🔒' : '✓' ?></span>
+                                        <span><?= $isUserLocked ? 'LOCKED IN PICK' : 'YOUR PICK' ?></span>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </label>
 
@@ -340,7 +460,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <label class="team-card relative flex flex-col items-center justify-between p-3.5 rounded-xl border-2 transition-all select-none group <?= $homePicked ? 'is-picked' : '' ?>
                             <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.02]' ?>
                             <?= $hasPick && !$homePicked ? 'opacity-40' : 'opacity-100' ?>"
-                            style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>">
+                            style="<?= $homeCardStyle ?>">
                             
                             <input type="radio" 
                                    name="picks[<?= $game['id'] ?>]" 
@@ -355,7 +475,12 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                             <!-- Top: Home Tag & Score -->
                             <div class="w-full flex items-center justify-between mb-1">
-                                <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Home</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Home</span>
+                                    <?php if ($isFinal && ($game['winning_team'] ?? '') === $homeAbbr): ?>
+                                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-black uppercase border border-emerald-500/30">🏆 WINNER</span>
+                                    <?php endif; ?>
+                                </div>
                                 <?php if ($game['home_score'] !== null): ?>
                                     <span class="text-base font-mono font-black <?= $isFinal && $game['home_score'] > $game['away_score'] ? 'text-emerald-400' : 'text-slate-300' ?>">
                                         <?= (int) $game['home_score'] ?>
@@ -386,10 +511,22 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                             <!-- Picked Indicator Badge -->
                             <div class="pick-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $homePicked ? 'block' : 'hidden' ?>">
-                                <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isUserLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
-                                    <span><?= $isUserLocked ? '🔒' : '✓' ?></span>
-                                    <span><?= $isUserLocked ? 'LOCKED IN PICK' : 'YOUR PICK' ?></span>
-                                </span>
+                                <?php if ($isCorrectHome): ?>
+                                    <span class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500 text-slate-950 shadow-md">
+                                        <span>✓</span>
+                                        <span>CORRECT PICK (+1)</span>
+                                    </span>
+                                <?php elseif ($isIncorrectHome): ?>
+                                    <span class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-950 border border-rose-500/60 text-rose-200 shadow-md">
+                                        <span>✗</span>
+                                        <span>MISSED PICK (0)</span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isUserLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
+                                        <span><?= $isUserLocked ? '🔒' : '✓' ?></span>
+                                        <span><?= $isUserLocked ? 'LOCKED IN PICK' : 'YOUR PICK' ?></span>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </label>
 

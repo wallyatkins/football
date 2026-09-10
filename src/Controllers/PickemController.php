@@ -84,12 +84,50 @@ class PickemController
             }
         }
 
-        // Check lock status per game
+        // Check lock status and pick grading per game
         $now = time();
+        $userCorrectCount = 0;
+        $userIncorrectCount = 0;
+        $userGradedCount = 0;
+        $userPendingCount = 0;
+
         foreach ($games as $idx => $g) {
             $kickoff = strtotime($g['kickoff_time']);
             $games[$idx]['is_locked'] = ($kickoff <= $now);
-            $games[$idx]['user_pick'] = $userPicks[$g['id']] ?? null;
+            $userPick = $userPicks[$g['id']] ?? null;
+            $games[$idx]['user_pick'] = $userPick;
+
+            $winningTeam = null;
+            if ($g['status'] === 'final' && $g['home_score'] !== null && $g['away_score'] !== null) {
+                if ($g['home_score'] > $g['away_score']) {
+                    $winningTeam = $g['home_team'];
+                } elseif ($g['away_score'] > $g['home_score']) {
+                    $winningTeam = $g['away_team'];
+                }
+            }
+            $games[$idx]['winning_team'] = $winningTeam;
+
+            $pickResult = 'pending';
+            if ($g['status'] === 'final') {
+                if ($userPick !== null && $winningTeam !== null) {
+                    if ($userPick === $winningTeam) {
+                        $pickResult = 'correct';
+                        $userCorrectCount++;
+                    } else {
+                        $pickResult = 'incorrect';
+                        $userIncorrectCount++;
+                    }
+                    $userGradedCount++;
+                } elseif ($winningTeam === null) {
+                    $pickResult = 'push';
+                    $userGradedCount++;
+                } else {
+                    $pickResult = 'unpicked';
+                }
+            } else {
+                $userPendingCount++;
+            }
+            $games[$idx]['pick_result'] = $pickResult;
         }
 
         // Find designated tiebreaker game
@@ -279,7 +317,7 @@ class PickemController
         );
 
         $games = $this->db->query(
-            'SELECT id, status FROM games WHERE season_year = :season AND week_number = :week',
+            'SELECT * FROM games WHERE season_year = :season AND week_number = :week ORDER BY kickoff_time ASC, id ASC',
             ['season' => $season, 'week' => $week]
         );
         $isWeekComplete = count($games) > 0;
@@ -288,6 +326,86 @@ class PickemController
                 $isWeekComplete = false;
                 break;
             }
+        }
+
+        // Determine opponent picks visibility:
+        $firstGameKickoff = null;
+        foreach ($games as $g) {
+            $kt = strtotime($g['kickoff_time']);
+            if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
+                $firstGameKickoff = $kt;
+            }
+        }
+        $now = time();
+        $firstGameStarted = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
+        $firstKickoffFormatted = $firstGameKickoff 
+            ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Kickoff';
+
+        $viewerId = !empty($user['id']) ? (int) $user['id'] : null;
+        $viewerEntry = null;
+        $viewerHasSubmitted = false;
+        if ($viewerId) {
+            $viewerEntry = $this->db->queryOne(
+                'SELECT id, is_locked FROM pickem_entries WHERE user_id = :uid AND season_year = :s AND week_number = :w',
+                ['uid' => $viewerId, 's' => $season, 'w' => $week]
+            );
+            $viewerHasSubmitted = !empty($viewerEntry['is_locked']);
+        }
+        $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
+
+        // Core Rule: Other users can see opponent picks once the first game has started,
+        // unless they have not put in their picks yet.
+        $canViewOpponentPicks = ($firstGameStarted && $viewerHasSubmitted) || $isCommissioner;
+
+        // Fetch picks mapped by entry_id
+        $picksByEntryId = [];
+        $rawPicks = $this->db->query(
+            'SELECT p.entry_id, p.game_id, p.selected_team 
+             FROM pickem_picks p
+             JOIN pickem_entries e ON e.id = p.entry_id
+             WHERE e.season_year = :s AND e.week_number = :w',
+            ['s' => $season, 'w' => $week]
+        );
+        foreach ($rawPicks as $rp) {
+            $picksByEntryId[$rp['entry_id']][$rp['game_id']] = $rp['selected_team'];
+        }
+
+        // Enrich standing rows with detailed game picks
+        foreach ($standings as $idx => $st) {
+            $ePicks = $picksByEntryId[$st['entry_id']] ?? [];
+            $userPicksDetail = [];
+            foreach ($games as $g) {
+                $sel = $ePicks[$g['id']] ?? null;
+                $win = null;
+                if ($g['status'] === 'final' && $g['home_score'] !== null && $g['away_score'] !== null) {
+                    if ($g['home_score'] > $g['away_score']) {
+                        $win = $g['home_team'];
+                    } elseif ($g['away_score'] > $g['home_score']) {
+                        $win = $g['away_team'];
+                    }
+                }
+                $res = 'pending';
+                if ($g['status'] === 'final') {
+                    if ($sel !== null && $win !== null) {
+                        $res = ($sel === $win) ? 'correct' : 'incorrect';
+                    } else {
+                        $res = 'push';
+                    }
+                }
+                $userPicksDetail[$g['id']] = [
+                    'game_id' => $g['id'],
+                    'away_team' => $g['away_team'],
+                    'home_team' => $g['home_team'],
+                    'away_score' => $g['away_score'],
+                    'home_score' => $g['home_score'],
+                    'status' => $g['status'],
+                    'selected_team' => $sel,
+                    'winning_team' => $win,
+                    'result' => $res,
+                ];
+            }
+            $standings[$idx]['picks_detail'] = $userPicksDetail;
         }
 
         $title = "Week {$week} Standings — Wally's NFL Pool";
