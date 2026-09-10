@@ -8,8 +8,21 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
-// Session configuration
-if (session_status() === PHP_SESSION_NONE) {
+// Session configuration with 90-day persistence matching WallyAuth trusted device duration
+if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+    ini_set('session.gc_maxlifetime', '7776000'); // 90 days
+    $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+    session_set_cookie_params([
+        'lifetime' => 7776000, // 90 days
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isSecure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
