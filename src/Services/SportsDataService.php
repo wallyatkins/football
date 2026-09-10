@@ -31,6 +31,70 @@ class SportsDataService
         ];
     }
 
+    public function syncIfNeeded(int $season, int $week, ?int $ttlSeconds = null): ?array
+    {
+        $cacheDir = dirname(__DIR__, 2) . '/data';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0777, true);
+        }
+        $cacheFile = "{$cacheDir}/.last_sync_{$season}_{$week}";
+
+        // Dynamic TTL calculation if not explicitly supplied:
+        if ($ttlSeconds === null) {
+            try {
+                $hasLiveGame = (bool) $this->db->queryValue(
+                    "SELECT 1 FROM games WHERE season_year = :s AND week_number = :w AND status = 'in_progress' LIMIT 1",
+                    ['s' => $season, 'w' => $week]
+                );
+            } catch (\Throwable) {
+                $hasLiveGame = false;
+            }
+
+            if ($hasLiveGame) {
+                $ttlSeconds = 60; // 1 minute during live games
+            } else {
+                try {
+                    $recentOrUpcoming = (bool) $this->db->queryValue(
+                        "SELECT 1 FROM games 
+                         WHERE season_year = :s AND week_number = :w 
+                           AND kickoff_time >= datetime('now', '-5 hours')
+                           AND kickoff_time <= datetime('now', '+1 hour')
+                         LIMIT 1",
+                        ['s' => $season, 'w' => $week]
+                    );
+                } catch (\Throwable) {
+                    $recentOrUpcoming = false;
+                }
+
+                $ttlSeconds = $recentOrUpcoming ? 180 : 1800; // 3 mins in game window, 30 mins outside
+            }
+        }
+
+        if (file_exists($cacheFile)) {
+            $mtime = filemtime($cacheFile);
+            if ($mtime !== false && (time() - $mtime) < $ttlSeconds) {
+                return null;
+            }
+        }
+
+        try {
+            $result = $this->syncWeek($season, $week);
+            @touch($cacheFile);
+
+            try {
+                $scoring = new ScoringEngine($this->db);
+                $scoring->gradeSurvivorWeek($season, $week);
+            } catch (\Throwable) {
+                // Non-blocking
+            }
+
+            return $result;
+        } catch (\Throwable) {
+            @touch($cacheFile);
+            return null;
+        }
+    }
+
     public function syncWeek(int $seasonYear, int $weekNumber, bool $force = false): array
     {
         $data = $this->fetchScoreboardData($seasonYear, $weekNumber);
@@ -218,12 +282,12 @@ class SportsDataService
     {
         $urls = [];
         if ($season !== null && $week !== null) {
-            $urls[] = sprintf('https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=football&league=nfl&dates=%d&seasontype=2&week=%d', $season, $week);
             $urls[] = sprintf('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=%d&seasontype=2&week=%d', $season, $week);
+            $urls[] = sprintf('https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=football&league=nfl&dates=%d&seasontype=2&week=%d', $season, $week);
             $urls[] = sprintf('http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=%d&seasontype=2&week=%d', $season, $week);
         } else {
-            $urls[] = 'https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=football&league=nfl';
             $urls[] = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+            $urls[] = 'https://site.web.api.espn.com/apis/v2/scoreboard/header?sport=football&league=nfl';
             $urls[] = 'http://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
         }
 
@@ -235,8 +299,10 @@ class SportsDataService
                     if (isset($json['sports'][0]['leagues'][0]['events']) && $week !== null) {
                         $events = array_values(array_filter($events, fn($e) => ($e['seasonType'] ?? 2) == 2 && ($e['week'] ?? 1) == $week));
                     }
-                    $json['events'] = $events;
-                    return $json;
+                    if (!empty($events)) {
+                        $json['events'] = $events;
+                        return $json;
+                    }
                 }
             } catch (\Throwable) {
                 continue;
@@ -251,10 +317,9 @@ class SportsDataService
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_USERAGENT => 'curl/7.88.1',
             CURLOPT_HTTPHEADER => [
-                'Accept: application/json, text/plain, */*',
-                'Accept-Language: en-US,en;q=0.9',
+                'Accept: */*',
             ],
             CURLOPT_TIMEOUT => 6,
         ]);

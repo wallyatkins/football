@@ -32,6 +32,8 @@ class PickemController
     {
         $user = $this->requireAuth();
 
+        $this->sports->syncIfNeeded($season, $week);
+
         $games = $this->db->query(
             'SELECT * FROM games WHERE season_year = :season AND week_number = :week ORDER BY kickoff_time ASC, id ASC',
             ['season' => $season, 'week' => $week]
@@ -268,6 +270,7 @@ class PickemController
     public function standings(int $season, int $week): void
     {
         $user = $_SESSION['user'] ?? null;
+        $this->sports->syncIfNeeded($season, $week);
         $standings = $this->scoring->getWeeklyStandings($season, $week);
         $pot = $this->scoring->calculateWeeklyPot($season, $week);
         $tiebreakerGame = $this->db->queryOne(

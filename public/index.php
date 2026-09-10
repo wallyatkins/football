@@ -93,9 +93,24 @@ if (str_starts_with($uri, '/assets/')) {
     }
 }
 
-// Default season and week
+// Default season and dynamic active week
 $season = isset($_GET['season']) ? (int) $_GET['season'] : (int) (getenv('NFL_CURRENT_SEASON') ?: date('Y'));
-$week = isset($_GET['week']) ? (int) $_GET['week'] : (int) (getenv('NFL_CURRENT_WEEK') ?: 1);
+if (isset($_GET['week'])) {
+    $week = (int) $_GET['week'];
+} elseif (getenv('NFL_CURRENT_WEEK')) {
+    $week = (int) getenv('NFL_CURRENT_WEEK');
+} else {
+    try {
+        $db = WallyFootball\Database\Connection::getInstance();
+        $activeWeek = $db->queryValue(
+            'SELECT MIN(week_number) FROM games WHERE season_year = :s AND status != "final"',
+            ['s' => $season]
+        );
+        $week = ($activeWeek && (int)$activeWeek > 0) ? (int) $activeWeek : 1;
+    } catch (\Throwable) {
+        $week = 1;
+    }
+}
 
 // Route dispatch
 try {

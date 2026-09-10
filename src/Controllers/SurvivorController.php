@@ -68,6 +68,8 @@ class SurvivorController
             ['uid' => $user['id'], 'season' => $season, 'week' => $week]
         );
 
+        $this->sports->syncIfNeeded($season, $week);
+
         // Get games for the week
         $games = $this->db->query(
             'SELECT * FROM games WHERE season_year = :season AND week_number = :week ORDER BY kickoff_time ASC, id ASC',
@@ -251,7 +253,16 @@ class SurvivorController
     {
         $user = $_SESSION['user'] ?? null;
         $viewingUserId = !empty($user['id']) ? (int) $user['id'] : null;
-        $currentWeek = (int) (getenv('NFL_CURRENT_WEEK') ?: 1);
+        $currentWeek = (int) (getenv('NFL_CURRENT_WEEK') ?: 0);
+        if ($currentWeek <= 0) {
+            $active = $this->db->queryValue(
+                'SELECT MIN(week_number) FROM games WHERE season_year = :s AND status != "final"',
+                ['s' => $season]
+            );
+            $currentWeek = ($active && (int)$active > 0) ? (int)$active : 1;
+        }
+
+        $this->sports->syncIfNeeded($season, $currentWeek);
         $standings = $this->scoring->getSurvivorStandings($season, $viewingUserId, $currentWeek);
         $pot = $this->scoring->calculateSurvivorPot($season);
 

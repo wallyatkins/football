@@ -8,6 +8,8 @@
 *.sqlite-shm
 data/*.sqlite*
 data/*_raw.json
+data/.last_sync*
+data/*.log
 .env
 .env.*
 !.env.example
