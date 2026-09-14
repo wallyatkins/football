@@ -220,4 +220,93 @@ class DailyPickemDigestServiceTest extends TestCase
         // Games should not be marked as reported in test mode
         $this->assertEmpty($service->getReportedGameIds($this->testSeason, $this->testWeek));
     }
+
+    public function testSurvivorStatusRenderingAndDualPoolReporting(): void
+    {
+        // Seed survivor entries and picks for Alice & Bob
+        $this->db->execute("INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated) VALUES 
+            (1, {$this->testSeason}, 'paid', 0),
+            (2, {$this->testSeason}, 'unpaid', 1)");
+
+        // Alice picked KC (game 901, KC won 27-20 vs BAL)
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated) VALUES 
+            (1, {$this->testSeason}, {$this->testWeek}, 'KC', 0)");
+
+        // Bob picked BAL (game 901, BAL lost)
+        $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated) VALUES 
+            (2, {$this->testSeason}, {$this->testWeek}, 'BAL', 1)");
+
+        $scoring = new ScoringEngine($this->db);
+        $service = new DailyPickemDigestService($this->db, $scoring, $this->createMockSportsService());
+
+        $data = $service->getDigestData($this->testSeason, $this->testWeek);
+
+        // Verify survivor summary
+        $this->assertArrayHasKey('survivor_summary', $data);
+        $this->assertEquals(1, $data['survivor_summary']['total_alive']);
+        $this->assertEquals(1, $data['survivor_summary']['total_eliminated']);
+
+        $aliceEntry = null;
+        $bobEntry = null;
+        foreach ($data['entries'] as $e) {
+            if ($e['username'] === 'Alice') {
+                $aliceEntry = $e;
+            } elseif ($e['username'] === 'Bob') {
+                $bobEntry = $e;
+            }
+        }
+        $this->assertNotNull($aliceEntry);
+        $this->assertNotNull($bobEntry);
+
+        // Alice HTML & Text
+        $aliceHtml = $service->renderHtml($aliceEntry, $data);
+        $aliceText = $service->renderText($aliceEntry, $data);
+
+        $this->assertStringContainsString('Survivor Pool Status', $aliceHtml);
+        $this->assertStringContainsString('ALIVE', $aliceHtml);
+        $this->assertStringContainsString('KC', $aliceHtml);
+        $this->assertStringContainsString('SURVIVOR STATUS:', $aliceText);
+        $this->assertStringContainsString('Pool Status: ALIVE (In the Hunt)', $aliceText);
+        $this->assertStringContainsString('Week 1 Pick: KC', $aliceText);
+
+        // Bob HTML & Text
+        $bobHtml = $service->renderHtml($bobEntry, $data);
+        $bobText = $service->renderText($bobEntry, $data);
+
+        $this->assertStringContainsString('ELIMINATED', $bobHtml);
+        $this->assertStringContainsString('Pool Status: ELIMINATED', $bobText);
+
+        // Dual CTAs present
+        $this->assertStringContainsString('View Full Standings', $aliceHtml);
+        $this->assertStringContainsString('View Survivor Board', $aliceHtml);
+        $this->assertStringContainsString('mtm_source=morning_digest', $aliceHtml);
+        $this->assertStringContainsString('https://analytics.wallyatkins.com/matomo.php', $aliceHtml);
+    }
+
+    public function testSendDigestIncludesUnsubscribeHeaders(): void
+    {
+        $sentHeaders = '';
+        $sentSubject = '';
+        $mockMailer = function (string $to, string $subject, string $body, string $headers) use (&$sentHeaders, &$sentSubject): bool {
+            $sentHeaders = $headers;
+            $sentSubject = $subject;
+            return true;
+        };
+
+        $service = new DailyPickemDigestService(
+            $this->db,
+            null,
+            $this->createMockSportsService(),
+            null,
+            null,
+            $mockMailer
+        );
+
+        $service->sendDigest($this->testSeason, $this->testWeek, true, 'tester@example.com');
+
+        $this->assertStringContainsString("Atkins NFL Pool: Week 1 Morning Update — Pick'em & Survivor Status", $sentSubject);
+        $this->assertStringContainsString('List-Unsubscribe: <https://football.wallyatkins.com/preferences?email=tester%40example.com>', $sentHeaders);
+        $this->assertStringContainsString('List-Unsubscribe-Post: List-Unsubscribe=One-Click', $sentHeaders);
+    }
 }
+

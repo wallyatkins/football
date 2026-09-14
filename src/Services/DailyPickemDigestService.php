@@ -128,17 +128,113 @@ class DailyPickemDigestService
         // If newly completed games is empty, use all completed games so far for context
         $gamesToHighlight = !empty($newlyCompletedGames) ? $newlyCompletedGames : $finalGames;
 
-        // 2. Standings & Pot
+        // 2. Pick'em Standings & Pot
         $standings = $this->scoring->getWeeklyStandings($season, $week);
         $pot = $this->scoring->calculateWeeklyPot($season, $week);
 
-        // 3. Entrants & their picks
+        // 2b. Survivor Standings, Pot, and User Picks
+        $survivorStandings = $this->scoring->getSurvivorStandings($season, null, $week);
+        $survivorPot = $this->scoring->calculateSurvivorPot($season);
+
+        $rawSurvivorPicks = $this->db->query(
+            'SELECT user_id, week_number, selected_team, is_eliminated, payment_status
+             FROM survivor_picks
+             WHERE season_year = :s AND week_number = :w',
+            ['s' => $season, 'w' => $week]
+        );
+        $survivorPicksByUserId = [];
+        foreach ($rawSurvivorPicks as $sp) {
+            $survivorPicksByUserId[(int) $sp['user_id']] = $sp;
+        }
+
+        $survivorByUser = [];
+        $aliveCount = 0;
+        $eliminatedCount = 0;
+        foreach ($survivorStandings as $st) {
+            $uid = (int) $st['user_id'];
+            if ($st['is_alive']) {
+                $aliveCount++;
+            } elseif ($st['is_eliminated']) {
+                $eliminatedCount++;
+            }
+
+            $currentPick = $survivorPicksByUserId[$uid]['selected_team'] ?? null;
+            $pickStatus = 'none';
+            $pickGame = null;
+            $pickResultDesc = '';
+
+            if ($currentPick !== null) {
+                foreach ($games as $g) {
+                    if ($g['home_team'] === $currentPick || $g['away_team'] === $currentPick) {
+                        $pickGame = $g;
+                        break;
+                    }
+                }
+
+                if ($pickGame !== null) {
+                    $opponent = ($pickGame['home_team'] === $currentPick) ? $pickGame['away_team'] : $pickGame['home_team'];
+                    $isHome = ($pickGame['home_team'] === $currentPick);
+                    $vsPrefix = $isHome ? "vs {$opponent}" : "@ {$opponent}";
+
+                    if ($pickGame['status'] === 'final') {
+                        $winner = $pickGame['winning_team'] ?? null;
+                        if ($winner === $currentPick) {
+                            $pickStatus = 'win';
+                            $pickResultDesc = "✓ WIN (Survives!) • {$currentPick} {$vsPrefix} ({$pickGame['away_score']}-{$pickGame['home_score']})";
+                        } else {
+                            $pickStatus = 'loss';
+                            $pickResultDesc = "✗ LOSS (Eliminated) • {$currentPick} {$vsPrefix} ({$pickGame['away_score']}-{$pickGame['home_score']})";
+                        }
+                    } elseif ($pickGame['status'] === 'in_progress') {
+                        $pickStatus = 'in_progress';
+                        $pickResultDesc = "⚡ In Progress • {$currentPick} {$vsPrefix} ({$pickGame['away_score']}-{$pickGame['home_score']})";
+                    } else {
+                        $pickStatus = 'scheduled';
+                        $kickoffEt = (new DateTimeImmutable($pickGame['kickoff_time']))->setTimezone(new DateTimeZone('America/New_York'))->format('D g:i A T');
+                        $pickResultDesc = "Upcoming • {$currentPick} {$vsPrefix} ({$kickoffEt})";
+                    }
+                } else {
+                    $pickStatus = 'picked';
+                    $pickResultDesc = "Selected: {$currentPick}";
+                }
+            } elseif ($st['is_alive']) {
+                $pickStatus = 'missing';
+                $pickResultDesc = "⚠️ No Survivor pick locked for Week {$week}!";
+            }
+
+            $survivorByUser[$uid] = [
+                'status' => $st['status'],
+                'is_alive' => $st['is_alive'],
+                'is_eliminated' => $st['is_eliminated'],
+                'elimination_week' => $st['elimination_week'],
+                'is_paid' => $st['is_paid'],
+                'tier' => $st['tier'],
+                'teams_used' => $st['teams_used'] ?? [],
+                'current_pick' => $currentPick,
+                'pick_status' => $pickStatus,
+                'pick_game' => $pickGame,
+                'pick_result_desc' => $pickResultDesc,
+            ];
+        }
+
+        $survivorSummary = [
+            'total_alive' => $aliveCount,
+            'total_eliminated' => $eliminatedCount,
+            'cash_pot' => (float) ($survivorPot['total_pot'] ?? 0.0),
+            'cash_alive' => count($survivorPot['alive_cash_contenders'] ?? []),
+            'cash_eliminated' => count($survivorPot['eliminated_cash_contenders'] ?? []),
+        ];
+
+        // 3. Entrants & their picks (Pick'em and Survivor participants)
         $entries = $this->db->query(
-            'SELECT e.id as entry_id, e.user_id, e.payment_status, e.mnf_total_points_prediction,
-                    u.username, u.email
-             FROM pickem_entries e
-             JOIN users u ON u.id = e.user_id
-             WHERE e.season_year = :s AND e.week_number = :w AND e.is_locked = 1',
+            'SELECT u.id as user_id, u.username, u.email,
+                    e.id as entry_id, e.payment_status, e.mnf_total_points_prediction
+             FROM users u
+             LEFT JOIN pickem_entries e ON e.user_id = u.id AND e.season_year = :s AND e.week_number = :w AND e.is_locked = 1
+             LEFT JOIN survivor_entries se ON se.user_id = u.id AND se.season_year = :s
+             WHERE (e.id IS NOT NULL OR se.id IS NOT NULL OR u.id IN (SELECT user_id FROM survivor_picks WHERE season_year = :s))
+               AND u.email IS NOT NULL AND u.email != ""
+             ORDER BY u.username ASC',
             ['s' => $season, 'w' => $week]
         );
 
@@ -164,6 +260,10 @@ class DailyPickemDigestService
             'upcoming_today' => $upcomingGames,
             'standings' => $standings,
             'pot' => $pot,
+            'survivor_standings' => $survivorStandings,
+            'survivor_pot' => $survivorPot,
+            'survivor_by_user' => $survivorByUser,
+            'survivor_summary' => $survivorSummary,
             'entries' => $entries,
             'picks_by_entry' => $picksByEntryId,
         ];
@@ -171,18 +271,34 @@ class DailyPickemDigestService
 
     public function renderHtml(array $userEntry, array $digestData): string
     {
-        $username = htmlspecialchars($userEntry['username']);
-        $week = $digestData['week'];
-        $season = $digestData['season'];
-        $entryId = (int) $userEntry['entry_id'];
-        $userPicks = $digestData['picks_by_entry'][$entryId] ?? [];
+        $username = htmlspecialchars($userEntry['username'] ?? 'Player');
+        $week = (int) $digestData['week'];
+        $season = (int) $digestData['season'];
+        $entryId = isset($userEntry['entry_id']) ? (int) $userEntry['entry_id'] : 0;
+        $userId = isset($userEntry['user_id']) ? (int) $userEntry['user_id'] : 0;
 
-        // Find user standing
+        if ($userId === 0 && $entryId > 0) {
+            foreach ($digestData['entries'] as $en) {
+                if ((int) ($en['entry_id'] ?? 0) === $entryId) {
+                    $userId = (int) ($en['user_id'] ?? 0);
+                    break;
+                }
+            }
+            if ($userId === 0) {
+                $userId = (int) ($this->db->queryValue('SELECT user_id FROM pickem_entries WHERE id = :id', ['id' => $entryId]) ?: 0);
+            }
+        }
+
+        $userPicks = ($entryId > 0) ? ($digestData['picks_by_entry'][$entryId] ?? []) : [];
+
+        // 1. Pick'em user standing
         $userStanding = null;
-        foreach ($digestData['standings'] as $st) {
-            if ((int) $st['entry_id'] === $entryId) {
-                $userStanding = $st;
-                break;
+        if ($entryId > 0) {
+            foreach ($digestData['standings'] as $st) {
+                if ((int) $st['entry_id'] === $entryId) {
+                    $userStanding = $st;
+                    break;
+                }
             }
         }
 
@@ -190,7 +306,42 @@ class DailyPickemDigestService
         $userGraded = $userStanding['total_graded'] ?? 0;
         $userRank = $userStanding['rank'] ?? '-';
         $userPending = $userStanding['pending_picks'] ?? 0;
-        $totalPicks = count($userPicks);
+
+        // 2. Survivor user data & summary
+        $survivorData = ($userId > 0) ? ($digestData['survivor_by_user'][$userId] ?? null) : null;
+        $survivorSummary = $digestData['survivor_summary'] ?? [
+            'total_alive' => 0,
+            'total_eliminated' => 0,
+            'cash_pot' => 0.0,
+        ];
+
+        $isSurvivorAlive = ($survivorData['is_alive'] ?? false);
+        $isSurvivorEliminated = ($survivorData['is_eliminated'] ?? false);
+        $survElimWeek = $survivorData['elimination_week'] ?? null;
+        $survPick = $survivorData['current_pick'] ?? null;
+        $survPickDesc = $survivorData['pick_result_desc'] ?? '';
+        $survTeamsUsed = $survivorData['teams_used'] ?? [];
+        $survUsedStr = !empty($survTeamsUsed) ? implode(', ', $survTeamsUsed) : 'None';
+
+        if ($isSurvivorAlive) {
+            $survivorBadge = '<span style="display: inline-block; padding: 4px 10px; border-radius: 6px; background-color: #064e3b; color: #34d399; font-weight: bold; font-size: 11px; border: 1px solid #059669;">🟢 ALIVE &bull; In the Hunt</span>';
+        } elseif ($isSurvivorEliminated) {
+            $elimLabel = $survElimWeek ? "Week {$survElimWeek}" : "Eliminated";
+            $survivorBadge = "<span style=\"display: inline-block; padding: 4px 10px; border-radius: 6px; background-color: #881337; color: #f43f5e; font-weight: bold; font-size: 11px; border: 1px solid #be123c;\">💀 ELIMINATED ({$elimLabel})</span>";
+        } else {
+            $survivorBadge = '<span style="display: inline-block; padding: 4px 10px; border-radius: 6px; background-color: #334155; color: #94a3b8; font-weight: bold; font-size: 11px; border: 1px solid #475569;">⚪ Not Entered</span>';
+        }
+
+        if ($survPick !== null) {
+            $survivorPickHtml = "<strong style=\"color: #f59e0b; font-size: 14px;\">{$survPick}</strong> <span style=\"color: #cbd5e1; font-size: 12px; margin-left: 6px;\">({$survPickDesc})</span>";
+        } elseif ($isSurvivorAlive) {
+            $survivorPickHtml = '<span style="color: #f43f5e; font-weight: bold;">⚠️ No pick locked yet!</span> <a href="https://football.wallyatkins.com/survivor?week=' . $week . '&mtm_campaign=week_' . $week . '&mtm_source=morning_digest&mtm_medium=email" style="color: #38bdf8; text-decoration: underline; margin-left: 6px; font-size: 12px;">Lock Pick &rarr;</a>';
+        } else {
+            $survivorPickHtml = '<span style="color: #64748b;">N/A</span>';
+        }
+
+        $potFormatted = '$' . number_format((float) ($survivorSummary['cash_pot'] ?? 0), 0);
+        $potHtml = ($survivorSummary['cash_pot'] ?? 0) > 0 ? " &bull; <strong style=\"color: #34d399;\">{$potFormatted} Pot</strong>" : "";
 
         // Recent results rows
         $resultsHtml = '';
@@ -292,7 +443,7 @@ HTML;
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Week {$week} Pick'em Morning Update</title>
+    <title>Week {$week} Morning Update — Pick'em &amp; Survivor</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #090d16; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
     <div style="max-width: 620px; margin: 0 auto; background-color: #0f172a; border-radius: 16px; overflow: hidden; border: 1px solid #334155; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
@@ -300,7 +451,7 @@ HTML;
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 24px 24px 20px 24px; border-bottom: 2px solid #f59e0b;">
             <div style="font-size: 11px; font-family: monospace; font-weight: bold; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
-                🏈 Atkins NFL Pick'em &bull; Season {$season}
+                🏈 Atkins NFL Pool &bull; Season {$season}
             </div>
             <h1 style="margin: 0; font-size: 22px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px;">
                 Week {$week} Morning Briefing
@@ -313,11 +464,14 @@ HTML;
         <!-- Body -->
         <div style="padding: 24px;">
             <p style="font-size: 15px; color: #e2e8f0; margin-top: 0; line-height: 1.5;">
-                Good morning, <strong>{$username}</strong>! Here is your daily status report on how your NFL picks performed and where you sit on the league leaderboard.
+                Good morning, <strong>{$username}</strong>! Here is your daily status report on how your NFL Pick'em and Survivor picks performed and where you sit on the league leaderboards.
             </p>
 
-            <!-- Scorecard Hero -->
-            <div style="background-color: #1e293b; border-radius: 12px; padding: 18px; margin-bottom: 24px; border: 1px solid #475569; display: flex; justify-content: space-around; text-align: center;">
+            <!-- Pick'em Scorecard Hero -->
+            <div style="background-color: #1e293b; border-radius: 12px; padding: 18px; margin-bottom: 16px; border: 1px solid #475569;">
+                <div style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+                    🏈 Week {$week} Pick'em Performance
+                </div>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
                         <td style="text-align: center; width: 33%;">
@@ -334,6 +488,40 @@ HTML;
                             <div style="font-size: 11px; font-weight: bold; color: #94a3b8; text-transform: uppercase;">In Play</div>
                             <div style="font-size: 24px; font-weight: 900; color: #e2e8f0; font-family: monospace; margin-top: 4px;">{$userPending}</div>
                             <div style="font-size: 10px; color: #64748b;">Games Remaining</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Survivor Pool Status Hero -->
+            <div style="background-color: #1e293b; border-radius: 12px; padding: 18px; margin-bottom: 24px; border: 1px solid #475569;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px;">
+                        🛡️ Survivor Pool Status
+                    </span>
+                    <span>
+                        {$survivorBadge}
+                    </span>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <tr>
+                        <td style="padding: 6px 0; color: #94a3b8; width: 32%;">Week {$week} Pick:</td>
+                        <td style="padding: 6px 0; color: #f8fafc;">
+                            {$survivorPickHtml}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; color: #94a3b8;">Teams Burned:</td>
+                        <td style="padding: 6px 0; color: #cbd5e1; font-family: monospace; font-size: 12px;">
+                            {$survUsedStr}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px 0; color: #94a3b8;">League Field:</td>
+                        <td style="padding: 6px 0; color: #94a3b8; font-size: 12px;">
+                            <strong style="color: #34d399;">{$survivorSummary['total_alive']} Alive</strong> &bull; 
+                            <span style="color: #f43f5e;">{$survivorSummary['total_eliminated']} Eliminated</span>
+                            {$potHtml}
                         </td>
                     </tr>
                 </table>
@@ -375,21 +563,32 @@ HTML;
                 </div>
             </div>
 
-            <!-- Call to Action -->
+            <!-- Call to Action (Dual Links) -->
             <div style="text-align: center; margin: 32px 0 16px 0;">
-                <a href="https://football.wallyatkins.com/pickem/standings?week={$week}" 
-                   style="display: inline-block; padding: 14px 28px; background-color: #f59e0b; color: #0f172a; font-weight: 900; font-size: 14px; text-decoration: none; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                <a href="https://football.wallyatkins.com/pickem/standings?week={$week}&mtm_campaign=week_{$week}&mtm_source=morning_digest&mtm_medium=email" 
+                   style="display: inline-block; margin: 4px; padding: 13px 22px; background-color: #f59e0b; color: #0f172a; font-weight: 900; font-size: 13px; text-decoration: none; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
                     View Full Standings &amp; Opponent Picks &rarr;
+                </a>
+                <a href="https://football.wallyatkins.com/survivor/standings?season={$season}&mtm_campaign=week_{$week}&mtm_source=morning_digest&mtm_medium=email" 
+                   style="display: inline-block; margin: 4px; padding: 13px 22px; background-color: #334155; color: #f8fafc; font-weight: 800; font-size: 13px; text-decoration: none; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #475569;">
+                    View Survivor Board &rarr;
                 </a>
             </div>
 
         </div>
 
         <!-- Footer -->
-        <div style="background-color: #090d16; padding: 18px 24px; border-top: 1px solid #1e293b; text-align: center; font-size: 11px; color: #64748b; line-height: 1.5;">
+        <div style="background-color: #090d16; padding: 18px 24px; border-top: 1px solid #1e293b; text-align: center; font-size: 11px; color: #64748b; line-height: 1.6;">
             Sent by Commissioner Wally Atkins &bull; <a href="mailto:football@wallyatkins.com" style="color: #94a3b8; text-decoration: underline;">football@wallyatkins.com</a><br>
-            Protected by WallyAuth SSO &bull; <a href="https://football.wallyatkins.com" style="color: #94a3b8; text-decoration: underline;">football.wallyatkins.com</a>
+            Protected by WallyAuth SSO &bull; <a href="https://football.wallyatkins.com" style="color: #94a3b8; text-decoration: underline;">football.wallyatkins.com</a><br>
+            <div style="margin-top: 8px; color: #475569; font-size: 10px;">
+                You are receiving this daily morning briefing as a participant in Wally's NFL Pool.<br>
+                To manage notifications or unsubscribe, visit your <a href="https://football.wallyatkins.com/preferences" style="color: #64748b; text-decoration: underline;">account preferences</a>.
+            </div>
         </div>
+
+        <!-- Matomo Analytics Open Tracking Pixel (Site ID 9: Email Newsletters & Telemetry) -->
+        <img src="https://analytics.wallyatkins.com/matomo.php?idsite=9&amp;rec=1&amp;action_name=email%2Fmorning_digest_week_{$week}&amp;url=https%3A%2F%2Femail.wallyatkins.com%2Fdigest%2Fweek_{$week}" width="1" height="1" style="display:none; width:1px; height:1px; border:0;" alt="" />
 
     </div>
 </body>
@@ -399,17 +598,33 @@ HTML;
 
     public function renderText(array $userEntry, array $digestData): string
     {
-        $username = $userEntry['username'];
-        $week = $digestData['week'];
-        $season = $digestData['season'];
-        $entryId = (int) $userEntry['entry_id'];
-        $userPicks = $digestData['picks_by_entry'][$entryId] ?? [];
+        $username = $userEntry['username'] ?? 'Player';
+        $week = (int) $digestData['week'];
+        $season = (int) $digestData['season'];
+        $entryId = isset($userEntry['entry_id']) ? (int) $userEntry['entry_id'] : 0;
+        $userId = isset($userEntry['user_id']) ? (int) $userEntry['user_id'] : 0;
+
+        if ($userId === 0 && $entryId > 0) {
+            foreach ($digestData['entries'] as $en) {
+                if ((int) ($en['entry_id'] ?? 0) === $entryId) {
+                    $userId = (int) ($en['user_id'] ?? 0);
+                    break;
+                }
+            }
+            if ($userId === 0) {
+                $userId = (int) ($this->db->queryValue('SELECT user_id FROM pickem_entries WHERE id = :id', ['id' => $entryId]) ?: 0);
+            }
+        }
+
+        $userPicks = ($entryId > 0) ? ($digestData['picks_by_entry'][$entryId] ?? []) : [];
 
         $userStanding = null;
-        foreach ($digestData['standings'] as $st) {
-            if ((int) $st['entry_id'] === $entryId) {
-                $userStanding = $st;
-                break;
+        if ($entryId > 0) {
+            foreach ($digestData['standings'] as $st) {
+                if ((int) $st['entry_id'] === $entryId) {
+                    $userStanding = $st;
+                    break;
+                }
             }
         }
 
@@ -418,8 +633,43 @@ HTML;
         $userRank = $userStanding['rank'] ?? '-';
         $userPending = $userStanding['pending_picks'] ?? 0;
 
+        // Survivor Data
+        $survivorData = ($userId > 0) ? ($digestData['survivor_by_user'][$userId] ?? null) : null;
+        $survivorSummary = $digestData['survivor_summary'] ?? [
+            'total_alive' => 0,
+            'total_eliminated' => 0,
+            'cash_pot' => 0.0,
+        ];
+
+        $isSurvivorAlive = ($survivorData['is_alive'] ?? false);
+        $isSurvivorEliminated = ($survivorData['is_eliminated'] ?? false);
+        $survElimWeek = $survivorData['elimination_week'] ?? null;
+        $survPick = $survivorData['current_pick'] ?? null;
+        $survPickDesc = $survivorData['pick_result_desc'] ?? '';
+        $survTeamsUsed = $survivorData['teams_used'] ?? [];
+        $survUsedStr = !empty($survTeamsUsed) ? implode(', ', $survTeamsUsed) : 'None';
+
+        if ($isSurvivorAlive) {
+            $survivorStatusText = "ALIVE (In the Hunt)";
+        } elseif ($isSurvivorEliminated) {
+            $elimLabel = $survElimWeek ? "Week {$survElimWeek}" : "Eliminated";
+            $survivorStatusText = "ELIMINATED ({$elimLabel})";
+        } else {
+            $survivorStatusText = "Not Entered";
+        }
+
+        if ($survPick !== null) {
+            $survivorPickText = "{$survPick} ({$survPickDesc})";
+        } elseif ($isSurvivorAlive) {
+            $survivorPickText = "⚠️ No pick locked yet! (Lock at https://football.wallyatkins.com/survivor)";
+        } else {
+            $survivorPickText = "N/A";
+        }
+
+        $potText = ($survivorSummary['cash_pot'] ?? 0) > 0 ? " • $" . number_format((float) $survivorSummary['cash_pot'], 0) . " Pot" : "";
+
         $lines = [];
-        $lines[] = "🏈 ATKINS NFL PICK'EM • WEEK {$week} MORNING UPDATE ({$season})";
+        $lines[] = "🏈 ATKINS NFL POOL • WEEK {$week} MORNING UPDATE ({$season})";
         $lines[] = "============================================================";
         $lines[] = "Good morning, {$username}!";
         $lines[] = "";
@@ -427,6 +677,12 @@ HTML;
         $lines[] = "- Score: {$userCorrect} Correct / {$userGraded} Graded";
         $lines[] = "- Current Rank: #{$userRank}";
         $lines[] = "- Pending Games: {$userPending}";
+        $lines[] = "";
+        $lines[] = "SURVIVOR STATUS:";
+        $lines[] = "- Pool Status: {$survivorStatusText}";
+        $lines[] = "- Week {$week} Pick: {$survivorPickText}";
+        $lines[] = "- Teams Burned: {$survUsedStr}";
+        $lines[] = "- League Contenders: {$survivorSummary['total_alive']} Alive / {$survivorSummary['total_eliminated']} Eliminated{$potText}";
         $lines[] = "";
         $lines[] = "RECENT RESULTS:";
         foreach ($digestData['games_to_highlight'] as $g) {
@@ -453,10 +709,13 @@ HTML;
         }
 
         $lines[] = "";
-        $lines[] = "View live standings & opponent picks:";
+        $lines[] = "View live Pick'em standings & opponent picks:";
         $lines[] = "https://football.wallyatkins.com/pickem/standings?week={$week}";
+        $lines[] = "View Survivor board & contenders:";
+        $lines[] = "https://football.wallyatkins.com/survivor/standings?season={$season}";
         $lines[] = "============================================================";
         $lines[] = "Commissioner Wally Atkins • football@wallyatkins.com";
+        $lines[] = "Manage notifications or unsubscribe: https://football.wallyatkins.com/preferences";
 
         return implode("\n", $lines);
     }
@@ -485,7 +744,7 @@ HTML;
         if (empty($digestData['entries'])) {
             return [
                 'status' => 'skipped',
-                'reason' => 'No locked entries for this week',
+                'reason' => 'No active participants found for this week',
                 'sent' => 0,
                 'failed' => 0,
                 'log' => [],
@@ -495,7 +754,7 @@ HTML;
         $sentCount = 0;
         $failedCount = 0;
         $log = [];
-        $subject = "🏈 Atkins NFL Pick'em: Week {$week} Morning Update — Your Picks & Leaderboard";
+        $subject = "🏈 Atkins NFL Pool: Week {$week} Morning Update — Pick'em & Survivor Status";
 
         // Determine target list:
         $recipients = $digestData['entries'];
@@ -531,7 +790,9 @@ HTML;
                 "Reply-To: {$this->fromEmail}",
                 "MIME-Version: 1.0",
                 "Content-Type: multipart/alternative; boundary=\"{$boundary}\"",
-                "X-Mailer: AtkinsPickemDigest/1.0",
+                "X-Mailer: AtkinsNFLPoolDigest/1.0",
+                "List-Unsubscribe: <https://football.wallyatkins.com/preferences?email=" . urlencode($email) . ">",
+                "List-Unsubscribe-Post: List-Unsubscribe=One-Click",
             ];
 
             $body = "--{$boundary}\r\n"

@@ -41,7 +41,7 @@ $dryRun = isset($options['dry-run']);
 $testTo = isset($options['test-to']) ? (string) $options['test-to'] : null;
 
 $timestamp = date('Y-m-d H:i:s T');
-echo "[{$timestamp}] Starting Pick'em Daily Morning Digest for Season {$season} Week {$week}...\n";
+echo "[{$timestamp}] Starting Daily Morning Digest (Pick'em & Survivor) for Season {$season} Week {$week}...\n";
 
 $result = $digest->sendDigest($season, $week, $force, $testTo, $dryRun);
 

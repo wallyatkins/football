@@ -305,6 +305,22 @@ function renderLandingPage(): void
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Wally's NFL Pool — football.wallyatkins.com</title>
+        <!-- Matomo Analytics (Site ID 3: Atkins NFL Pool) -->
+        <script>
+          var _paq = window._paq = window._paq || [];
+          _paq.push(['setDocumentTitle', document.domain + '/' + (document.title || 'Landing')]);
+          _paq.push(['setCookieDomain', '*.wallyatkins.com']);
+          _paq.push(['trackPageView']);
+          _paq.push(['enableLinkTracking']);
+          (function() {
+            var u = 'https://analytics.wallyatkins.com/';
+            _paq.push(['setTrackerUrl', u + 'matomo.php']);
+            _paq.push(['setSiteId', '3']);
+            var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+            g.async = true; g.src = u + 'matomo.js'; s.parentNode.insertBefore(g, s);
+          })();
+        </script>
+        <!-- End Matomo Code -->
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
@@ -312,7 +328,7 @@ function renderLandingPage(): void
             <div class="flex items-center gap-3">
                 <span class="text-2xl">🏈</span>
                 <span class="font-black tracking-tight text-lg text-white">Wally's NFL Pool</span>
-                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30">Pick'em &amp; Survivor</span>
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono border border-amber-500/30">Pick'em &amp; Survivor</span>
             </div>
             <div class="flex items-center gap-4">
                 <a href="/auth/login" class="px-4 py-2 text-sm font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-sm">Sign In via WallyAuth</a>
@@ -320,32 +336,72 @@ function renderLandingPage(): void
         </header>
 
         <main class="flex-1 max-w-4xl mx-auto w-full p-6 flex flex-col justify-center items-center text-center">
-            <div class="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl max-w-xl">
+            <div class="p-8 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-2xl max-w-xl w-full">
                 <div class="inline-flex p-3 rounded-xl bg-amber-500/10 text-amber-400 text-3xl mb-4 border border-amber-500/20">
                     🏈
                 </div>
                 <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">Wally's NFL Pool</h1>
                 <p class="text-slate-400 text-sm sm:text-base mb-6 leading-relaxed">
-                    Welcome to the private NFL straight Pick'em and season-long Survivor pool. Authentication is verified via WallyAuth SSO.
+                    Welcome to the private NFL Pick'em and Survivor tournament pool. Compete against friends and colleagues with live scoreboard syncing, weekly leaderboard standings, and automated daily morning email briefings.
                 </p>
-                <div class="grid grid-cols-2 gap-3 text-left mb-6">
-                    <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                        <span class="text-xs text-amber-400 font-semibold block uppercase tracking-wider">Weekly Pick'em</span>
-                        <span class="text-xs text-slate-300">Straight-up winners + weekly Game of the Week tiebreaker points.</span>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mb-6">
+                    <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-base">🎯</span>
+                            <span class="text-xs text-amber-400 font-bold uppercase tracking-wider">Weekly Pick'em</span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Pick straight-up winners for every game on the slate. Submit predicted total points for the Game of the Week tiebreaker.
+                        </p>
                     </div>
-                    <div class="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                        <span class="text-xs text-emerald-400 font-semibold block uppercase tracking-wider">Season Survivor</span>
-                        <span class="text-xs text-slate-300">Pick 1 winner per week. Each NFL team can only be chosen once.</span>
+                    <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <span class="text-base">🛡️</span>
+                            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Season Survivor</span>
+                        </div>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Select one winning team each week. Each NFL franchise can only be utilized once per season. Survive to the final whistle!
+                        </p>
                     </div>
                 </div>
-                <a href="/auth/login" class="w-full inline-flex justify-center items-center gap-2 px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg">
-                    Enter League with WallyAuth &rarr;
+
+                <a href="/auth/login" class="w-full inline-flex justify-center items-center gap-2 px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg text-base">
+                    Enter League with WallyAuth SSO &rarr;
                 </a>
+
+                <!-- Account Request Callout -->
+                <div class="mt-6 p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-left flex items-start gap-3.5">
+                    <span class="text-2xl shrink-0 mt-0.5">✉️</span>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">Need an Account or Want to Join?</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            Participation is invite-only for friends, family, and colleagues. If you don't have an account yet and would like to join this season's pool, reach out directly using the{' '}
+                            <a href="https://wallyatkins.com/contact" class="text-amber-400 font-semibold underline hover:text-amber-300">
+                                Get in Touch form
+                            </a>{' '}
+                            on Wally's website.
+                        </p>
+                    </div>
+                </div>
             </div>
         </main>
 
-        <footer class="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
-            &copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="underline hover:text-slate-400">wallyatkins.com</a> &bull; Powered by WallyAuth SSO
+        <footer class="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+            <div class="max-w-xl mx-auto px-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mb-2">
+                <span>&copy; <?= date('Y') ?> Wally's NFL Pool</span>
+                <span>&bull;</span>
+                <a href="https://wallyatkins.com" class="hover:text-slate-300 transition">wallyatkins.com</a>
+                <span>&bull;</span>
+                <a href="https://wallyatkins.com/contact" class="hover:text-slate-300 transition">Request Account</a>
+                <span>&bull;</span>
+                <a href="https://wallyatkins.com/privacy" class="hover:text-slate-300 transition">Privacy</a>
+                <span>&bull;</span>
+                <a href="https://wallyatkins.com/terms" class="hover:text-slate-300 transition">Terms</a>
+            </div>
+            <p class="text-[11px] text-slate-600">
+                Protected by WallyAuth SSO &bull; Self-hosted telemetry via Matomo Analytics
+            </p>
         </footer>
     </body>
     </html>

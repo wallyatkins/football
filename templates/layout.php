@@ -12,6 +12,22 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title ?? "Wally's NFL Pool") ?></title>
+    <!-- Matomo Analytics (Site ID 3: Atkins NFL Pool) -->
+    <script>
+      var _paq = window._paq = window._paq || [];
+      _paq.push(['setDocumentTitle', document.domain + '/' + (document.title || 'Football')]);
+      _paq.push(['setCookieDomain', '*.wallyatkins.com']);
+      _paq.push(['trackPageView']);
+      _paq.push(['enableLinkTracking']);
+      (function() {
+        var u = 'https://analytics.wallyatkins.com/';
+        _paq.push(['setTrackerUrl', u + 'matomo.php']);
+        _paq.push(['setSiteId', '3']);
+        var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+        g.async = true; g.src = u + 'matomo.js'; s.parentNode.insertBefore(g, s);
+      })();
+    </script>
+    <!-- End Matomo Code -->
     <script>
         (function() {
             var theme = localStorage.getItem('wally_theme') || 'dark';
@@ -425,7 +441,7 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
     </main>
 
     <footer class="hidden md:block border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        <p>&copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
+        <p>&copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; <a href="https://wallyatkins.com/privacy" class="hover:text-slate-400 transition underline">Privacy Policy</a> &bull; <a href="https://wallyatkins.com/terms" class="hover:text-slate-400 transition underline">Terms of Use</a> &bull; <a href="https://wallyatkins.com/#contact" class="hover:text-slate-400 transition underline">Get in Touch</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
     </footer>
 
     <script>
