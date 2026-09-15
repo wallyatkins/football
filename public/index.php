@@ -252,6 +252,37 @@ try {
             (new AdminController())->resetPicks();
             exit;
 
+        case '/api/cron/daily-digest':
+            $secret = $_GET['secret'] ?? '';
+            $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+            $expectedSecret = getenv('CRON_SECRET') ?: 'atkins-football-cron-2026';
+            $isCommissioner = (!empty($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'commissioner');
+            $isBearerValid = ($authHeader === "Bearer {$expectedSecret}");
+            $isSecretValid = ($secret === $expectedSecret);
+
+            if (!$isCommissioner && !$isBearerValid && !$isSecretValid) {
+                http_response_code(403);
+                header('Content-Type: application/json');
+                echo json_encode(['status' => 'forbidden', 'message' => 'Invalid or missing cron secret authorization']);
+                exit;
+            }
+
+            header('Content-Type: application/json');
+            try {
+                $db = WallyFootball\Database\Connection::getInstance();
+                $sports = new WallyFootball\Services\SportsDataService($db);
+                $digest = new WallyFootball\Services\DailyPickemDigestService($db, null, $sports);
+                $force = isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true');
+                $dryRun = isset($_GET['dry_run']) && ($_GET['dry_run'] === '1' || $_GET['dry_run'] === 'true');
+                $testTo = !empty($_GET['test_to']) ? (string) $_GET['test_to'] : null;
+                $result = $digest->sendDigest($season, $week, $force, $testTo, $dryRun);
+                echo json_encode($result, JSON_PRETTY_PRINT);
+            } catch (\Throwable $e) {
+                http_response_code(500);
+                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+            }
+            exit;
+
         default:
             http_response_code(404);
             $user = $_SESSION['user'] ?? null;
@@ -298,6 +329,33 @@ try {
 function renderLandingPage(): void
 {
     header('Content-Type: text/html; charset=utf-8');
+    $season = (int) (getenv('NFL_CURRENT_SEASON') ?: date('Y'));
+    $landingWinner = null;
+    try {
+        $db = WallyFootball\Database\Connection::getInstance();
+        $scoring = new WallyFootball\Services\ScoringEngine($db);
+        $lastCompletedWeek = (int) ($db->queryValue(
+            'SELECT MAX(week_number) FROM games WHERE season_year = :s AND status = "final"',
+            ['s' => $season]
+        ) ?: 0);
+        if ($lastCompletedWeek > 0) {
+            $totalG = (int) $db->queryValue('SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w', ['s' => $season, 'w' => $lastCompletedWeek]);
+            $finalG = (int) $db->queryValue('SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w AND status = "final"', ['s' => $season, 'w' => $lastCompletedWeek]);
+            if ($totalG > 0 && $finalG === $totalG) {
+                $potInfo = $scoring->calculateWeeklyPot($season, $lastCompletedWeek);
+                if (!empty($potInfo['winners'])) {
+                    $landingWinner = [
+                        'week' => $lastCompletedWeek,
+                        'names' => implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $potInfo['winners'])),
+                        'score' => $potInfo['winners'][0]['correct_picks'] ?? 0,
+                        'payout' => $potInfo['payout_per_winner'] ?? 0,
+                    ];
+                }
+            }
+        }
+    } catch (\Throwable) {
+        $landingWinner = null;
+    }
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -337,6 +395,20 @@ function renderLandingPage(): void
 
         <main class="flex-1 max-w-4xl mx-auto w-full p-6 flex flex-col justify-center items-center text-center">
             <div class="p-8 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-2xl max-w-xl w-full">
+                <?php if ($landingWinner): ?>
+                    <div class="mb-6 p-4 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-amber-500/20 border border-amber-500/30 text-center shadow-lg">
+                        <div class="text-xs font-black uppercase tracking-wider text-amber-400 mb-1 flex items-center justify-center gap-1.5">
+                            <span>👑</span>
+                            <span>Week <?= $landingWinner['week'] ?> Champion</span>
+                            <span>👑</span>
+                        </div>
+                        <div class="text-xl font-black text-white">Congratulations, <?= $landingWinner['names'] ?>!</div>
+                        <div class="text-xs text-slate-300 mt-1">
+                            Finished #1 with <strong class="text-emerald-400 font-bold"><?= $landingWinner['score'] ?> correct picks</strong><?= ($landingWinner['payout'] > 0) ? " &bull; Won <span class='text-emerald-400 font-bold'>$" . number_format($landingWinner['payout'], 2) . "</span>" : "" ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <div class="inline-flex p-3 rounded-xl bg-amber-500/10 text-amber-400 text-3xl mb-4 border border-amber-500/20">
                     🏈
                 </div>

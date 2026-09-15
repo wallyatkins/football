@@ -155,6 +155,30 @@ class PickemController
             $weeklyWinners = $potInfo['winners'] ?? [];
         }
 
+        // Check for prior completed week to celebrate last week's champion
+        $lastCompletedWeek = null;
+        $lastWeekPotInfo = null;
+        $lastWeekWinners = [];
+        $checkPriorWeek = ($week > 1) ? ($week - 1) : 0;
+        if ($checkPriorWeek >= 1) {
+            $priorGames = $this->db->query(
+                'SELECT status FROM games WHERE season_year = :s AND week_number = :w',
+                ['s' => $season, 'w' => $checkPriorWeek]
+            );
+            $priorComplete = !empty($priorGames);
+            foreach ($priorGames as $pg) {
+                if ($pg['status'] !== 'final') {
+                    $priorComplete = false;
+                    break;
+                }
+            }
+            if ($priorComplete) {
+                $lastCompletedWeek = $checkPriorWeek;
+                $lastWeekPotInfo = $this->scoring->calculateWeeklyPot($season, $checkPriorWeek);
+                $lastWeekWinners = $lastWeekPotInfo['winners'] ?? [];
+            }
+        }
+
         // Commissioner payment links (exact verified links)
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';

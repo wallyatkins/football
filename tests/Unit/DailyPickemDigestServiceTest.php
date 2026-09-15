@@ -60,6 +60,18 @@ class DailyPickemDigestServiceTest extends TestCase
         if (file_exists($trackingFile)) {
             @unlink($trackingFile);
         }
+        $trackingFile2 = $service->getTrackingFilePath($this->testSeason, 2);
+        if (file_exists($trackingFile2)) {
+            @unlink($trackingFile2);
+        }
+        $wrapupFile = $service->getWrapupTrackingFilePath($this->testSeason, $this->testWeek);
+        if (file_exists($wrapupFile)) {
+            @unlink($wrapupFile);
+        }
+        $wrapupFile2 = $service->getWrapupTrackingFilePath($this->testSeason, 2);
+        if (file_exists($wrapupFile2)) {
+            @unlink($wrapupFile2);
+        }
     }
 
     private function createMockSportsService(): SportsDataService
@@ -307,6 +319,82 @@ class DailyPickemDigestServiceTest extends TestCase
         $this->assertStringContainsString("Atkins NFL Pool: Week 1 Morning Update — Pick'em & Survivor Status", $sentSubject);
         $this->assertStringContainsString('List-Unsubscribe: <https://football.wallyatkins.com/preferences?email=tester%40example.com>', $sentHeaders);
         $this->assertStringContainsString('List-Unsubscribe-Post: List-Unsubscribe=One-Click', $sentHeaders);
+    }
+
+    public function testWeeklyWrapupAndWinnerCelebrationDigest(): void
+    {
+        // 1. Conclude Week 1: game 903 final (SF 21, LAR 17). Alice picked SF (correct, 2 total), Bob picked LAR (missed, 1 total)
+        $this->db->execute("UPDATE games SET status = 'final', home_score = 21, away_score = 17 WHERE id = 903");
+        $service = new DailyPickemDigestService(
+            $this->db,
+            new ScoringEngine($this->db),
+            $this->createMockSportsService()
+        );
+
+        // Mark individual games as reported for week 1
+        $service->markGamesAsReported($this->testSeason, 1, [901, 902, 903]);
+        $this->assertFalse($service->isWrapupReported($this->testSeason, 1));
+
+        // 2. Set up Week 2 slate
+        $this->db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status, home_score, away_score, is_mnf) VALUES 
+            (920, {$this->testSeason}, 2, 'BUF', 'MIA', datetime('now', '+24 hours'), 'scheduled', null, null, 0)");
+        $this->db->execute("INSERT INTO pickem_entries (id, user_id, season_year, week_number, mnf_total_points_prediction, payment_status, is_locked) VALUES 
+            (102, 1, {$this->testSeason}, 2, 45, 'paid', 0),
+            (202, 2, {$this->testSeason}, 2, 50, 'paid', 0)");
+
+        // hasNewResults for Week 2 must be true because Week 1 concluded and wrapup is unreported
+        $this->assertTrue($service->hasNewResults($this->testSeason, 2));
+
+        $data = $service->getDigestData($this->testSeason, 2);
+        $this->assertSame(1, $data['completed_week']);
+        $this->assertNotEmpty($data['completed_week_winners']);
+        $this->assertSame('Alice', $data['completed_week_winners'][0]['username']);
+        $this->assertSame(2, $data['completed_week_winners'][0]['correct_picks']);
+
+        $aliceEntry = $data['entries'][0];
+        $html = $service->renderHtml($aliceEntry, $data);
+        $text = $service->renderText($aliceEntry, $data);
+
+        $this->assertStringContainsString('Official Week 1 Champion', $html);
+        $this->assertStringContainsString('Alice', $html);
+        $this->assertStringContainsString('Week 2 Picks are Open!', $html);
+
+        $this->assertStringContainsString('OFFICIAL WEEK 1 CHAMPION:', $text);
+        $this->assertStringContainsString('Congratulations, Alice!', $text);
+        $this->assertStringContainsString('WEEK 2 PICKS ARE OPEN!', $text);
+
+        // Test sending digest
+        $sentMails = [];
+        $mockMailer = function (string $to, string $subject, string $body, string $headers) use (&$sentMails): bool {
+            $sentMails[] = [
+                'to' => $to,
+                'subject' => $subject,
+                'body' => $body,
+            ];
+            return true;
+        };
+
+        $serviceWithMailer = new DailyPickemDigestService(
+            $this->db,
+            new ScoringEngine($this->db),
+            $this->createMockSportsService(),
+            'football@wallyatkins.com',
+            "Wally's NFL Pool",
+            $mockMailer
+        );
+
+        $res = $serviceWithMailer->sendDigest($this->testSeason, 2);
+        $this->assertSame('success', $res['status']);
+        $this->assertSame(2, $res['sent']);
+        $this->assertCount(2, $sentMails);
+        $this->assertStringContainsString('Week 1 Winner Alice!', $sentMails[0]['subject']);
+        $this->assertStringContainsString('Week 2 Picks Open', $sentMails[0]['subject']);
+
+        // Wrapup is now marked reported
+        $this->assertTrue($service->isWrapupReported($this->testSeason, 1));
+
+        // Subsequent check returns false (no more new results or wrapup)
+        $this->assertFalse($service->hasNewResults($this->testSeason, 2));
     }
 }
 

@@ -9,6 +9,7 @@
 data/*.sqlite*
 data/*_raw.json
 data/.last_sync*
+data/.reported_*
 data/*.log
 .env
 .env.*

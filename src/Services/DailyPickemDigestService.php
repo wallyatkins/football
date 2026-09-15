@@ -63,22 +63,54 @@ class DailyPickemDigestService
         file_put_contents($this->getTrackingFilePath($season, $week), json_encode($merged));
     }
 
+    public function getWrapupTrackingFilePath(int $season, int $week): string
+    {
+        $dir = dirname(__DIR__, 2) . '/data';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        return "{$dir}/.reported_wrapup_{$season}_{$week}.json";
+    }
+
+    public function markWrapupAsReported(int $season, int $week): void
+    {
+        file_put_contents($this->getWrapupTrackingFilePath($season, $week), json_encode(['timestamp' => time(), 'date' => date('c')]));
+    }
+
+    public function isWrapupReported(int $season, int $week): bool
+    {
+        return file_exists($this->getWrapupTrackingFilePath($season, $week));
+    }
+
     public function hasNewResults(int $season, int $week): bool
     {
         $finalGames = $this->db->query(
             "SELECT id FROM games WHERE season_year = :s AND week_number = :w AND status = 'final'",
             ['s' => $season, 'w' => $week]
         );
-        if (empty($finalGames)) {
-            return false;
-        }
-
         $reportedIds = $this->getReportedGameIds($season, $week);
         foreach ($finalGames as $fg) {
             if (!in_array((int) $fg['id'], $reportedIds, true)) {
                 return true;
             }
         }
+
+        // Check if prior week concluded and needs wrapup
+        $priorWeek = ($week > 1) ? ($week - 1) : 0;
+        if ($priorWeek >= 1 && !$this->isWrapupReported($season, $priorWeek)) {
+            $priorTotal = (int) $this->db->queryValue(
+                "SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w",
+                ['s' => $season, 'w' => $priorWeek]
+            );
+            $priorFinal = (int) $this->db->queryValue(
+                "SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w AND status = 'final'",
+                ['s' => $season, 'w' => $priorWeek]
+            );
+            if ($priorTotal > 0 && $priorFinal === $priorTotal) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -131,6 +163,48 @@ class DailyPickemDigestService
         // 2. Pick'em Standings & Pot
         $standings = $this->scoring->getWeeklyStandings($season, $week);
         $pot = $this->scoring->calculateWeeklyPot($season, $week);
+
+        // 2a. Check if there is a completed prior week (e.g. Week 1 just completed, active week is Week 2)
+        $completedWeek = null;
+        $completedWeekPot = null;
+        $completedWeekWinners = [];
+        $completedWeekStandings = [];
+        $priorWeek = ($week > 1) ? ($week - 1) : 0;
+        if ($priorWeek >= 1) {
+            $priorTotal = (int) $this->db->queryValue(
+                "SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w",
+                ['s' => $season, 'w' => $priorWeek]
+            );
+            $priorFinal = (int) $this->db->queryValue(
+                "SELECT count(*) FROM games WHERE season_year = :s AND week_number = :w AND status = 'final'",
+                ['s' => $season, 'w' => $priorWeek]
+            );
+            if ($priorTotal > 0 && $priorFinal === $priorTotal) {
+                $completedWeek = $priorWeek;
+                $completedWeekPot = $this->scoring->calculateWeeklyPot($season, $priorWeek);
+                $completedWeekWinners = $completedWeekPot['winners'] ?? [];
+                $completedWeekStandings = $this->scoring->getWeeklyStandings($season, $priorWeek);
+            }
+        } elseif (!empty($finalGames) && count($finalGames) === count($games)) {
+            $completedWeek = $week;
+            $completedWeekPot = $pot;
+            $completedWeekWinners = $pot['winners'] ?? [];
+            $completedWeekStandings = $standings;
+        }
+
+        // Earliest kickoff for upcoming week
+        $firstKickoff = null;
+        foreach ($games as $g) {
+            if ($g['status'] !== 'final') {
+                $kt = strtotime($g['kickoff_time']);
+                if ($firstKickoff === null || $kt < $firstKickoff) {
+                    $firstKickoff = $kt;
+                }
+            }
+        }
+        $firstKickoffFormatted = $firstKickoff 
+            ? (new DateTimeImmutable("@{$firstKickoff}"))->setTimezone(new DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Thursday Kickoff';
 
         // 2b. Survivor Standings, Pot, and User Picks
         $survivorStandings = $this->scoring->getSurvivorStandings($season, null, $week);
@@ -228,11 +302,14 @@ class DailyPickemDigestService
         // 3. Entrants & their picks (Pick'em and Survivor participants)
         $entries = $this->db->query(
             'SELECT u.id as user_id, u.username, u.email,
-                    e.id as entry_id, e.payment_status, e.mnf_total_points_prediction
+                    e.id as entry_id, e.payment_status, e.mnf_total_points_prediction, e.is_locked
              FROM users u
-             LEFT JOIN pickem_entries e ON e.user_id = u.id AND e.season_year = :s AND e.week_number = :w AND e.is_locked = 1
+             LEFT JOIN pickem_entries e ON e.user_id = u.id AND e.season_year = :s AND e.week_number = :w
              LEFT JOIN survivor_entries se ON se.user_id = u.id AND se.season_year = :s
-             WHERE (e.id IS NOT NULL OR se.id IS NOT NULL OR u.id IN (SELECT user_id FROM survivor_picks WHERE season_year = :s))
+             WHERE (e.id IS NOT NULL 
+                    OR se.id IS NOT NULL 
+                    OR u.id IN (SELECT user_id FROM pickem_entries WHERE season_year = :s)
+                    OR u.id IN (SELECT user_id FROM survivor_picks WHERE season_year = :s))
                AND u.email IS NOT NULL AND u.email != ""
              ORDER BY u.username ASC',
             ['s' => $season, 'w' => $week]
@@ -260,6 +337,11 @@ class DailyPickemDigestService
             'upcoming_today' => $upcomingGames,
             'standings' => $standings,
             'pot' => $pot,
+            'completed_week' => $completedWeek,
+            'completed_week_pot' => $completedWeekPot,
+            'completed_week_winners' => $completedWeekWinners,
+            'completed_week_standings' => $completedWeekStandings,
+            'first_kickoff_formatted' => $firstKickoffFormatted,
             'survivor_standings' => $survivorStandings,
             'survivor_pot' => $survivorPot,
             'survivor_by_user' => $survivorByUser,
@@ -437,6 +519,57 @@ HTML;
 
         $dateFormatted = date('l, F j, Y');
 
+        // Weekly Champion celebration banner
+        $completedWeekBannerHtml = '';
+        if (!empty($digestData['completed_week']) && !empty($digestData['completed_week_winners'])) {
+            $cWeek = (int) $digestData['completed_week'];
+            $cWinners = $digestData['completed_week_winners'];
+            $cNames = array_map(fn($w) => htmlspecialchars($w['username'] ?? 'Champion'), $cWinners);
+            $cNamesStr = implode(' &amp; ', $cNames);
+            $cScore = $cWinners[0]['correct_picks'] ?? 0;
+            $cPot = $digestData['completed_week_pot'] ?? null;
+            $cPotPerWinner = ($cPot && !empty($cPot['payout_per_winner']) && $cPot['payout_per_winner'] > 0)
+                ? " &bull; <span style=\"color: #34d399; font-weight: 900;\">Won $" . number_format((float)$cPot['payout_per_winner'], 2) . "</span>"
+                : '';
+
+            $completedWeekBannerHtml = <<<HTML
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 2px solid #f59e0b; border-radius: 14px; padding: 20px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);">
+                <div style="font-size: 28px; line-height: 1; margin-bottom: 6px;">👑 🏆 👑</div>
+                <div style="font-size: 11px; font-weight: 900; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px;">
+                    Official Week {$cWeek} Champion
+                </div>
+                <div style="font-size: 22px; font-weight: 900; color: #ffffff; margin-top: 4px; letter-spacing: -0.5px;">
+                    Congratulations, {$cNamesStr}!
+                </div>
+                <div style="font-size: 13px; color: #cbd5e1; margin-top: 6px;">
+                    Finished #1 with <strong style="color: #34d399;">{$cScore} correct picks</strong>{$cPotPerWinner}
+                </div>
+            </div>
+HTML;
+        }
+
+        $firstKickoff = htmlspecialchars($digestData['first_kickoff_formatted'] ?? 'Upcoming Kickoff');
+        $upcomingActionBannerHtml = <<<HTML
+        <div style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); border-radius: 14px; padding: 18px 20px; margin-bottom: 24px; border: 1px solid #059669; text-align: center; box-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);">
+            <div style="font-size: 11px; font-weight: 900; color: #a7f3d0; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px;">
+                ⚡ Week {$week} Picks are Open!
+            </div>
+            <div style="font-size: 13px; color: #ffffff; margin-bottom: 14px; line-height: 1.4;">
+                First kickoff is <strong>{$firstKickoff}</strong>. Be sure to lock in your Pick'em selections and choose your Survivor team!
+            </div>
+            <div>
+                <a href="https://football.wallyatkins.com/pickem?week={$week}&mtm_campaign=week_{$week}&mtm_source=morning_digest&mtm_medium=email" 
+                   style="display: inline-block; margin: 4px; padding: 11px 20px; background-color: #ffffff; color: #064e3b; font-weight: 900; font-size: 12px; text-decoration: none; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    🏈 Submit Week {$week} Picks &rarr;
+                </a>
+                <a href="https://football.wallyatkins.com/survivor?week={$week}&mtm_campaign=week_{$week}&mtm_source=morning_digest&mtm_medium=email" 
+                   style="display: inline-block; margin: 4px; padding: 11px 20px; background-color: #047857; color: #ffffff; font-weight: 900; font-size: 12px; text-decoration: none; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #10b981;">
+                    🛡️ Lock Survivor Pick &rarr;
+                </a>
+            </div>
+        </div>
+HTML;
+
         return <<<HTML
 <!DOCTYPE html>
 <html>
@@ -463,6 +596,9 @@ HTML;
 
         <!-- Body -->
         <div style="padding: 24px;">
+            {$completedWeekBannerHtml}
+            {$upcomingActionBannerHtml}
+
             <p style="font-size: 15px; color: #e2e8f0; margin-top: 0; line-height: 1.5;">
                 Good morning, <strong>{$username}</strong>! Here is your daily status report on how your NFL Pick'em and Survivor picks performed and where you sit on the league leaderboards.
             </p>
@@ -673,6 +809,23 @@ HTML;
         $lines[] = "============================================================";
         $lines[] = "Good morning, {$username}!";
         $lines[] = "";
+
+        if (!empty($digestData['completed_week']) && !empty($digestData['completed_week_winners'])) {
+            $cWeek = (int) $digestData['completed_week'];
+            $cWinners = $digestData['completed_week_winners'];
+            $cNamesStr = implode(' & ', array_column($cWinners, 'username'));
+            $cScore = $cWinners[0]['correct_picks'] ?? 0;
+            $lines[] = "👑 OFFICIAL WEEK {$cWeek} CHAMPION:";
+            $lines[] = "Congratulations, {$cNamesStr}! Finished #1 with {$cScore} correct picks.";
+            $lines[] = "";
+        }
+
+        $lines[] = "⚡ WEEK {$week} PICKS ARE OPEN!";
+        $lines[] = "First kickoff: " . ($digestData['first_kickoff_formatted'] ?? 'Kickoff');
+        $lines[] = "Lock in your selections before games start:";
+        $lines[] = "- Pick'em: https://football.wallyatkins.com/pickem?week={$week}";
+        $lines[] = "- Survivor: https://football.wallyatkins.com/survivor?week={$week}";
+        $lines[] = "";
         $lines[] = "YOUR STATUS:";
         $lines[] = "- Score: {$userCorrect} Correct / {$userGraded} Graded";
         $lines[] = "- Current Rank: #{$userRank}";
@@ -754,7 +907,14 @@ HTML;
         $sentCount = 0;
         $failedCount = 0;
         $log = [];
-        $subject = "🏈 Atkins NFL Pool: Week {$week} Morning Update — Pick'em & Survivor Status";
+
+        if (!empty($digestData['completed_week']) && !empty($digestData['completed_week_winners'])) {
+            $cWeek = (int) $digestData['completed_week'];
+            $wNames = implode(', ', array_column($digestData['completed_week_winners'], 'username'));
+            $subject = "🏆 Atkins NFL Pool: Week {$cWeek} Winner {$wNames}! Week {$week} Picks Open";
+        } else {
+            $subject = "🏈 Atkins NFL Pool: Week {$week} Morning Update — Pick'em & Survivor Status";
+        }
 
         // Determine target list:
         $recipients = $digestData['entries'];
@@ -826,6 +986,9 @@ HTML;
         if ($testTo === null && !$dryRun && $sentCount > 0) {
             $reportedIds = array_column($digestData['final_games'], 'id');
             $this->markGamesAsReported($season, $week, $reportedIds);
+            if (!empty($digestData['completed_week'])) {
+                $this->markWrapupAsReported($season, (int) $digestData['completed_week']);
+            }
         }
 
         return [

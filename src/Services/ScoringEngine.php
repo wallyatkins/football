@@ -164,6 +164,16 @@ class ScoringEngine
                     }
                 }
             }
+        } elseif (!empty($standings)) {
+            $topScore = reset($standings)['correct_picks'];
+            $bestDelta = reset($standings)['tiebreaker_delta'];
+            foreach ($standings as $entry) {
+                if ($entry['correct_picks'] === $topScore) {
+                    if ($bestDelta === null || $entry['tiebreaker_delta'] === $bestDelta) {
+                        $winners[] = $entry;
+                    }
+                }
+            }
         }
 
         $payoutPerWinner = count($winners) > 0 ? round($totalPot / count($winners), 2) : 0.0;

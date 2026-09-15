@@ -1,0 +1,60 @@
+name: Daily Morning Digest (Pick'em & Survivor)
+
+on:
+  schedule:
+    # Run daily at 11:00 UTC (7:00 AM EDT / 6:00 AM EST)
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force send even if no new games or wrapup detected'
+        type: boolean
+        required: false
+        default: false
+      dry_run:
+        description: 'Dry run (render and log without dispatching emails)'
+        type: boolean
+        required: false
+        default: false
+      test_to:
+        description: 'Send test email to specific recipient only'
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  dispatch_digest:
+    name: Dispatch Daily Morning Digest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Daily Digest API
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET || 'atkins-football-cron-2026' }}
+          FORCE: ${{ github.event.inputs.force }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          TEST_TO: ${{ github.event.inputs.test_to }}
+        run: |
+          URL="https://football.wallyatkins.com/api/cron/daily-digest?secret=${CRON_SECRET}"
+          if [ "$FORCE" = "true" ]; then
+            URL="${URL}&force=1"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            URL="${URL}&dry_run=1"
+          fi
+          if [ -n "$TEST_TO" ]; then
+            URL="${URL}&test_to=$(python3 -c 'import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))' "$TEST_TO")"
+          fi
+
+          echo "Triggering: https://football.wallyatkins.com/api/cron/daily-digest"
+          RESPONSE=$(curl -sS -X GET "$URL" -w "\nHTTP_STATUS:%{http_code}")
+          BODY=$(echo "$RESPONSE" | sed -e '$d')
+          STATUS=$(echo "$RESPONSE" | tail -n1 | cut -d':' -f2)
+
+          echo "HTTP Status: $STATUS"
+          echo "Response Body:"
+          echo "$BODY"
+
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Error: Daily Digest trigger returned HTTP $STATUS"
+            exit 1
+          fi

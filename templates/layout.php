@@ -47,18 +47,18 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         :root {
             --turf-bg: #091f11;
             --turf-img: url('/assets/field-turf.svg');
-            --card-surface: rgba(15, 23, 42, 0.85);
-            --card-surface-border: #1e293b;
-            --picked-end: #090d16;
-            --matchup-card-bg: rgba(15, 23, 42, 0.85);
-            --matchup-header-bg: rgba(2, 6, 23, 0.75);
-            --matchup-border: rgba(51, 65, 85, 0.8);
-            --tiebreaker-bg: rgba(15, 23, 42, 0.95);
+            --card-surface: #0f172a;
+            --card-surface-border: #334155;
+            --picked-end: #0f172a;
+            --matchup-card-bg: #0f172a;
+            --matchup-header-bg: #020617;
+            --matchup-border: #334155;
+            --tiebreaker-bg: #0f172a;
             --input-bg: #020617;
             --input-border: #334155;
             --input-text: #ffffff;
-            --bottom-bar-bg: rgba(15, 23, 42, 0.95);
-            --bottom-bar-border: #1e293b;
+            --bottom-bar-bg: #0f172a;
+            --bottom-bar-border: #334155;
         }
 
         html[data-theme="light"] {
