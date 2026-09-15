@@ -21,7 +21,7 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
         </div>
 
         <!-- Single-Week Focus Action Bar -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5">
                 <span>🏆</span> Week <?= $week ?> Leaderboard
             </span>
@@ -37,35 +37,90 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
         </div>
     </div>
 
-    <!-- Week Champion Congratulatory Banner (Displayed when all games in week are final) -->
-    <?php if (!empty($isWeekComplete) && !empty($pot['winners'])): ?>
-        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-emerald-500/20 border-2 border-amber-400/60 shadow-2xl relative overflow-hidden">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="p-3.5 rounded-2xl bg-amber-500/25 text-amber-300 text-3xl border border-amber-400/50 shrink-0 shadow-lg">
-                        🏆
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-                                Week <?= $week ?> Official Champion<?= count($pot['winners']) > 1 ? 's' : '' ?>
-                            </span>
-                            <span class="text-xs font-mono text-emerald-400 font-bold">Week Complete</span>
-                        </div>
-                        <h2 class="text-xl sm:text-2xl font-black text-white mt-1">
-                            Congratulations <?= implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $pot['winners'])) ?>! 🎉
-                        </h2>
-                        <p class="text-xs text-slate-300 mt-1">
-                            Victory with <strong class="text-amber-300"><?= $pot['winners'][0]['correct_picks'] ?></strong> correct picks!
-                            <?php if (!empty($pot['total_pot']) && $pot['total_pot'] > 0): ?>
-                                Cash Prize: <strong class="font-mono text-emerald-300">$<?= number_format($pot['payout_per_winner'], 2) ?></strong><?= $pot['is_split'] ? ' (Split Pot)' : '' ?>
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                </div>
-            </div>
+    <!-- Week Navigation -->
+    <?php if (!empty($availableWeeks) && count($availableWeeks) > 1): ?>
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">View Week:</span>
+            <?php foreach ($availableWeeks as $wk): ?>
+                <a href="/pickem/standings?week=<?= $wk ?>&season=<?= $season ?>"
+                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition <?= (int)$wk === (int)$week ? 'bg-amber-500 text-slate-950 shadow-sm' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' ?>">
+                    Wk <?= $wk ?>
+                </a>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
+
+    <!-- Three-Way Week Champion Banner (Displayed when all games in week are final) -->
+    <?php if (!empty($isWeekComplete)): ?>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            <!-- Overall Champion -->
+            <div class="p-5 rounded-2xl <?= !empty($winnersOverall) ? 'bg-gradient-to-br from-amber-500/20 via-yellow-500/10 to-amber-500/10 border-2 border-amber-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xl">🏆</span>
+                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">Overall Champion</span>
+                </div>
+                <?php if (!empty($winnersOverall)): ?>
+                    <div class="text-lg font-black text-white">
+                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersOverall)) ?>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        <strong class="text-amber-300"><?= $winnersOverall[0]['correct_picks'] ?></strong> correct picks
+                        <?= count($winnersOverall) > 1 ? ' <span class="text-amber-400">(Tied)</span>' : '' ?>
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">All entrants combined</p>
+                <?php else: ?>
+                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Cash Pool Winner -->
+            <div class="p-5 rounded-2xl <?= !empty($winnersPaid) ? 'bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-emerald-500/10 border-2 border-emerald-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xl">💰</span>
+                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-emerald-500 text-white uppercase tracking-wider">Cash Pool Winner</span>
+                </div>
+                <?php if (!empty($winnersPaid)): ?>
+                    <div class="text-lg font-black text-white">
+                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersPaid)) ?>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        <strong class="text-emerald-300"><?= $winnersPaid[0]['correct_picks'] ?></strong> correct picks
+                        <?php if (!empty($pot['total_pot']) && $pot['total_pot'] > 0): ?>
+                            &bull; Payout: <strong class="font-mono text-emerald-300">$<?= number_format($pot['payout_per_winner'] / max(1, count($winnersPaid)), 2) ?></strong>
+                        <?php endif; ?>
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">$10 stake verified entrants</p>
+                <?php elseif ($pot['verified_entries_count'] === 0): ?>
+                    <p class="text-sm text-slate-500 italic">No cash entrants this week</p>
+                <?php else: ?>
+                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
+                <?php endif; ?>
+            </div>
+
+            <!-- Free/Fun Pool Winner -->
+            <div class="p-5 rounded-2xl <?= !empty($winnersFree) ? 'bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-violet-500/10 border-2 border-violet-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-xl">🎮</span>
+                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-violet-500 text-white uppercase tracking-wider">Free / Fun Winner</span>
+                </div>
+                <?php if (!empty($winnersFree)): ?>
+                    <div class="text-lg font-black text-white">
+                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersFree)) ?>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        <strong class="text-violet-300"><?= $winnersFree[0]['correct_picks'] ?></strong> correct picks &bull; Bragging Rights
+                        <?= count($winnersFree) > 1 ? ' <span class="text-violet-400">(Tied)</span>' : '' ?>
+                    </p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Free / for-fun entrants</p>
+                <?php else: ?>
+                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
+                <?php endif; ?>
+            </div>
+
+        </div>
+    <?php endif; ?>
+
 
     <!-- Pot Overview Card -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

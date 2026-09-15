@@ -190,6 +190,41 @@ class ScoringEngine
     }
 
     /**
+     * Find week winners filtered by payment mode.
+     * @param string|null $mode  'paid' = cash pool only, 'free' = free/fun pool only, null = all entrants
+     */
+    public function getWeeklyWinnersByMode(int $season, int $week, ?string $mode = null): array
+    {
+        $standings = $this->getWeeklyStandings($season, $week);
+
+        if ($mode === 'paid') {
+            $pool = array_values(array_filter($standings, fn ($s) => $s['is_paid']));
+        } elseif ($mode === 'free') {
+            $pool = array_values(array_filter($standings, fn ($s) => !$s['is_paid']));
+        } else {
+            $pool = array_values($standings);
+        }
+
+        if (empty($pool)) {
+            return [];
+        }
+
+        $topScore = $pool[0]['correct_picks'];
+        $bestDelta = $pool[0]['tiebreaker_delta'];
+        $winners = [];
+        foreach ($pool as $entry) {
+            if ($entry['correct_picks'] === $topScore) {
+                if ($bestDelta === null || $entry['tiebreaker_delta'] === $bestDelta) {
+                    $winners[] = $entry;
+                }
+            }
+        }
+
+        return $winners;
+    }
+
+
+    /**
      * Evaluate survivor picks for completed games
      */
     public function gradeSurvivorWeek(int $season, int $week): int

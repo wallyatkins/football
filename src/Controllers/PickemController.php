@@ -352,6 +352,23 @@ class PickemController
             }
         }
 
+        // Three-way winner categories (only meaningful once week is complete)
+        $winnersOverall = [];
+        $winnersPaid    = [];
+        $winnersFree    = [];
+        if ($isWeekComplete) {
+            $winnersOverall = $this->scoring->getWeeklyWinnersByMode($season, $week, null);
+            $winnersPaid    = $this->scoring->getWeeklyWinnersByMode($season, $week, 'paid');
+            $winnersFree    = $this->scoring->getWeeklyWinnersByMode($season, $week, 'free');
+        }
+
+        // Available weeks for navigation (weeks that have at least one game)
+        $availableWeeks = $this->db->query(
+            'SELECT DISTINCT week_number FROM games WHERE season_year = :season ORDER BY week_number ASC',
+            ['season' => $season]
+        );
+        $availableWeeks = array_column($availableWeeks, 'week_number');
+
         // Determine opponent picks visibility:
         $firstGameKickoff = null;
         foreach ($games as $g) {
@@ -381,6 +398,10 @@ class PickemController
         // Core Rule: Other users can see opponent picks once the first game has started,
         // unless they have not put in their picks yet.
         $canViewOpponentPicks = ($firstGameStarted && $viewerHasSubmitted) || $isCommissioner;
+        // For past/completed weeks, always allow viewing all picks
+        if ($isWeekComplete) {
+            $canViewOpponentPicks = true;
+        }
 
         // Fetch picks mapped by entry_id
         $picksByEntryId = [];
@@ -435,6 +456,7 @@ class PickemController
         $title = "Week {$week} Standings — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/standings.php';
     }
+
 
     private function requireAuth(): array
     {

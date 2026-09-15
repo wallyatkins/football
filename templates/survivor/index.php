@@ -425,27 +425,30 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 <?php endforeach; ?>
             </div>
 
-            <!-- Sticky Bottom Action Bar -->
-            <div class="sticky bottom-16 md:bottom-6 z-30 p-4 rounded-2xl bg-slate-900/95 border border-slate-800 backdrop-blur shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-xs text-slate-400">
-                    <span>🛡️</span>
-                    <?php if ($isEliminated): ?>
-                        <span class="text-rose-400 font-semibold">Eliminated from the season-long pool in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>.</span>
-                    <?php elseif ($isPickLocked): ?>
-                        <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. Per pool rules, survivor selections are one and done and cannot be altered.</span>
-                    <?php elseif ($isSurvivorClosed): ?>
-                        <span class="text-rose-400 font-semibold">Survivor selections closed at kickoff of the first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
-                    <?php elseif ($isCashEligible): ?>
-                        <span class="text-emerald-400 font-semibold">🟢 Cash Prize Contender: Selections are One and Done. Deadline: First game kickoff.</span>
-                    <?php else: ?>
-                        <span class="text-amber-400 font-semibold">🎮 Free / Fun Pool: Selections are One and Done. Deadline: First game kickoff.</span>
-                    <?php endif; ?>
+
+            <!-- In-flow Action Card (replaces sticky bar) -->
+            <div class="mt-6 p-5 rounded-2xl bg-slate-900 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div class="flex items-start gap-3 text-xs text-slate-400">
+                    <span class="text-lg shrink-0 mt-0.5">🛡️</span>
+                    <div>
+                        <?php if ($isEliminated): ?>
+                            <span class="text-rose-400 font-semibold">Eliminated from the season-long pool in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>.</span>
+                        <?php elseif ($isPickLocked): ?>
+                            <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. Per pool rules, survivor selections are one and done and cannot be altered.</span>
+                        <?php elseif ($isSurvivorClosed): ?>
+                            <span class="text-rose-400 font-semibold">Survivor selections closed at kickoff of the first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
+                        <?php elseif ($isCashEligible): ?>
+                            <span class="text-emerald-400 font-semibold">Cash Prize Contender &mdash; Selections are One and Done. Deadline: First game kickoff.</span>
+                        <?php else: ?>
+                            <span class="text-amber-400 font-semibold">Free / Fun Pool &mdash; Selections are One and Done. Deadline: First game kickoff.</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <?php if ($isEliminated): ?>
                     <button type="button" disabled
                             class="w-full sm:w-auto px-8 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed border border-slate-700">
-                        ☠️ Pool Run Ended
+                        Pool Run Ended
                     </button>
                 <?php elseif ($isPickLocked): ?>
                     <!-- Pick is Already Locked In: One and Done (No changing!) -->
@@ -461,7 +464,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 <?php elseif ($isSurvivorClosed): ?>
                     <button type="button" disabled
                             class="w-full sm:w-auto px-8 py-3 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed border border-slate-700">
-                        🔒 Picks Closed (First Game Started)
+                        Picks Closed (First Game Started)
                     </button>
                 <?php else: ?>
                     <!-- Eligible to Pick: Opens Confirmation Modal before locking in -->
@@ -483,6 +486,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 <?php endif; ?>
             </div>
         </form>
+
 
     </div>
 

@@ -234,7 +234,12 @@ class AdminController
                     'UPDATE survivor_entries SET is_eliminated = 0, elimination_week = NULL WHERE user_id = :uid AND season_year = :season',
                     ['uid' => $userId, 'season' => $season]
                 );
-                $_SESSION['flash'] = "User revived in Survivor pool!";
+                // Also reset any per-pick elimination flags so ScoringEngine reads user as alive
+                $this->db->execute(
+                    'UPDATE survivor_picks SET is_eliminated = 0 WHERE user_id = :uid AND season_year = :season',
+                    ['uid' => $userId, 'season' => $season]
+                );
+                $_SESSION['flash'] = "User revived in Survivor pool! All week picks reset to active.";
             }
         }
 

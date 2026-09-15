@@ -395,81 +395,98 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                     </div>
 
                     <!-- Teams Selection Grid -->
-                    <div class="p-3.5 grid grid-cols-2 gap-3.5">
+                    <div class="p-3.5 relative">
+                        <div class="grid grid-cols-2 gap-3.5">
                         
-                        <!-- Away Team Card -->
-                        <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $awayPicked ? 'is-picked' : '' ?>
-                            <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
-                            style="<?= $awayCardStyle ?>">
-                            
-                            <input type="radio" 
-                                   name="picks[<?= $game['id'] ?>]" 
-                                   value="<?= htmlspecialchars($awayAbbr) ?>" 
-                                   class="sr-only pick-radio"
-                                   data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
-                                   data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
-                                   data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
-                                   data-color="<?= htmlspecialchars($awayColor) ?>"
-                                   <?= $awayPicked ? 'checked' : '' ?>
-                                   <?= $cardDisabled ? 'disabled' : '' ?>>
+                            <!-- Away Team Card -->
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $awayPicked ? 'is-picked' : '' ?>
+                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                                style="<?= $awayCardStyle ?>">
+                                
+                                <input type="radio" 
+                                       name="picks[<?= $game['id'] ?>]" 
+                                       value="<?= htmlspecialchars($awayAbbr) ?>" 
+                                       class="sr-only pick-radio"
+                                       data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
+                                       data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
+                                       data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
+                                       data-color="<?= htmlspecialchars($awayColor) ?>"
+                                       <?= $awayPicked ? 'checked' : '' ?>
+                                       <?= $cardDisabled ? 'disabled' : '' ?>>
 
-                            <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
-                            <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $awayPicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
-                                ✓
+                                <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
+                                <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $awayPicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                    ✓
+                                </div>
+
+                                <!-- Official ESPN Logo -->
+                                <div class="my-2 h-16 flex items-center justify-center">
+                                    <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
+                                         alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
+                                         class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
+                                         loading="lazy">
+                                </div>
+
+                                <!-- Single-line Team Name -->
+                                <div class="text-center w-full mt-2">
+                                    <span class="text-sm sm:text-base font-bold text-white block truncate">
+                                        <?= htmlspecialchars($awayTeam['name']) ?>
+                                    </span>
+                                </div>
+                            </label>
+
+                            <!-- Home Team Card -->
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $homePicked ? 'is-picked' : '' ?>
+                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                                style="<?= $homeCardStyle ?>">
+                                
+                                <input type="radio" 
+                                       name="picks[<?= $game['id'] ?>]" 
+                                       value="<?= htmlspecialchars($homeAbbr) ?>" 
+                                       class="sr-only pick-radio"
+                                       data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
+                                       data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
+                                       data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
+                                       data-color="<?= htmlspecialchars($homeColor) ?>"
+                                       <?= $homePicked ? 'checked' : '' ?>
+                                       <?= $cardDisabled ? 'disabled' : '' ?>>
+
+                                <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
+                                <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $homePicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                    ✓
+                                </div>
+
+                                <!-- Official ESPN Logo -->
+                                <div class="my-2 h-16 flex items-center justify-center">
+                                    <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
+                                         alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
+                                         class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
+                                         loading="lazy">
+                                </div>
+
+                                <!-- Single-line Team Name -->
+                                <div class="text-center w-full mt-2">
+                                    <span class="text-sm sm:text-base font-bold text-white block truncate">
+                                        <?= htmlspecialchars($homeTeam['name']) ?>
+                                    </span>
+                                </div>
+                            </label>
+
+                        </div>
+
+                        <!-- VS Circle Overlay (centered between two cards) -->
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                            <div class="relative w-11 h-11 rounded-full shadow-2xl overflow-hidden ring-2 ring-slate-950/80">
+                                <!-- Away color left half -->
+                                <div class="absolute left-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
+                                <!-- Home color right half -->
+                                <div class="absolute right-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
+                                <!-- VS text -->
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span class="text-[11px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] tracking-tight leading-none select-none">VS</span>
+                                </div>
                             </div>
-
-                            <!-- Official ESPN Logo -->
-                            <div class="my-2 h-16 flex items-center justify-center">
-                                <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
-                                     alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
-                                     class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
-                                     loading="lazy">
-                            </div>
-
-                            <!-- Single-line Team Name -->
-                            <div class="text-center w-full mt-2">
-                                <span class="text-sm sm:text-base font-bold text-white block truncate">
-                                    <?= htmlspecialchars($awayTeam['name']) ?>
-                                </span>
-                            </div>
-                        </label>
-
-                        <!-- Home Team Card -->
-                        <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $homePicked ? 'is-picked' : '' ?>
-                            <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
-                            style="<?= $homeCardStyle ?>">
-                            
-                            <input type="radio" 
-                                   name="picks[<?= $game['id'] ?>]" 
-                                   value="<?= htmlspecialchars($homeAbbr) ?>" 
-                                   class="sr-only pick-radio"
-                                   data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
-                                   data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
-                                   data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
-                                   data-color="<?= htmlspecialchars($homeColor) ?>"
-                                   <?= $homePicked ? 'checked' : '' ?>
-                                   <?= $cardDisabled ? 'disabled' : '' ?>>
-
-                            <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
-                            <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $homePicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
-                                ✓
-                            </div>
-
-                            <!-- Official ESPN Logo -->
-                            <div class="my-2 h-16 flex items-center justify-center">
-                                <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
-                                     alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
-                                     class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
-                                     loading="lazy">
-                            </div>
-
-                            <!-- Single-line Team Name -->
-                            <div class="text-center w-full mt-2">
-                                <span class="text-sm sm:text-base font-bold text-white block truncate">
-                                    <?= htmlspecialchars($homeTeam['name']) ?>
-                                </span>
-                            </div>
-                        </label>
+                        </div>
 
                     </div>
 
