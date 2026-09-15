@@ -43,16 +43,29 @@ class SurvivorController
         $eliminationWeek = null;
 
         // Check if eliminated
-        $eliminatedRecord = $this->db->queryOne(
-            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
-            ['uid' => $user['id'], 'season' => $season]
-        );
-        if ($eliminatedRecord || !empty($survivorEntry['is_eliminated'])) {
-            $isEliminated = true;
-            $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : (int) ($survivorEntry['elimination_week'] ?? 1);
-            $survivorStatus = 'eliminated';
-        } else {
+        $entryRevived = ($survivorEntry && isset($survivorEntry['is_eliminated']) && (int) $survivorEntry['is_eliminated'] === 0);
+        if ($entryRevived) {
+            // Commissioner has revived this user. Auto-repair any stale pick flags.
+            $this->db->execute(
+                'UPDATE survivor_picks SET is_eliminated = 0 WHERE user_id = :uid AND season_year = :season',
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            $eliminatedRecord = null;
+            $isEliminated = false;
+            $eliminationWeek = null;
             $survivorStatus = 'alive';
+        } else {
+            $eliminatedRecord = $this->db->queryOne(
+                'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1 LIMIT 1',
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            if ($eliminatedRecord || !empty($survivorEntry['is_eliminated'])) {
+                $isEliminated = true;
+                $eliminationWeek = $eliminatedRecord ? (int) $eliminatedRecord['week_number'] : (int) ($survivorEntry['elimination_week'] ?? 1);
+                $survivorStatus = 'eliminated';
+            } else {
+                $survivorStatus = 'alive';
+            }
         }
 
         // Get all teams used by this user in previous weeks
@@ -188,14 +201,17 @@ class SurvivorController
         }
 
         // 4. Verify user is not already eliminated
-        $eliminated = $this->db->queryOne(
-            'SELECT id FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1',
-            ['uid' => $user['id'], 'season' => $season]
-        );
-        if ($eliminated || !empty($survivorEntry['is_eliminated'])) {
-            $_SESSION['error'] = 'You have already been eliminated from this season\'s Survivor pool.';
-            header("Location: /survivor?week={$week}&season={$season}");
-            exit;
+        $entryRevived = ($survivorEntry && isset($survivorEntry['is_eliminated']) && (int) $survivorEntry['is_eliminated'] === 0);
+        if (!$entryRevived) {
+            $eliminated = $this->db->queryOne(
+                'SELECT id FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND is_eliminated = 1',
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            if ($eliminated || !empty($survivorEntry['is_eliminated'])) {
+                $_SESSION['error'] = 'You have already been eliminated from this season\'s Survivor pool.';
+                header("Location: /survivor?week={$week}&season={$season}");
+                exit;
+            }
         }
 
         // 5. Verify team has NOT been used in an earlier week

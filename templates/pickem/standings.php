@@ -10,6 +10,20 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
 
 <div class="space-y-6">
 
+    <!-- Standings Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" 
+           class="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-slate-950 font-black transition shadow-sm flex items-center gap-2">
+            <span>🎯</span>
+            <span>Weekly Pick'em Standings</span>
+        </a>
+        <a href="/survivor/standings?season=<?= $season ?>" 
+           class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+            <span>🛡️</span>
+            <span>Survivor Pool Standings</span>
+        </a>
+    </div>
+
     <!-- Header & Week Selector -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>

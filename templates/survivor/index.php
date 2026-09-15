@@ -522,6 +522,14 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 </div>
             </div>
 
+            <!-- Confirmation Question Prompt -->
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-1">
+                <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">Lock In Confirmation</span>
+                <p class="text-sm sm:text-base text-slate-100 font-bold">
+                    Are you sure <span id="confirmTeamPromptName" class="text-amber-300 font-black">the selected team</span> is who you want to lock in for your Week <?= htmlspecialchars((string) $week) ?> Survivor pick?
+                </p>
+            </div>
+
             <!-- One and Done Rule Warning -->
             <div class="p-4 rounded-xl bg-rose-500/15 border-2 border-rose-500/50 text-xs text-rose-200 space-y-2">
                 <div class="flex items-center gap-2 text-rose-300 font-black uppercase tracking-wider text-xs">
@@ -708,11 +716,43 @@ document.addEventListener('DOMContentLoaded', function () {
             const badge = this.querySelector('.survivor-badge');
             if (badge) badge.classList.remove('hidden');
 
-            radio.checked = true;
+            // Function to populate and open modal for a selected radio
+            function openConfirmModal(checkedRadio) {
+                if (!checkedRadio) return;
+                const teamAbbr = checkedRadio.value;
+                const teamName = checkedRadio.getAttribute('data-name') || teamAbbr;
+                const teamNick = checkedRadio.getAttribute('data-nick') || teamAbbr;
+                const teamLogo = checkedRadio.getAttribute('data-logo') || '';
+                const teamColor = checkedRadio.getAttribute('data-color') || '#10b981';
+                const teamMatchup = checkedRadio.getAttribute('data-matchup') || '';
+                const teamKickoff = checkedRadio.getAttribute('data-kickoff') || '';
+
+                if (confirmTeamLogo) confirmTeamLogo.src = teamLogo;
+                if (confirmTeamName) confirmTeamName.textContent = teamName;
+                const promptName = document.getElementById('confirmTeamPromptName');
+                if (promptName) promptName.textContent = teamName;
+                if (confirmTeamMatchup) confirmTeamMatchup.textContent = teamMatchup;
+                if (confirmTeamKickoff) confirmTeamKickoff.textContent = 'Kickoff: ' + teamKickoff;
+                if (confirmTeamCard) {
+                    confirmTeamCard.style.borderColor = teamColor;
+                    confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, var(--card-surface) 100%)`;
+                }
+                if (btnFinalConfirmText) {
+                    btnFinalConfirmText.textContent = `Yes, Lock In ${teamNick} (Final)`;
+                }
+
+                if (confirmModal) {
+                    confirmModal.classList.remove('hidden');
+                    confirmModal.classList.add('flex');
+                }
+            }
+
+            // Immediately pop up confirmation modal upon picking a team
+            openConfirmModal(radio);
         });
     });
 
-    // Open Confirmation Modal
+    // Open Confirmation Modal from action card button (if already selected and re-opening)
     if (btnOpenConfirm) {
         btnOpenConfirm.addEventListener('click', function () {
             const checkedRadio = form.querySelector('.survivor-radio:checked');
@@ -720,33 +760,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('Please select a team before locking in your survivor pick.');
                 return;
             }
-
-            const teamAbbr = checkedRadio.value;
-            const teamName = checkedRadio.getAttribute('data-name') || teamAbbr;
-            const teamNick = checkedRadio.getAttribute('data-nick') || teamAbbr;
-            const teamLogo = checkedRadio.getAttribute('data-logo') || '';
-            const teamColor = checkedRadio.getAttribute('data-color') || '#10b981';
-            const teamMatchup = checkedRadio.getAttribute('data-matchup') || '';
-            const teamKickoff = checkedRadio.getAttribute('data-kickoff') || '';
-
-            // Populate Modal
-            if (confirmTeamLogo) confirmTeamLogo.src = teamLogo;
-            if (confirmTeamName) confirmTeamName.textContent = teamName;
-            if (confirmTeamMatchup) confirmTeamMatchup.textContent = teamMatchup;
-            if (confirmTeamKickoff) confirmTeamKickoff.textContent = 'Kickoff: ' + teamKickoff;
-            if (confirmTeamCard) {
-                confirmTeamCard.style.borderColor = teamColor;
-                confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, var(--card-surface) 100%)`;
-            }
-            if (btnFinalConfirmText) {
-                btnFinalConfirmText.textContent = `Yes, Lock In ${teamNick} (Final)`;
-            }
-
-            // Show modal
-            if (confirmModal) {
-                confirmModal.classList.remove('hidden');
-                confirmModal.classList.add('flex');
-            }
+            openConfirmModal(checkedRadio);
         });
     }
 

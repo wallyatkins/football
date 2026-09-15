@@ -1,8 +1,23 @@
 <?php
+use WallyFootball\Support\TeamData;
 ob_start();
 ?>
 
 <div class="space-y-6">
+
+    <!-- Standings Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+        <a href="/pickem/standings?season=<?= $season ?>" 
+           class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+            <span>🎯</span>
+            <span>Weekly Pick'em Standings</span>
+        </a>
+        <a href="/survivor/standings?season=<?= $season ?>" 
+           class="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-500 text-slate-950 font-black transition shadow-sm flex items-center gap-2">
+            <span>🛡️</span>
+            <span>Survivor Pool Standings</span>
+        </a>
+    </div>
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
@@ -11,7 +26,7 @@ ob_start();
                 <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Survivor Pool</span>
                 <span class="text-xs text-slate-400">Season <?= htmlspecialchars((string) $season) ?></span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Survivor Leaderboard</h1>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Survivor Leaderboard &amp; Pick History</h1>
         </div>
         <div class="flex items-center gap-2">
             <a href="/fantasy/vault?tab=pools" 
@@ -72,7 +87,7 @@ ob_start();
                     <th class="py-3 px-4 text-center">Pool Tier</th>
                     <th class="py-3 px-4 text-center">Status</th>
                     <th class="py-3 px-4 text-center">Alive Weeks</th>
-                    <th class="py-3 px-4">Teams Selected This Season</th>
+                    <th class="py-3 px-4">Survivor Pick History Across Weeks</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60">
@@ -120,18 +135,37 @@ ob_start();
                             </td>
                             <td class="py-3.5 px-4">
                                 <?php if (empty($row['teams_used'])): ?>
-                                    <span class="text-xs text-slate-600">—</span>
+                                    <span class="text-xs text-slate-600 italic">No picks submitted yet</span>
                                 <?php else: ?>
-                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <?php foreach ($row['history'] as $h): ?>
+                                            <?php 
+                                            $teamAbbr = $h['selected_team'] ?? '';
+                                            $tData = !empty($teamAbbr) ? TeamData::get($teamAbbr) : null;
+                                            ?>
                                             <?php if (!empty($h['is_hidden'])): ?>
-                                                <span class="text-xs font-mono px-2 py-0.5 rounded border bg-slate-900 border-slate-800 text-slate-500 flex items-center gap-1" title="Hidden until game kickoff">
-                                                    <span class="text-[10px] text-slate-600">W<?= $h['week_number'] ?>:</span><span>🔒 Hidden</span>
-                                                </span>
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-slate-950/80 border-slate-800 text-slate-400 text-xs font-mono" title="Opponent pick hidden until kickoff">
+                                                    <span class="text-[10px] text-slate-500 font-bold">Wk <?= $h['week_number'] ?>:</span>
+                                                    <span>🔒 Hidden</span>
+                                                </div>
+                                            <?php elseif (!empty($h['is_eliminated'])): ?>
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-rose-950/40 border-rose-800/60 text-rose-300 text-xs font-mono shadow-sm" title="Eliminated in Week <?= $h['week_number'] ?>">
+                                                    <span class="text-[10px] text-rose-400 font-bold">Wk <?= $h['week_number'] ?>:</span>
+                                                    <?php if ($tData && !empty($tData['logo'])): ?>
+                                                        <img src="<?= htmlspecialchars($tData['logo']) ?>" alt="<?= htmlspecialchars($teamAbbr) ?>" class="w-4 h-4 object-contain grayscale opacity-70">
+                                                    <?php endif; ?>
+                                                    <span class="line-through font-bold"><?= htmlspecialchars($h['display_team'] ?? $teamAbbr) ?></span>
+                                                    <span class="text-[10px] font-black text-rose-400">✗ Out</span>
+                                                </div>
                                             <?php else: ?>
-                                                <span class="text-xs font-mono px-2 py-0.5 rounded border <?= $h['is_eliminated'] ? 'bg-rose-950/40 border-rose-800/60 text-rose-300 line-through' : 'bg-slate-800 border-slate-700 text-emerald-400' ?>">
-                                                    <span class="text-[10px] text-slate-400 mr-1">W<?= $h['week_number'] ?>:</span><?= htmlspecialchars($h['display_team'] ?? $h['selected_team']) ?>
-                                                </span>
+                                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-emerald-400 text-xs font-mono shadow-sm" title="Survived Week <?= $h['week_number'] ?>">
+                                                    <span class="text-[10px] text-slate-400 font-bold">Wk <?= $h['week_number'] ?>:</span>
+                                                    <?php if ($tData && !empty($tData['logo'])): ?>
+                                                        <img src="<?= htmlspecialchars($tData['logo']) ?>" alt="<?= htmlspecialchars($teamAbbr) ?>" class="w-4 h-4 object-contain">
+                                                    <?php endif; ?>
+                                                    <span class="font-bold text-white"><?= htmlspecialchars($h['display_team'] ?? $teamAbbr) ?></span>
+                                                    <span class="text-[10px] font-black text-emerald-400">✓</span>
+                                                </div>
                                             <?php endif; ?>
                                         <?php endforeach; ?>
                                     </div>

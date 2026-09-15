@@ -67,70 +67,110 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
     <!-- Center Column Gridiron Layout (One Game Per Row) -->
     <div class="max-w-3xl mx-auto space-y-6">
 
-    <!-- Week Champion Congratulatory Banner (Displayed when all games in current week are final) -->
-    <?php if (!empty($isWeekComplete) && !empty($weeklyWinners)): ?>
-        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-emerald-500/20 border-2 border-amber-400/60 shadow-2xl relative overflow-hidden">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <div class="p-3.5 rounded-2xl bg-amber-500/25 text-amber-300 text-3xl border border-amber-400/50 shrink-0 shadow-lg">
-                        🏆
-                    </div>
+    <!-- Week Champion Congratulatory Banners (Displayed when games are final) -->
+    <?php 
+    $activeCelebrateWeek = !empty($isWeekComplete) ? $week : (!empty($lastCompletedWeek) ? $lastCompletedWeek : null);
+    $activeWinnersOverall = !empty($isWeekComplete) ? ($weeklyWinnersOverall ?? []) : ($lastWeekWinnersOverall ?? []);
+    $activeWinnersPaid    = !empty($isWeekComplete) ? ($weeklyWinnersPaid ?? []) : ($lastWeekWinnersPaid ?? []);
+    $activeWinnersFree    = !empty($isWeekComplete) ? ($weeklyWinnersFree ?? []) : ($lastWeekWinnersFree ?? []);
+    $activePotInfo        = !empty($isWeekComplete) ? ($potInfo ?? null) : ($lastWeekPotInfo ?? null);
+    ?>
+
+    <?php if ($activeCelebrateWeek !== null && (!empty($activeWinnersOverall) || !empty($activeWinnersPaid) || !empty($activeWinnersFree))): ?>
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-emerald-500/15 border-2 border-amber-400/50 shadow-2xl relative overflow-hidden space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="p-2.5 rounded-xl bg-amber-500/25 text-amber-300 text-2xl border border-amber-400/50 shadow-sm">🏆</span>
                     <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-                                Week <?= $week ?> Official Champion<?= count($weeklyWinners) > 1 ? 's' : '' ?>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                                Week <?= $activeCelebrateWeek ?> Winners Circle
                             </span>
-                            <span class="text-xs font-mono text-emerald-400 font-bold">Week Complete</span>
+                            <span class="text-xs font-mono text-emerald-400 font-bold"><?= !empty($isWeekComplete) ? 'Week Complete' : 'Last Week Wrapup' ?></span>
                         </div>
-                        <h2 class="text-xl sm:text-2xl font-black text-white mt-1">
-                            Congratulations <?= implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $weeklyWinners)) ?>! 🎉
-                        </h2>
-                        <p class="text-xs text-slate-300 mt-1">
-                            Top Score: <strong class="text-amber-300"><?= $weeklyWinners[0]['correct_picks'] ?></strong> correct picks
-                            <?php if (!empty($potInfo['total_pot']) && $potInfo['total_pot'] > 0): ?>
-                                &bull; Cash Payout: <strong class="font-mono text-emerald-300">$<?= number_format($potInfo['payout_per_winner'], 2) ?></strong><?= $potInfo['is_split'] ? ' (Split Pot)' : '' ?>
-                            <?php endif; ?>
-                        </p>
+                        <h2 class="text-lg sm:text-xl font-black text-white mt-0.5">Week <?= $activeCelebrateWeek ?> Pool Champions</h2>
                     </div>
                 </div>
-                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shrink-0">
-                    View Final Standings &rarr;
+                <a href="/pickem/standings?week=<?= $activeCelebrateWeek ?>&season=<?= $season ?>" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm shrink-0">
+                    Week <?= $activeCelebrateWeek ?> Standings &rarr;
                 </a>
             </div>
-        </div>
-    <?php elseif (empty($isWeekComplete) && !empty($lastCompletedWeek) && !empty($lastWeekWinners)): ?>
-        <!-- Celebratory Banner for Past Week's Champion -->
-        <div class="p-5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-yellow-500/10 to-slate-900 border-2 border-amber-400/50 shadow-xl relative overflow-hidden">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div class="flex items-center gap-3.5">
-                    <div class="p-3 rounded-2xl bg-amber-500/25 text-amber-300 text-2xl border border-amber-400/50 shrink-0 shadow-lg">
-                        👑
-                    </div>
+
+            <!-- Three Winner Categories Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+                
+                <!-- 1. Overall Champion -->
+                <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-400/50 shadow-md flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-[10px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-                                Week <?= $lastCompletedWeek ?> Champion<?= count($lastWeekWinners) > 1 ? 's' : '' ?>
-                            </span>
-                            <span class="text-xs font-mono text-emerald-400 font-bold">Past Week Winner</span>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-base">👑</span>
+                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-amber-400">Overall Champion</span>
                         </div>
-                        <h2 class="text-lg sm:text-xl font-black text-white mt-1">
-                            🏆 Congratulations <?= implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $lastWeekWinners)) ?>!
-                        </h2>
-                        <p class="text-xs text-slate-300 mt-0.5">
-                            Took the crown with <strong class="text-amber-300"><?= $lastWeekWinners[0]['correct_picks'] ?></strong> wins!
-                            <?php if (!empty($lastWeekPotInfo['total_pot']) && $lastWeekPotInfo['total_pot'] > 0): ?>
-                                &bull; Cash Prize: <strong class="font-mono text-emerald-300">$<?= number_format($lastWeekPotInfo['payout_per_winner'], 2) ?></strong>
-                            <?php endif; ?>
-                            &bull; Ready to take the title in Week <?= $week ?>? Lock your picks below!
-                        </p>
+                        <?php if (!empty($activeWinnersOverall)): ?>
+                            <div class="font-black text-white text-base truncate">
+                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersOverall)) ?>
+                            </div>
+                            <div class="text-slate-300 font-semibold mt-1">
+                                <span class="text-amber-300 font-bold"><?= $activeWinnersOverall[0]['correct_picks'] ?></span> correct picks
+                                <?= count($activeWinnersOverall) > 1 ? '<span class="text-amber-400 text-[10px] ml-1">(Tied)</span>' : '' ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-slate-500 italic">Pending final games</div>
+                        <?php endif; ?>
                     </div>
+                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">All entrants combined</span>
                 </div>
-                <a href="/pickem/standings?week=<?= $lastCompletedWeek ?>&season=<?= $season ?>" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shrink-0">
-                    Week <?= $lastCompletedWeek ?> Standings &rarr;
-                </a>
+
+                <!-- 2. Money Pool Winner -->
+                <div class="p-4 rounded-xl bg-slate-900/90 border border-emerald-400/50 shadow-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-base">💰</span>
+                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-emerald-400">Money Pool Winner</span>
+                        </div>
+                        <?php if (!empty($activeWinnersPaid)): ?>
+                            <div class="font-black text-white text-base truncate">
+                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersPaid)) ?>
+                            </div>
+                            <div class="text-slate-300 font-semibold mt-1">
+                                <span class="text-emerald-300 font-bold"><?= $activeWinnersPaid[0]['correct_picks'] ?></span> correct
+                                <?php if (!empty($activePotInfo['total_pot']) && $activePotInfo['total_pot'] > 0): ?>
+                                    &bull; Won <strong class="font-mono text-emerald-300">$<?= number_format($activePotInfo['payout_per_winner'] / max(1, count($activeWinnersPaid)), 2) ?></strong>
+                                <?php endif; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-slate-500 italic">No cash entries verified</div>
+                        <?php endif; ?>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">$10 stake cash pool</span>
+                </div>
+
+                <!-- 3. For Fun / Free Pool Winner -->
+                <div class="p-4 rounded-xl bg-slate-900/90 border border-violet-400/50 shadow-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-2">
+                            <span class="text-base">🎮</span>
+                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-violet-400">Free / Fun Winner</span>
+                        </div>
+                        <?php if (!empty($activeWinnersFree)): ?>
+                            <div class="font-black text-white text-base truncate">
+                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersFree)) ?>
+                            </div>
+                            <div class="text-slate-300 font-semibold mt-1">
+                                <span class="text-violet-300 font-bold"><?= $activeWinnersFree[0]['correct_picks'] ?></span> correct
+                                <?= count($activeWinnersFree) > 1 ? '<span class="text-violet-400 text-[10px] ml-1">(Tied)</span>' : '' ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-slate-500 italic">No free entries</div>
+                        <?php endif; ?>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">Free tier &bull; Bragging rights</span>
+                </div>
+
             </div>
         </div>
     <?php endif; ?>
+
 
     <!-- User Pick Lock & Payment Callout -->
     <?php if ($isUserLocked): ?>
@@ -399,10 +439,13 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <div class="grid grid-cols-2 gap-3.5">
                         
                             <!-- Away Team Card -->
-                            <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $awayPicked ? 'is-picked' : '' ?>
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $awayPicked ? 'is-picked' : '' ?>
                                 <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
                                 style="<?= $awayCardStyle ?>">
                                 
+                                <!-- Team Color Top Accent Stripe -->
+                                <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
+
                                 <input type="radio" 
                                        name="picks[<?= $game['id'] ?>]" 
                                        value="<?= htmlspecialchars($awayAbbr) ?>" 
@@ -436,10 +479,13 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             </label>
 
                             <!-- Home Team Card -->
-                            <label class="team-card relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all select-none group <?= $homePicked ? 'is-picked' : '' ?>
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $homePicked ? 'is-picked' : '' ?>
                                 <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
                                 style="<?= $homeCardStyle ?>">
                                 
+                                <!-- Team Color Top Accent Stripe -->
+                                <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
+
                                 <input type="radio" 
                                        name="picks[<?= $game['id'] ?>]" 
                                        value="<?= htmlspecialchars($homeAbbr) ?>" 
@@ -474,16 +520,18 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                         </div>
 
-                        <!-- VS Circle Overlay (centered between two cards) -->
+                        <!-- Cool Broadcast-Style VS Circle Overlay (centered between two cards) -->
                         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                            <div class="relative w-11 h-11 rounded-full shadow-2xl overflow-hidden ring-2 ring-slate-950/80">
+                            <div class="relative w-12 h-12 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.8)] overflow-hidden ring-4 ring-slate-900 border border-slate-700/60 flex items-center justify-center">
                                 <!-- Away color left half -->
                                 <div class="absolute left-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
                                 <!-- Home color right half -->
                                 <div class="absolute right-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
-                                <!-- VS text -->
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <span class="text-[11px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] tracking-tight leading-none select-none">VS</span>
+                                <!-- Subtle depth overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40"></div>
+                                <!-- Inner VS circular badge -->
+                                <div class="relative w-7 h-7 rounded-full bg-slate-950/90 border border-slate-700 shadow-inner flex items-center justify-center">
+                                    <span class="text-[10px] font-black font-mono text-amber-400 tracking-wider">VS</span>
                                 </div>
                             </div>
                         </div>
@@ -778,12 +826,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 });
 
-                // Highlight selected (solid background, crisp border & glow, zero layout shift)
+                // Highlight selected (team color gradient background, crisp border & glow, zero layout shift)
                 const color = radio.getAttribute('data-color') || '#f59e0b';
                 this.classList.add('is-picked');
                 this.style.borderColor = color;
-                this.style.backgroundColor = '#1e293b';
-                this.style.boxShadow = `0 0 20px ${color}55`;
+                this.style.background = `linear-gradient(135deg, ${color}28 0%, #0f172a 100%)`;
+                this.style.boxShadow = `0 0 22px ${color}44`;
                 this.classList.remove('opacity-50');
                 this.classList.add('opacity-100');
 

@@ -340,7 +340,11 @@ class ScoringEngine
                 $processedPicks[] = $p;
             }
 
-            if (!empty($user['entry_eliminated'])) {
+            if (isset($user['entry_eliminated']) && (int) $user['entry_eliminated'] === 0) {
+                // Commissioner explicitly designated user as revived/alive
+                $isEliminated = false;
+                $eliminationWeek = null;
+            } elseif (!empty($user['entry_eliminated'])) {
                 $isEliminated = true;
                 if ($eliminationWeek === null && !empty($user['entry_elim_week'])) {
                     $eliminationWeek = (int) $user['entry_elim_week'];

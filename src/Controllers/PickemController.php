@@ -150,15 +150,24 @@ class PickemController
 
         $potInfo = null;
         $weeklyWinners = [];
+        $weeklyWinnersOverall = [];
+        $weeklyWinnersPaid = [];
+        $weeklyWinnersFree = [];
         if ($isWeekComplete) {
             $potInfo = $this->scoring->calculateWeeklyPot($season, $week);
             $weeklyWinners = $potInfo['winners'] ?? [];
+            $weeklyWinnersOverall = $this->scoring->getWeeklyWinnersByMode($season, $week, null);
+            $weeklyWinnersPaid = $this->scoring->getWeeklyWinnersByMode($season, $week, 'paid');
+            $weeklyWinnersFree = $this->scoring->getWeeklyWinnersByMode($season, $week, 'free');
         }
 
-        // Check for prior completed week to celebrate last week's champion
+        // Check for prior completed week to celebrate last week's champions
         $lastCompletedWeek = null;
         $lastWeekPotInfo = null;
         $lastWeekWinners = [];
+        $lastWeekWinnersOverall = [];
+        $lastWeekWinnersPaid = [];
+        $lastWeekWinnersFree = [];
         $checkPriorWeek = ($week > 1) ? ($week - 1) : 0;
         if ($checkPriorWeek >= 1) {
             $priorGames = $this->db->query(
@@ -176,6 +185,9 @@ class PickemController
                 $lastCompletedWeek = $checkPriorWeek;
                 $lastWeekPotInfo = $this->scoring->calculateWeeklyPot($season, $checkPriorWeek);
                 $lastWeekWinners = $lastWeekPotInfo['winners'] ?? [];
+                $lastWeekWinnersOverall = $this->scoring->getWeeklyWinnersByMode($season, $checkPriorWeek, null);
+                $lastWeekWinnersPaid = $this->scoring->getWeeklyWinnersByMode($season, $checkPriorWeek, 'paid');
+                $lastWeekWinnersFree = $this->scoring->getWeeklyWinnersByMode($season, $checkPriorWeek, 'free');
             }
         }
 
