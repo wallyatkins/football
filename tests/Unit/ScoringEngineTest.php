@@ -233,8 +233,9 @@ class ScoringEngineTest extends TestCase
     public function testSurvivorCurrentWeekPickMaskingForOpponents(): void
     {
         // Add a future game in week 2 that has not kicked off yet
+        $futureKickoff = date('Y-m-d H:i:s', time() + 86400);
         $this->db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
-            (201, 2026, 2, 'BUF', 'MIA', '2026-09-15 20:15:00', 'scheduled')");
+            (201, 2026, 2, 'BUF', 'MIA', '{$futureKickoff}', 'scheduled')");
 
         // Alice (user 1) picks BUF for week 2
         $this->db->execute("INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
