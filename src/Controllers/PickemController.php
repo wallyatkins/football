@@ -91,9 +91,22 @@ class PickemController
         $userGradedCount = 0;
         $userPendingCount = 0;
 
+        // Check first game kickoff deadline for the entire week
+        $firstGameKickoff = null;
+        foreach ($games as $g) {
+            $kt = strtotime($g['kickoff_time']);
+            if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
+                $firstGameKickoff = $kt;
+            }
+        }
+        $isWeekLocked = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
+        $firstKickoffFormatted = $firstGameKickoff
+            ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Kickoff of Week ' . $week;
+
         foreach ($games as $idx => $g) {
             $kickoff = strtotime($g['kickoff_time']);
-            $games[$idx]['is_locked'] = ($kickoff <= $now);
+            $games[$idx]['is_locked'] = $isWeekLocked || ($kickoff <= $now);
             $userPick = $userPicks[$g['id']] ?? null;
             $games[$idx]['user_pick'] = $userPick;
 
@@ -200,6 +213,119 @@ class PickemController
         require dirname(__DIR__, 2) . '/templates/pickem/grid.php';
     }
 
+    public function autoSave(): void
+    {
+        header('Content-Type: application/json');
+
+        if (empty($_SESSION['user']['id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Please log in to save picks.']);
+            exit;
+        }
+        $user = $_SESSION['user'];
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = $_POST;
+        }
+
+        $season = (int) ($input['season_year'] ?? date('Y'));
+        $week = (int) ($input['week_number'] ?? 1);
+        $gameId = isset($input['game_id']) ? (int) $input['game_id'] : null;
+        $selectedTeam = isset($input['selected_team']) ? strtoupper(trim((string) $input['selected_team'])) : null;
+        $mnfPoints = isset($input['mnf_total_points']) && $input['mnf_total_points'] !== ''
+            ? (int) $input['mnf_total_points']
+            : null;
+
+        // Check first game kickoff deadline
+        $firstGame = $this->db->queryOne(
+            'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+        $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
+        if ($firstKickoff !== null && time() >= $firstKickoff) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "Picks for Week {$week} are locked (first game kickoff has passed)."]);
+            exit;
+        }
+
+        // Get or create pickem_entries record
+        $entry = $this->db->queryOne(
+            'SELECT id, mnf_total_points_prediction FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',
+            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
+        );
+
+        if (!$entry) {
+            $entryId = (int) $this->db->insert(
+                "INSERT INTO pickem_entries (user_id, season_year, week_number, payment_status, is_locked)
+                 VALUES (:uid, :season, :week, 'pending', 0)",
+                ['uid' => $user['id'], 'season' => $season, 'week' => $week]
+            );
+        } else {
+            $entryId = (int) $entry['id'];
+        }
+
+        // Update tiebreaker if explicitly passed in payload
+        if (array_key_exists('mnf_total_points', $input)) {
+            $this->db->execute(
+                'UPDATE pickem_entries SET mnf_total_points_prediction = :mnf WHERE id = :id',
+                ['mnf' => $mnfPoints, 'id' => $entryId]
+            );
+        }
+
+        // Save individual game pick if provided
+        $savedPick = null;
+        if ($gameId !== null && !empty($selectedTeam)) {
+            $game = $this->db->queryOne(
+                'SELECT home_team, away_team, kickoff_time FROM games WHERE id = :gid AND season_year = :season AND week_number = :week',
+                ['gid' => $gameId, 'season' => $season, 'week' => $week]
+            );
+
+            if ($game && ($selectedTeam === $game['home_team'] || $selectedTeam === $game['away_team'])) {
+                $existingPick = $this->db->queryOne(
+                    'SELECT id FROM pickem_picks WHERE entry_id = :eid AND game_id = :gid',
+                    ['eid' => $entryId, 'gid' => $gameId]
+                );
+
+                if ($existingPick) {
+                    $this->db->execute(
+                        'UPDATE pickem_picks SET selected_team = :team WHERE id = :id',
+                        ['team' => $selectedTeam, 'id' => $existingPick['id']]
+                    );
+                } else {
+                    $this->db->insert(
+                        'INSERT INTO pickem_picks (entry_id, game_id, selected_team) VALUES (:eid, :gid, :team)',
+                        ['eid' => $entryId, 'gid' => $gameId, 'team' => $selectedTeam]
+                    );
+                }
+                $savedPick = [
+                    'game_id' => $gameId,
+                    'selected_team' => $selectedTeam,
+                ];
+            }
+        }
+
+        $pickCount = (int) $this->db->queryValue(
+            'SELECT count(*) FROM pickem_picks WHERE entry_id = :eid',
+            ['eid' => $entryId]
+        );
+        $totalGames = (int) $this->db->queryValue(
+            'SELECT count(*) FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Auto-saved successfully',
+            'saved_pick' => $savedPick,
+            'pick_count' => $pickCount,
+            'total_games' => $totalGames,
+            'entry_id' => $entryId,
+            'mnf_total_points' => $mnfPoints,
+        ]);
+        exit;
+    }
+
     public function save(): void
     {
         $user = $this->requireAuth();
@@ -217,6 +343,7 @@ class PickemController
         );
 
         $now = time();
+        $firstGameKickoff = null;
         $validGames = [];
         $mnfGame = null;
         foreach ($games as $g) {
@@ -224,33 +351,35 @@ class PickemController
             if ($g['is_mnf']) {
                 $mnfGame = $g;
             }
+            $kt = strtotime($g['kickoff_time']);
+            if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
+                $firstGameKickoff = $kt;
+            }
         }
 
-        // Check if user entry already exists and is locked
-        $entry = $this->db->queryOne(
-            'SELECT id, mnf_total_points_prediction, is_locked FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',
-            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
-        );
+        $firstKickoffFormatted = $firstGameKickoff
+            ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Kickoff of Week ' . $week;
 
-        if ($entry && !empty($entry['is_locked'])) {
-            $_SESSION['error'] = "Your picks for Week {$week} are already locked in and cannot be modified.";
+        // Check if week is locked (Kickoff of the first game deadline rule)
+        if ($firstGameKickoff !== null && $now >= $firstGameKickoff) {
+            $_SESSION['error'] = "Picks for Week {$week} closed at the kickoff of the week's first game ({$firstKickoffFormatted}).";
             header("Location: /pickem?week={$week}&season={$season}");
             exit;
         }
 
-        // Validate that all open/unlocked games are picked
-        $unlockedGames = array_filter($games, fn ($g) => strtotime($g['kickoff_time']) > $now);
+        // Validate that all games are picked for final submission
         $unpickedCount = 0;
-        foreach ($unlockedGames as $g) {
+        foreach ($games as $g) {
             $pick = $submittedPicks[$g['id']] ?? null;
             if (empty($pick) || ($pick !== $g['home_team'] && $pick !== $g['away_team'])) {
                 $unpickedCount++;
             }
         }
 
-        // Validate tiebreaker if designated game has not kicked off
+        // Validate tiebreaker if designated game is present
         $tiebreakerMissing = false;
-        if ($mnfGame && strtotime($mnfGame['kickoff_time']) > $now) {
+        if ($mnfGame) {
             if ($mnfPrediction === null || $mnfPrediction <= 0) {
                 $tiebreakerMissing = true;
             }
@@ -270,7 +399,12 @@ class PickemController
             exit;
         }
 
-        // Ensure or update entry as locked
+        // Ensure or update entry (Mark as submitted/confirmed)
+        $entry = $this->db->queryOne(
+            'SELECT id, mnf_total_points_prediction, is_locked FROM pickem_entries WHERE user_id = :uid AND season_year = :season AND week_number = :week',
+            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
+        );
+
         if (!$entry) {
             $entryId = (int) $this->db->insert(
                 "INSERT INTO pickem_entries (user_id, season_year, week_number, mnf_total_points_prediction, payment_status, is_locked, locked_at)
@@ -286,17 +420,13 @@ class PickemController
         }
 
         // Process submitted picks
+        $savedCount = 0;
         foreach ($submittedPicks as $gameId => $selectedTeam) {
             $gameId = (int) $gameId;
             $selectedTeam = strtoupper(trim((string) $selectedTeam));
 
             $game = $validGames[$gameId] ?? null;
             if (!$game) {
-                continue;
-            }
-
-            // Reject updates if game has already kicked off (Lockout rule)
-            if (strtotime($game['kickoff_time']) <= $now) {
                 continue;
             }
 
@@ -322,6 +452,7 @@ class PickemController
                     ['eid' => $entryId, 'gid' => $gameId, 'team' => $selectedTeam]
                 );
             }
+            $savedCount++;
         }
 
         try {
@@ -330,13 +461,13 @@ class PickemController
                 $week,
                 $season,
                 $mnfPrediction,
-                count($submittedPicks)
+                $savedCount
             );
         } catch (\Throwable) {
             // Notification failures should never disrupt player experience
         }
 
-        $_SESSION['flash'] = "Your Week {$week} picks are officially LOCKED IN! Don't forget to send your $10.00 entry fee.";
+        $_SESSION['flash'] = "✅ Your Week {$week} picks are confirmed and saved! You can adjust your picks anytime before the first game kicks off ({$firstKickoffFormatted}).";
         header("Location: /pickem?week={$week}&season={$season}");
         exit;
     }

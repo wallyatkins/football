@@ -174,11 +174,15 @@ try {
             (new PickemController())->save();
             exit;
 
+        case '/pickem/autosave':
+            (new PickemController())->autoSave();
+            exit;
+
         case '/pickem/standings':
             (new PickemController())->standings($season, $week);
             exit;
 
-            // --- Survivor Pool ---
+        // --- Survivor Pool ---
         case '/survivor':
             if ($method === 'POST') {
                 (new SurvivorController())->save();
@@ -189,6 +193,10 @@ try {
 
         case '/survivor/save':
             (new SurvivorController())->save();
+            exit;
+
+        case '/survivor/autosave':
+            (new SurvivorController())->autoSave();
             exit;
 
         case '/survivor/standings':

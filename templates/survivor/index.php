@@ -4,8 +4,9 @@ use WallyFootball\Support\TeamData;
 ob_start();
 $isAlive = !$isEliminated;
 $isCashEligible = (bool) $isPaid;
-$isPickLocked = !empty($currentPick);
+$isPickLocked = !empty($isPickLocked);
 $isSurvivorClosed = !empty($isSurvivorClosed);
+$hasCurrentPick = !empty($currentPick);
 $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 ?>
 
@@ -131,6 +132,46 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 </div>
             </div>
 
+        <?php elseif ($hasCurrentPick): ?>
+            <!-- Current Week Selected Pick (Saved & Editable Until First Game Kickoff) -->
+            <?php 
+            $pickedTeamAbbr = $currentPick['selected_team'];
+            $pickedTeamData = TeamData::get($pickedTeamAbbr);
+            ?>
+            <div class="survivor-pick-saved-banner p-6 rounded-2xl border shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                 style="border-color: <?= $pickedTeamData['color'] ?>; background: linear-gradient(135deg, <?= $pickedTeamData['color'] ?>28 0%, var(--picked-end) 100%);">
+                <div class="flex items-center gap-4">
+                    <img src="<?= htmlspecialchars($pickedTeamData['logo']) ?>" 
+                         alt="<?= htmlspecialchars($pickedTeamData['name']) ?>" 
+                         class="w-16 h-16 object-contain filter drop-shadow-md">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="text-[10px] font-mono text-emerald-400 font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40">
+                                ✓ Pick Auto-Saved &bull; Editable Until Kickoff
+                            </span>
+                            <?php if ($isCashEligible): ?>
+                                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                    💰 CASH CONTENDER
+                                </span>
+                            <?php else: ?>
+                                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                    🎮 FREE POOL
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <span class="text-2xl font-black text-white"><?= htmlspecialchars($pickedTeamData['name']) ?></span>
+                        <span class="text-xs text-slate-300 block mt-0.5">
+                            Auto-saved behind the scenes. You can switch to any eligible team anytime until kickoff of the first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
+                        </span>
+                    </div>
+                </div>
+                <div class="sm:text-right shrink-0">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold shadow-sm">
+                        <span>🛡️</span> Saved &bull; Editable
+                    </span>
+                </div>
+            </div>
+
         <?php elseif ($isCashEligible): ?>
             <!-- Alive & Cash Verified Banner (Pre-selection) -->
             <div class="survivor-banner-cash p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -238,7 +279,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                             <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">First Game Kickoff</span>
                         </div>
                         <span class="text-slate-400 text-[11px] block mt-0.5">
-                            You have until the week's first game kicks off to submit. <strong>Note: Selections are strictly One and Done</strong> — once confirmed, your pick cannot be modified.
+                            Selections auto-save behind the scenes as you pick! You can change your selection anytime before the week's first kickoff. Once the opening game begins, your pick locks permanently and the team is burned for the season.
                         </span>
                     </div>
                 </div>
@@ -434,13 +475,13 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                         <?php if ($isEliminated): ?>
                             <span class="text-rose-400 font-semibold">Eliminated from the season-long pool in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>.</span>
                         <?php elseif ($isPickLocked): ?>
-                            <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. Per pool rules, survivor selections are one and done and cannot be altered.</span>
+                            <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. First game kicked off at <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
                         <?php elseif ($isSurvivorClosed): ?>
                             <span class="text-rose-400 font-semibold">Survivor selections closed at kickoff of the first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
-                        <?php elseif ($isCashEligible): ?>
-                            <span class="text-emerald-400 font-semibold">Cash Prize Contender &mdash; Selections are One and Done. Deadline: First game kickoff.</span>
+                        <?php elseif ($hasCurrentPick): ?>
+                            <span class="text-emerald-400 font-semibold">Pick Auto-Saved! You can change your selection to another eligible team anytime before kickoff (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
                         <?php else: ?>
-                            <span class="text-amber-400 font-semibold">Free / Fun Pool &mdash; Selections are One and Done. Deadline: First game kickoff.</span>
+                            <span class="text-amber-400 font-semibold">Picks auto-save behind the scenes. Deadline: Kickoff of the week's first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -472,7 +513,7 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                             id="btnOpenSurvivorConfirm"
                             class="w-full sm:w-auto px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2">
                         <span>🛡️</span>
-                        <span>Lock In Week <?= htmlspecialchars((string) $week) ?> Survivor Pick</span>
+                        <span><?= $hasCurrentPick ? 'Review &amp; Confirm Survivor Pick' : "Confirm Week {$week} Survivor Pick" ?></span>
                         <?php if ($isCashEligible): ?>
                             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-400/50 text-emerald-300">
                                 $10 CASH
@@ -524,23 +565,23 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 
             <!-- Confirmation Question Prompt -->
             <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-1">
-                <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">Lock In Confirmation</span>
+                <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">Pick Confirmation</span>
                 <p class="text-sm sm:text-base text-slate-100 font-bold">
-                    Are you sure <span id="confirmTeamPromptName" class="text-amber-300 font-black">the selected team</span> is who you want to lock in for your Week <?= htmlspecialchars((string) $week) ?> Survivor pick?
+                    Are you sure you want to select <span id="confirmTeamPromptName" class="text-amber-300 font-black">the selected team</span> for your Week <?= htmlspecialchars((string) $week) ?> Survivor pick?
                 </p>
             </div>
 
-            <!-- One and Done Rule Warning -->
-            <div class="p-4 rounded-xl bg-rose-500/15 border-2 border-rose-500/50 text-xs text-rose-200 space-y-2">
-                <div class="flex items-center gap-2 text-rose-300 font-black uppercase tracking-wider text-xs">
+            <!-- One and Done Rule Notice -->
+            <div class="p-4 rounded-xl bg-amber-500/10 border-2 border-amber-500/40 text-xs text-amber-200 space-y-2">
+                <div class="flex items-center gap-2 text-amber-300 font-black uppercase tracking-wider text-xs">
                     <span class="text-base">⚠️</span>
-                    <span>One and Done Rule &bull; Irreversible Decision</span>
+                    <span>One and Done Rule &bull; Season-Long Exclusivity</span>
                 </div>
                 <p class="leading-relaxed">
-                    Once you confirm this pick, it is <strong>permanently locked in</strong> for Week <?= htmlspecialchars((string) $week) ?> and <strong>CANNOT BE CHANGED</strong> under any circumstances.
+                    You can freely change your pick to another eligible team anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
                 </p>
                 <p class="leading-relaxed text-slate-300">
-                    Additionally, you will <strong>burn</strong> this team and cannot select them again for the remainder of the season.
+                    Once the first game kicks off, your selection locks permanently, and you will <strong>burn</strong> this team (cannot pick them again for the rest of the season).
                 </p>
             </div>
 
@@ -548,8 +589,8 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
             <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-start gap-3">
                 <span class="text-base">⏱️</span>
                 <div>
-                    <strong class="text-white block mb-0.5">No Rush Before Kickoff:</strong>
-                    <span>You have until the kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>) to make your choice. If you want more time to analyze injuries or weather, click <em>Keep Deciding</em> below.</span>
+                    <strong class="text-white block mb-0.5">Editable Before Kickoff:</strong>
+                    <span>You have until the kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>) to make or modify your choice.</span>
                 </div>
             </div>
 
@@ -563,8 +604,8 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
             </button>
             <button type="button" id="btnConfirmSurvivorFinal" 
                     class="w-full sm:w-auto px-7 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2">
-                <span>🔒</span>
-                <span id="btnConfirmSurvivorFinalText">Yes, Lock In My Pick (Final)</span>
+                <span>✓</span>
+                <span id="btnConfirmSurvivorFinalText">Yes, Confirm My Pick</span>
             </button>
         </div>
 
@@ -601,13 +642,13 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 </div>
             </div>
 
-            <!-- Rule 2: One and Done (Irreversible) -->
+            <!-- Rule 2: One and Done (Editable Until Kickoff) -->
             <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="p-2 rounded-lg bg-rose-500/15 text-rose-400 font-black text-sm shrink-0">2</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">One and Done — Selections Lock Permanently</strong>
+                    <strong class="text-white text-sm block mb-0.5">One and Done &bull; Editable Until Kickoff</strong>
                     <p class="text-slate-300 leading-relaxed">
-                        Once you submit and lock in your survivor pick, <strong>it cannot be changed</strong>. You have until the kickoff of that week's first game to make your choice.
+                        Selections auto-save behind the scenes. You have until the kickoff of that week's first game to choose or change your pick. Once the opening game kicks off, picks lock permanently and that team is burned for the season.
                     </p>
                 </div>
             </div>
@@ -669,6 +710,12 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
     </div>
 </div>
 
+<!-- Silent Behind-the-Scenes Auto-Save Toast Notification -->
+<div id="survivorAutoSaveToast" class="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
+    <span class="text-sm">✓</span>
+    <span id="survivorAutoSaveToastText">Survivor Pick Auto-Saved</span>
+</div>
+
 <script>
 // Survivor Single-Selection across games and Confirmation Modal
 document.addEventListener('DOMContentLoaded', function () {
@@ -686,6 +733,54 @@ document.addEventListener('DOMContentLoaded', function () {
     const confirmTeamName = document.getElementById('confirmTeamName');
     const confirmTeamMatchup = document.getElementById('confirmTeamMatchup');
     const confirmTeamKickoff = document.getElementById('confirmTeamKickoff');
+
+    // Auto-Save Toast Notification
+    const autoSaveToast = document.getElementById('survivorAutoSaveToast');
+    const autoSaveToastText = document.getElementById('survivorAutoSaveToastText');
+    let toastTimeout = null;
+
+    function showAutoSaveToast(text) {
+        if (!autoSaveToast || !autoSaveToastText) return;
+        autoSaveToastText.textContent = text || 'Survivor Pick Auto-Saved';
+        autoSaveToast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+        autoSaveToast.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            autoSaveToast.classList.remove('opacity-100', 'translate-y-0');
+            autoSaveToast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+        }, 1800);
+    }
+
+    // Function to populate and open modal for a selected radio
+    function openConfirmModal(checkedRadio) {
+        if (!checkedRadio) return;
+        const teamAbbr = checkedRadio.value;
+        const teamName = checkedRadio.getAttribute('data-name') || teamAbbr;
+        const teamNick = checkedRadio.getAttribute('data-nick') || teamAbbr;
+        const teamLogo = checkedRadio.getAttribute('data-logo') || '';
+        const teamColor = checkedRadio.getAttribute('data-color') || '#10b981';
+        const teamMatchup = checkedRadio.getAttribute('data-matchup') || '';
+        const teamKickoff = checkedRadio.getAttribute('data-kickoff') || '';
+
+        if (confirmTeamLogo) confirmTeamLogo.src = teamLogo;
+        if (confirmTeamName) confirmTeamName.textContent = teamName;
+        const promptName = document.getElementById('confirmTeamPromptName');
+        if (promptName) promptName.textContent = teamName;
+        if (confirmTeamMatchup) confirmTeamMatchup.textContent = teamMatchup;
+        if (confirmTeamKickoff) confirmTeamKickoff.textContent = 'Kickoff: ' + teamKickoff;
+        if (confirmTeamCard) {
+            confirmTeamCard.style.borderColor = teamColor;
+            confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, var(--card-surface) 100%)`;
+        }
+        if (btnFinalConfirmText) {
+            btnFinalConfirmText.textContent = `Yes, Confirm ${teamNick} Pick`;
+        }
+
+        if (confirmModal) {
+            confirmModal.classList.remove('hidden');
+            confirmModal.classList.add('flex');
+        }
+    }
 
     // Handle card clicks
     cards.forEach(card => {
@@ -716,39 +811,25 @@ document.addEventListener('DOMContentLoaded', function () {
             const badge = this.querySelector('.survivor-badge');
             if (badge) badge.classList.remove('hidden');
 
-            // Function to populate and open modal for a selected radio
-            function openConfirmModal(checkedRadio) {
-                if (!checkedRadio) return;
-                const teamAbbr = checkedRadio.value;
-                const teamName = checkedRadio.getAttribute('data-name') || teamAbbr;
-                const teamNick = checkedRadio.getAttribute('data-nick') || teamAbbr;
-                const teamLogo = checkedRadio.getAttribute('data-logo') || '';
-                const teamColor = checkedRadio.getAttribute('data-color') || '#10b981';
-                const teamMatchup = checkedRadio.getAttribute('data-matchup') || '';
-                const teamKickoff = checkedRadio.getAttribute('data-kickoff') || '';
+            radio.checked = true;
 
-                if (confirmTeamLogo) confirmTeamLogo.src = teamLogo;
-                if (confirmTeamName) confirmTeamName.textContent = teamName;
-                const promptName = document.getElementById('confirmTeamPromptName');
-                if (promptName) promptName.textContent = teamName;
-                if (confirmTeamMatchup) confirmTeamMatchup.textContent = teamMatchup;
-                if (confirmTeamKickoff) confirmTeamKickoff.textContent = 'Kickoff: ' + teamKickoff;
-                if (confirmTeamCard) {
-                    confirmTeamCard.style.borderColor = teamColor;
-                    confirmTeamCard.style.background = `linear-gradient(135deg, ${teamColor}25 0%, var(--card-surface) 100%)`;
-                }
-                if (btnFinalConfirmText) {
-                    btnFinalConfirmText.textContent = `Yes, Lock In ${teamNick} (Final)`;
-                }
-
-                if (confirmModal) {
-                    confirmModal.classList.remove('hidden');
-                    confirmModal.classList.add('flex');
-                }
+            // Silent auto-save behind the scenes
+            const teamVal = radio.value;
+            if (teamVal) {
+                fetch('/survivor/autosave', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        season_year: <?= (int)$season ?>,
+                        week_number: <?= (int)$week ?>,
+                        selected_team: teamVal
+                    })
+                }).then(r => r.json()).then(data => {
+                    if (data && data.success) {
+                        showAutoSaveToast(teamVal + ' Pick Auto-Saved ✓');
+                    }
+                }).catch(e => console.warn('Survivor autosave notice:', e));
             }
-
-            // Immediately pop up confirmation modal upon picking a team
-            openConfirmModal(radio);
         });
     });
 
@@ -757,7 +838,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnOpenConfirm.addEventListener('click', function () {
             const checkedRadio = form.querySelector('.survivor-radio:checked');
             if (!checkedRadio) {
-                alert('Please select a team before locking in your survivor pick.');
+                alert('Please select a team before confirming your survivor pick.');
                 return;
             }
             openConfirmModal(checkedRadio);
@@ -783,7 +864,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnFinalConfirm) {
         btnFinalConfirm.addEventListener('click', function () {
             this.disabled = true;
-            this.innerHTML = '<span>🔒</span> Locking In Pick...';
+            this.innerHTML = '<span>⏳</span> Confirming Pick...';
             form.submit();
         });
     }

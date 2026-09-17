@@ -4,7 +4,9 @@ use WallyFootball\Support\TeamData;
 ob_start();
 $entryStatus = $entry['payment_status'] ?? 'none';
 $isPaid = in_array($entryStatus, ['paid', 'exempt'], true);
-$isUserLocked = !empty($entry['is_locked']);
+$isUserLocked = !empty($isWeekLocked);
+$hasConfirmedPicks = !empty($entry['is_locked']);
+$firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
 $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
@@ -184,7 +186,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <div class="flex items-center gap-2.5 flex-wrap">
                             <h2 class="text-lg font-black text-white">Your Week <?= $week ?> Picks Are Locked In!</h2>
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                                LOCKED &amp; SUBMITTED
+                                LOCKED &bull; GAME STARTED
                             </span>
                             <?php if ($isPaid): ?>
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
@@ -197,6 +199,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             <?php endif; ?>
                         </div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Picks closed at the kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
                             <?php if ($isPaid): ?>
                                 Your picks and $10.00 entry fee are verified. You are fully active in this week's prize pool!
                             <?php else: ?>
@@ -229,8 +232,61 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 <?php endif; ?>
             </div>
         </div>
+    <?php elseif ($hasConfirmedPicks): ?>
+        <!-- Confirmed & Editable Banner (Pre-Kickoff) -->
+        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-emerald-950/20 to-slate-950 border border-emerald-500/40 shadow-xl space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div class="flex items-start gap-4">
+                    <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 text-3xl border border-emerald-500/30 shrink-0">
+                        ✓
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <h2 class="text-lg font-black text-white">Your Week <?= $week ?> Picks Are Confirmed!</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
+                                CONFIRMED &bull; EDITABLE UNTIL KICKOFF
+                            </span>
+                            <?php if ($isPaid): ?>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
+                                    ✓ STAKE VERIFIED
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
+                                    AWAITING $10 PAYMENT
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                            Your ballot has been confirmed and saved! You can still change any pick or your tiebreaker score anytime before kickoff of the first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>). All changes are saved automatically behind the scenes.
+                        </p>
+                        <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/90 border border-slate-700/80 text-xs">
+                            <span class="text-slate-400">Payment Memo Note:</span>
+                            <span class="font-mono font-bold text-amber-300 select-all">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verified Payment Action Buttons -->
+                <?php if (!$isPaid): ?>
+                    <div class="flex items-center gap-2 flex-wrap shrink-0">
+                        <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008CFF]/20 hover:bg-[#008CFF]/30 border border-[#008CFF]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                            <span>📱</span> Venmo (@WallyAtkins) &rarr;
+                        </a>
+                        <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0079C1]/20 hover:bg-[#0079C1]/30 border border-[#0079C1]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                            <span>💳</span> PayPal (paypal.me/WallyAtkins) &rarr;
+                        </a>
+                        <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" 
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00D632]/20 hover:bg-[#00D632]/30 border border-[#00D632]/50 text-[#4ade80] font-bold text-xs transition shadow-sm hover:scale-105 transform">
+                            <span>⚡</span> Cash App ($WallyAtkins) &rarr;
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
     <?php else: ?>
-        <!-- Pre-Lock Reminder Banner -->
+        <!-- Pre-Lock Reminder Banner (Auto-saving Draft) -->
         <div class="prelock-banner p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/30 shadow-xl space-y-3">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-start gap-3.5">
@@ -241,11 +297,11 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-bold text-white">Weekly Pick'em Stake: $10.00</h3>
                             <span class="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                                Unlocked Draft
+                                Auto-Saving Draft
                             </span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Once saved and submitted, your picks are locked in for the week.</strong>
+                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Your selections and tiebreaker score auto-save silently behind the scenes.</strong> You can change your picks anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
                         </p>
                         <div class="mt-2 text-[11px] text-slate-400">
                             Remember to add note <span class="font-mono text-amber-300 font-bold">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span> when sending your $10 stake.
@@ -592,13 +648,21 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         <!-- Submission & Status Card (In-flow, Non-Floating) -->
         <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5">
             <div class="flex items-center gap-3 text-xs text-slate-300">
-                <span class="text-xl">🔒</span>
+                <span class="text-xl"><?= $isUserLocked ? '🔒' : ($hasConfirmedPicks ? '✓' : '💾') ?></span>
                 <?php if ($isUserLocked): ?>
-                    <span class="text-emerald-400 font-semibold text-sm">Your Week <?= $week ?> picks are locked in. Contact Commissioner Wally if you need changes before kickoff.</span>
+                    <div>
+                        <span class="text-emerald-400 font-semibold text-sm">Picks for Week <?= $week ?> are locked in.</span>
+                        <span class="text-slate-400 block text-xs">First game kicked off at <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                    </div>
+                <?php elseif ($hasConfirmedPicks): ?>
+                    <div>
+                        <span class="font-bold text-emerald-400 block text-sm mb-0.5">Week <?= $week ?> Ballot Confirmed &amp; Auto-Saved!</span>
+                        <span class="text-slate-400">All picks auto-save behind the scenes. You can adjust your picks or tiebreaker score anytime before <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                    </div>
                 <?php else: ?>
                     <div>
-                        <span class="font-bold text-white block text-sm mb-0.5">Ready to Lock In?</span>
-                        <span class="text-slate-400">Picks are permanent once submitted. You will review all selections before final confirmation.</span>
+                        <span class="font-bold text-white block text-sm mb-0.5">Picks Auto-Save As You Go</span>
+                        <span class="text-slate-400">Selections save behind the scenes. Click Review &amp; Submit whenever you're ready to confirm your ballot before <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -615,8 +679,8 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 <button type="button" 
                         id="btnReviewPicks"
                         class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/30 flex items-center justify-center gap-2 shrink-0">
-                    <span>🔍</span>
-                    <span>Review &amp; Submit Week <?= htmlspecialchars((string) $week) ?> Picks</span>
+                    <span><?= $hasConfirmedPicks ? '✏️' : '🔍' ?></span>
+                    <span><?= $hasConfirmedPicks ? "Review &amp; Re-confirm Week {$week} Picks" : "Review &amp; Submit Week {$week} Picks" ?></span>
                 </button>
             <?php endif; ?>
         </div>
@@ -639,17 +703,17 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                     </span>
                     <span class="text-xs text-slate-400">Week <?= $week ?></span>
                 </div>
-                <h3 class="text-xl font-black text-white">Review Your Picks Before Lock-In</h3>
+                <h3 class="text-xl font-black text-white">Review Your Picks</h3>
             </div>
             <button type="button" id="btnModalCloseX" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
         </div>
 
-        <!-- Warning Callout -->
-        <div class="p-4 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-300 flex items-start gap-2.5">
-            <span class="text-lg">⚠️</span>
+        <!-- Info Callout -->
+        <div class="p-4 bg-emerald-500/10 border-b border-emerald-500/20 text-xs text-emerald-300 flex items-start gap-2.5">
+            <span class="text-lg">✓</span>
             <div>
-                <strong class="font-bold">Final Submission Notice:</strong>
-                <span>Once submitted, your picks for Week <?= $week ?> will be <strong>locked in</strong> and cannot be modified. Please inspect your picks below before confirming.</span>
+                <strong class="font-bold">Ballot Confirmation:</strong>
+                <span>Confirming your picks records your official submission. You can continue to modify any pick or tiebreaker score anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).</span>
             </div>
         </div>
 
@@ -671,12 +735,12 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
             <button type="button" id="btnCancelModal" 
                     class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition">
-                ✏️ Make Changes
+                ✏️ Keep Editing
             </button>
             <button type="button" id="btnConfirmLockIn" 
                     class="w-full sm:w-auto px-7 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2">
-                <span>🔒</span>
-                <span>Confirm &amp; Lock In My Picks</span>
+                <span>✓</span>
+                <span>Confirm &amp; Submit My Picks</span>
             </button>
         </div>
 
@@ -735,13 +799,13 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 </div>
             </div>
 
-            <!-- Rule 4: Lockout & Lock-in -->
+            <!-- Rule 4: Auto-Save & Review -->
             <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                 <span class="p-2 rounded-lg bg-purple-500/15 text-purple-400 font-black text-sm shrink-0">4</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">Review, Submit &amp; Lock-In</strong>
+                    <strong class="text-white text-sm block mb-0.5">Auto-Saved As You Go &bull; Confirmed Ballot</strong>
                     <p class="text-slate-300 leading-relaxed">
-                        Select all games and enter your tiebreaker prediction. Click <strong>Review &amp; Submit</strong> to inspect your choices before locking them in. Games also individually lock at official kickoff time.
+                        Picks and tiebreaker scores are saved automatically behind the scenes! You can change your picks anytime until kickoff of the week's first game. Click <strong>Review &amp; Submit</strong> to confirm your choices whenever you're ready.
                     </p>
                 </div>
             </div>
@@ -758,6 +822,12 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
     </div>
 </div>
 
+<!-- Silent Behind-the-Scenes Auto-Save Toast Notification -->
+<div id="autoSaveToast" class="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
+    <span class="text-sm">✓</span>
+    <span id="autoSaveToastText">Saved behind the scenes</span>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('pickemForm');
@@ -772,6 +842,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const mnfContainer = document.getElementById('mnfTiebreakerContainer');
     const reviewPicksList = document.getElementById('reviewPicksList');
     const reviewMnfPoints = document.getElementById('reviewMnfPoints');
+
+    // Auto-Save Toast Notification
+    const autoSaveToast = document.getElementById('autoSaveToast');
+    const autoSaveToastText = document.getElementById('autoSaveToastText');
+    let toastTimeout = null;
+
+    function showAutoSaveBadge(text) {
+        if (!autoSaveToast || !autoSaveToastText) return;
+        autoSaveToastText.textContent = text || 'Saved behind the scenes';
+        autoSaveToast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+        autoSaveToast.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            autoSaveToast.classList.remove('opacity-100', 'translate-y-0');
+            autoSaveToast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+        }, 1800);
+    }
 
     // How It Works Modal elements
     const howItWorksModal = document.getElementById('howItWorksModal');
@@ -802,7 +889,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 1. Dynamic selection & radio button handling
+    // 1. Dynamic selection & radio button handling + silent autosave
     const matchups = document.querySelectorAll('.matchup-card');
     matchups.forEach(card => {
         const labels = card.querySelectorAll('.team-card');
@@ -846,9 +933,49 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Remove red error highlight if present
                 card.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
                 if (validationAlert) validationAlert.classList.add('hidden');
+
+                // Silent auto-save behind the scenes
+                const gameId = card.getAttribute('data-game-id');
+                const teamVal = radio.value;
+                if (gameId && teamVal) {
+                    fetch('/pickem/autosave', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            season_year: <?= (int) $season ?>,
+                            week_number: <?= (int) $week ?>,
+                            game_id: parseInt(gameId, 10),
+                            selected_team: teamVal
+                        })
+                    }).then(r => r.json()).then(data => {
+                        if (data && data.success) {
+                            showAutoSaveBadge(teamVal + ' Pick Saved ✓');
+                        }
+                    }).catch(e => console.warn('Autosave notice:', e));
+                }
             });
         });
     });
+
+    // 2. Debounced auto-save for Tiebreaker input
+    let mnfSaveTimer = null;
+    function autoSaveTiebreaker() {
+        if (!mnfInput) return;
+        const val = mnfInput.value.trim();
+        fetch('/pickem/autosave', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                season_year: <?= (int) $season ?>,
+                week_number: <?= (int) $week ?>,
+                mnf_total_points: val !== '' ? parseInt(val, 10) : null
+            })
+        }).then(r => r.json()).then(data => {
+            if (data && data.success) {
+                showAutoSaveBadge('Tiebreaker Saved (' + (val !== '' ? val : '0') + ' pts) ✓');
+            }
+        }).catch(e => console.warn('Tiebreaker autosave notice:', e));
+    }
 
     if (mnfInput) {
         mnfInput.addEventListener('input', function () {
@@ -856,10 +983,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 mnfContainer.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
                 if (validationAlert) validationAlert.classList.add('hidden');
             }
+            clearTimeout(mnfSaveTimer);
+            mnfSaveTimer = setTimeout(autoSaveTiebreaker, 600);
         });
+        mnfInput.addEventListener('change', autoSaveTiebreaker);
     }
 
-    // 2. Client-side Validation & Review modal trigger
+    // 3. Client-side Validation & Review modal trigger
     if (reviewBtn) {
         reviewBtn.addEventListener('click', function (e) {
             e.preventDefault();
@@ -964,11 +1094,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
     if (btnModalCloseX) btnModalCloseX.addEventListener('click', closeModal);
 
-    // Confirm & Lock In Submit
+    // Confirm & Submit
     if (btnConfirmLockIn) {
         btnConfirmLockIn.addEventListener('click', function () {
             btnConfirmLockIn.disabled = true;
-            btnConfirmLockIn.innerHTML = '<span>⏳</span> Submitting &amp; Locking...';
+            btnConfirmLockIn.innerHTML = '<span>⏳</span> Submitting Ballot...';
             form.submit();
         });
     }

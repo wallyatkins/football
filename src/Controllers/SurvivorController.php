@@ -133,8 +133,8 @@ class SurvivorController
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
 
-        $isPickLocked = !empty($currentPick);
-        $isSurvivorClosed = $isFirstGameStarted && empty($currentPick);
+        $isPickLocked = !empty($currentPick) && $isFirstGameStarted;
+        $isSurvivorClosed = $isFirstGameStarted;
 
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';
@@ -142,6 +142,116 @@ class SurvivorController
 
         $title = "Week {$week} Survivor — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/survivor/index.php';
+    }
+
+    public function autoSave(): void
+    {
+        header('Content-Type: application/json');
+
+        if (empty($_SESSION['user']['id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Please log in to save your survivor pick.']);
+            exit;
+        }
+        $user = $_SESSION['user'];
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = $_POST;
+        }
+
+        $season = (int) ($input['season_year'] ?? date('Y'));
+        $week = (int) ($input['week_number'] ?? 1);
+        $selectedTeam = strtoupper(trim((string) ($input['selected_team'] ?? '')));
+
+        if (!$selectedTeam) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No team selected.']);
+            exit;
+        }
+
+        $firstGame = $this->db->queryOne(
+            'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+        $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
+        if ($firstKickoff !== null && time() >= $firstKickoff) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "Survivor picks for Week {$week} are locked (first game kickoff has passed)."]);
+            exit;
+        }
+
+        // Initialize survivor entry if needed
+        $survivorEntry = $this->db->queryOne(
+            'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        if (!$survivorEntry) {
+            $this->db->execute(
+                "INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+                 VALUES (:uid, :season, 'unpaid', 0)",
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            $isPaid = false;
+        } else {
+            $isPaid = in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true);
+        }
+
+        // Check elimination
+        if (!empty($survivorEntry['is_eliminated'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "You have been eliminated from this season's Survivor pool."]);
+            exit;
+        }
+
+        // Check if previously used in another week
+        $previouslyUsed = $this->db->queryOne(
+            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND selected_team = :team AND week_number != :week',
+            ['uid' => $user['id'], 'season' => $season, 'team' => $selectedTeam, 'week' => $week]
+        );
+        if ($previouslyUsed) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "You already used {$selectedTeam} in Week {$previouslyUsed['week_number']}!"]);
+            exit;
+        }
+
+        // Check if game exists in week
+        $game = $this->db->queryOne(
+            'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week AND (home_team = :team OR away_team = :team)',
+            ['season' => $season, 'week' => $week, 'team' => $selectedTeam]
+        );
+        if (!$game) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "Game not found for {$selectedTeam} in Week {$week}."]);
+            exit;
+        }
+
+        $existing = $this->db->queryOne(
+            'SELECT id FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND week_number = :week',
+            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
+        );
+
+        $paymentStatus = $isPaid ? 'paid' : 'unpaid';
+        if ($existing) {
+            $this->db->execute(
+                'UPDATE survivor_picks SET selected_team = :team, created_at = CURRENT_TIMESTAMP WHERE id = :id',
+                ['team' => $selectedTeam, 'id' => $existing['id']]
+            );
+        } else {
+            $this->db->execute(
+                "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+                 VALUES (:uid, :season, :week, :team, 0, :ps)",
+                ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam, 'ps' => $paymentStatus]
+            );
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Survivor pick for Week {$week} saved as {$selectedTeam}",
+            'selected_team' => $selectedTeam,
+            'week_number' => $week,
+        ]);
+        exit;
     }
 
     public function save(): void
@@ -158,32 +268,23 @@ class SurvivorController
             exit;
         }
 
-        // 1. One and Done Rule: Verify user does not already have a locked pick for this week
-        $existing = $this->db->queryOne(
-            'SELECT id, selected_team FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND week_number = :week',
-            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
-        );
-        if ($existing) {
-            $_SESSION['error'] = "Your Survivor pick of {$existing['selected_team']} for Week {$week} is already locked in and cannot be changed (One and Done rule).";
-            header("Location: /survivor?week={$week}&season={$season}");
-            exit;
-        }
-
-        // 2. First-game deadline rule: Verify first game of the week has not kicked off yet
+        // 1. First-game deadline rule: Verify first game of the week has not kicked off yet
         $firstGame = $this->db->queryOne(
             'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
             ['season' => $season, 'week' => $week]
         );
-        if ($firstGame && !empty($firstGame['first_kickoff']) && time() >= strtotime($firstGame['first_kickoff'])) {
-            $firstKickoffFormatted = (new \DateTimeImmutable($firstGame['first_kickoff']))
-                ->setTimezone(new \DateTimeZone('America/New_York'))
-                ->format('D, M j @ g:i A T');
+        $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
+        $firstKickoffFormatted = $firstKickoff
+            ? (new \DateTimeImmutable("@{$firstKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Kickoff of Week ' . $week;
+
+        if ($firstKickoff !== null && time() >= $firstKickoff) {
             $_SESSION['error'] = "Survivor selections for Week {$week} closed at the kickoff of the week's first game ({$firstKickoffFormatted}).";
             header("Location: /survivor?week={$week}&season={$season}");
             exit;
         }
 
-        // 3. Get or initialize survivor entry
+        // 2. Get or initialize survivor entry
         $survivorEntry = $this->db->queryOne(
             'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
             ['uid' => $user['id'], 'season' => $season]
@@ -200,7 +301,7 @@ class SurvivorController
             $isPaid = in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true);
         }
 
-        // 4. Verify user is not already eliminated
+        // 3. Verify user is not already eliminated
         $entryRevived = ($survivorEntry && isset($survivorEntry['is_eliminated']) && (int) $survivorEntry['is_eliminated'] === 0);
         if (!$entryRevived) {
             $eliminated = $this->db->queryOne(
@@ -214,7 +315,7 @@ class SurvivorController
             }
         }
 
-        // 5. Verify team has NOT been used in an earlier week
+        // 4. Verify team has NOT been used in an earlier week (One and Done rule across weeks)
         $previouslyUsed = $this->db->queryOne(
             'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND selected_team = :team AND week_number != :week',
             ['uid' => $user['id'], 'season' => $season, 'team' => $selectedTeam, 'week' => $week]
@@ -225,25 +326,40 @@ class SurvivorController
             exit;
         }
 
-        // 6. Verify chosen game has not kicked off yet
+        // 5. Verify chosen game exists in this week
         $game = $this->db->queryOne(
             'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week AND (home_team = :team OR away_team = :team)',
             ['season' => $season, 'week' => $week, 'team' => $selectedTeam]
         );
 
-        if (!$game || strtotime($game['kickoff_time']) <= time()) {
-            $_SESSION['error'] = "The game featuring {$selectedTeam} has already started or is locked.";
+        if (!$game) {
+            $_SESSION['error'] = "The game featuring {$selectedTeam} was not found for Week {$week}.";
             header("Location: /survivor?week={$week}&season={$season}");
             exit;
         }
 
-        // 7. Insert pick (One and Done: INSERT only, never update)
-        $paymentStatus = $isPaid ? 'paid' : 'unpaid';
-        $this->db->execute(
-            "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
-             VALUES (:uid, :season, :week, :team, 0, :ps)",
-            ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam, 'ps' => $paymentStatus]
+        // 6. Check existing pick for this week (Allow modifying pick before first kickoff!)
+        $existing = $this->db->queryOne(
+            'SELECT id, selected_team FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND week_number = :week',
+            ['uid' => $user['id'], 'season' => $season, 'week' => $week]
         );
+
+        $paymentStatus = $isPaid ? 'paid' : 'unpaid';
+
+        if ($existing) {
+            $this->db->execute(
+                'UPDATE survivor_picks SET selected_team = :team, created_at = CURRENT_TIMESTAMP WHERE id = :id',
+                ['team' => $selectedTeam, 'id' => $existing['id']]
+            );
+            $actionWord = 'updated to';
+        } else {
+            $this->db->execute(
+                "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+                 VALUES (:uid, :season, :week, :team, 0, :ps)",
+                ['uid' => $user['id'], 'season' => $season, 'week' => $week, 'team' => $selectedTeam, 'ps' => $paymentStatus]
+            );
+            $actionWord = 'locked in as';
+        }
 
         try {
             $this->notifier->notifySurvivorPickSubmitted(
@@ -256,11 +372,7 @@ class SurvivorController
             // Notification failures should never disrupt player experience
         }
 
-        if ($isPaid) {
-            $_SESSION['flash'] = "Your Survivor pick of {$selectedTeam} for Week {$week} is locked in! (Cash Prize Pool 🟢 — One and Done)";
-        } else {
-            $_SESSION['flash'] = "Your Survivor pick of {$selectedTeam} for Week {$week} is locked in! (Playing For Fun 🎮 — One and Done — Send $10 to Wally to enter Cash Pot)";
-        }
+        $_SESSION['flash'] = "✅ Your Survivor pick for Week {$week} has been {$actionWord} {$selectedTeam}! You can adjust your pick anytime until kickoff of the first game ({$firstKickoffFormatted}).";
         header("Location: /survivor?week={$week}&season={$season}");
         exit;
     }
