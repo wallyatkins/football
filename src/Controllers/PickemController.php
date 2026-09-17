@@ -538,13 +538,10 @@ class PickemController
         }
         $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
-        // Core Rule: Other users can see opponent picks once the first game has started,
-        // unless they have not put in their picks yet.
-        $canViewOpponentPicks = ($firstGameStarted && $viewerHasSubmitted) || $isCommissioner;
-        // For past/completed weeks, always allow viewing all picks
-        if ($isWeekComplete) {
-            $canViewOpponentPicks = true;
-        }
+        // Core Rule: Participant picks remain confidential until the first game kicks off.
+        // Once the opening game starts, users who have submitted their picks (or the commissioner)
+        // can view opponent picks. For past/completed weeks, picks are always visible.
+        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
 
         // Fetch picks mapped by entry_id
         $picksByEntryId = [];

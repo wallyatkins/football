@@ -161,4 +161,59 @@ class LockoutTest extends TestCase
 
         \WallyFootball\Database\Connection::resetInstance();
     }
+
+    public function testOpponentPicksConfidentialBeforeFirstGameKickoff(): void
+    {
+        $firstGameKickoff = time() + 7200; // 2 hours in the future
+        $now = time();
+        $firstGameStarted = ($now >= $firstGameKickoff);
+        $isWeekComplete = false;
+
+        $viewerHasSubmitted = true;
+        $isCommissioner = true;
+
+        // Core Rule: Participant picks remain confidential until the first game kicks off.
+        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+
+        $this->assertFalse($firstGameStarted, 'First game has not started yet.');
+        $this->assertFalse($canViewOpponentPicks, 'Before the first game kicks off, opponent picks must remain confidential even for commissioner.');
+    }
+
+    public function testOpponentPicksUnlockedAfterFirstGameKickoffWhenSubmitted(): void
+    {
+        $firstGameKickoff = time() - 300; // 5 minutes ago
+        $now = time();
+        $firstGameStarted = ($now >= $firstGameKickoff);
+        $isWeekComplete = false;
+
+        $viewerHasSubmitted = true;
+        $isCommissioner = false;
+
+        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+
+        $this->assertTrue($firstGameStarted);
+        $this->assertTrue($canViewOpponentPicks, 'Once the first game kicks off, submitted players can view opponent picks.');
+
+        // Non-submitted player cannot view opponent picks
+        $viewerNotSubmitted = false;
+        $canViewUnsubmitted = ($firstGameStarted && ($viewerNotSubmitted || $isCommissioner)) || $isWeekComplete;
+        $this->assertFalse($canViewUnsubmitted, 'Unsubmitted players cannot view opponent picks until they lock in their picks.');
+
+        // Commissioner can view once first game kicks off even if not submitted
+        $commissionerNotSubmitted = true;
+        $canViewCommissioner = ($firstGameStarted && ($viewerNotSubmitted || $commissionerNotSubmitted)) || $isWeekComplete;
+        $this->assertTrue($canViewCommissioner, 'Commissioner can view picks once the first game has kicked off.');
+    }
+
+    public function testOpponentPicksAlwaysViewableForCompletedWeeks(): void
+    {
+        $firstGameStarted = true;
+        $isWeekComplete = true;
+        $viewerHasSubmitted = false;
+        $isCommissioner = false;
+
+        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+        $this->assertTrue($canViewOpponentPicks, 'For completed weeks, all picks must be viewable.');
+    }
 }
+

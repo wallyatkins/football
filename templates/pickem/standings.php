@@ -188,8 +188,8 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
             <div class="flex items-center gap-2.5">
                 <span class="text-xl">🔓</span>
                 <div>
-                    <strong class="text-emerald-300 text-sm block font-bold">Opponent Picks Unlocked!</strong>
-                    <span>The opening game has kicked off and your picks are locked in. You can now inspect all participant selections below or open the full league matrix.</span>
+                    <strong class="text-emerald-300 text-sm block font-bold"><?= $isWeekComplete ? 'Final Week Standings & Picks' : 'Opponent Picks Unlocked!' ?></strong>
+                    <span><?= $isWeekComplete ? 'All games for Week ' . $week . ' are final. Inspect all participant selections and results below or open the full league matrix.' : 'The opening game has kicked off and your picks are locked in. You can now inspect all participant selections below or open the full league matrix.' ?></span>
                 </div>
             </div>
             <button type="button" onclick="openPicksMatrixModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow shrink-0 flex items-center gap-1.5">
@@ -311,7 +311,7 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
                                         <span class="text-[10px] text-slate-400 font-mono">(<?= $row['total_picks'] ?>)</span>
                                     </button>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-slate-500 text-xs font-mono" title="Picks unlock once you lock in your picks">
+                                    <span class="inline-flex items-center gap-1 text-slate-500 text-xs font-mono" title="<?= $firstGameStarted ? 'Lock in your picks to reveal opponent picks' : 'Picks remain confidential until kickoff' ?>">
                                         <span>🔒</span> Hidden
                                     </span>
                                 <?php endif; ?>
