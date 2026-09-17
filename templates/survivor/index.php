@@ -8,6 +8,13 @@ $isPickLocked = !empty($isPickLocked);
 $isSurvivorClosed = !empty($isSurvivorClosed);
 $hasCurrentPick = !empty($currentPick);
 $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
+
+$usedPicksByTeam = [];
+if (!empty($usedPicks)) {
+    foreach ($usedPicks as $up) {
+        $usedPicksByTeam[$up['selected_team']] = (int) $up['week_number'];
+    }
+}
 ?>
 
 <div class="space-y-6">
@@ -188,15 +195,17 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                         <p class="text-xs text-slate-400 mt-0.5">Your $10 entry stake is verified by Commissioner Wally. Pick 1 winner below to stay alive!</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-xs font-mono uppercase tracking-wider text-slate-400">Burned Teams:</span>
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                    <span class="font-mono uppercase tracking-wider text-slate-400">Burned:</span>
                     <?php if (empty($usedTeams)): ?>
-                        <span class="text-xs text-slate-500 italic">None yet (all 32 teams open)</span>
+                        <span class="text-slate-500 italic">0 of 32 (all open)</span>
                     <?php else: ?>
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <?php foreach ($usedTeams as $ut): ?>
-                                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-rose-400 border border-rose-900/40 line-through">
-                                    <?= htmlspecialchars($ut) ?>
+                                <?php $utData = TeamData::get($ut); ?>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-950 text-rose-300 border border-rose-500/40 shadow-sm" title="Burned: <?= htmlspecialchars($utData['name']) ?>">
+                                    <img src="<?= htmlspecialchars($utData['logo']) ?>" alt="<?= htmlspecialchars($utData['name']) ?>" class="w-3.5 h-3.5 object-contain">
+                                    <span class="line-through"><?= htmlspecialchars($utData['nick']) ?></span>
                                 </span>
                             <?php endforeach; ?>
                         </div>
@@ -258,8 +267,10 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                     <?php else: ?>
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <?php foreach ($usedTeams as $ut): ?>
-                                <span class="font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-rose-400 border border-rose-900/40 line-through">
-                                    <?= htmlspecialchars($ut) ?>
+                                <?php $utData = TeamData::get($ut); ?>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-950 text-rose-300 border border-rose-500/40 shadow-sm" title="Burned: <?= htmlspecialchars($utData['name']) ?>">
+                                    <img src="<?= htmlspecialchars($utData['logo']) ?>" alt="<?= htmlspecialchars($utData['name']) ?>" class="w-3.5 h-3.5 object-contain">
+                                    <span class="line-through"><?= htmlspecialchars($utData['nick']) ?></span>
                                 </span>
                             <?php endforeach; ?>
                         </div>
@@ -267,6 +278,57 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                 </div>
             </div>
         <?php endif; ?>
+
+        <!-- Burned Teams Showcase Bar (With Official Team Logos) -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 shadow-xl space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-2 rounded-xl bg-rose-500/15 text-rose-400 text-lg border border-rose-500/30 shrink-0">🔥</span>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-sm font-bold text-white">Your Burned Teams (One &amp; Done)</h3>
+                            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full <?= empty($usedTeams) ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30' ?>">
+                                <?= count($usedTeams) ?> of 32 Used
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Each NFL team can only be selected once per season. Burned teams cannot be picked again.</p>
+                    </div>
+                </div>
+                <div class="text-xs font-mono text-slate-400 shrink-0">
+                    <span class="text-emerald-400 font-bold"><?= 32 - count($usedTeams) ?></span> teams available
+                </div>
+            </div>
+
+            <div>
+                <?php if (empty($usedTeams)): ?>
+                    <div class="flex items-center gap-2 text-xs text-slate-500 italic py-1">
+                        <span>🛡️</span>
+                        <span>No teams burned yet &mdash; all 32 NFL teams are available for your Week <?= htmlspecialchars((string) $week) ?> selection!</span>
+                    </div>
+                <?php else: ?>
+                    <div class="flex items-center gap-2.5 flex-wrap pt-1">
+                        <?php foreach ($usedTeams as $ut): ?>
+                            <?php 
+                            $utData = TeamData::get($ut);
+                            $utWeek = $usedPicksByTeam[$ut] ?? null;
+                            ?>
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-rose-500/40 text-xs shadow-md group hover:border-rose-500/70 transition" title="Burned in Week <?= $utWeek ?? 'earlier' ?>: <?= htmlspecialchars($utData['name']) ?>">
+                                <?php if ($utWeek !== null): ?>
+                                    <span class="text-[10px] font-mono font-bold text-slate-400">Wk <?= $utWeek ?>:</span>
+                                <?php endif; ?>
+                                <img src="<?= htmlspecialchars($utData['logo']) ?>" 
+                                     alt="<?= htmlspecialchars($utData['name']) ?>" 
+                                     class="w-5 h-5 object-contain filter drop-shadow-sm group-hover:scale-110 transition-transform">
+                                <span class="font-bold text-white"><?= htmlspecialchars($utData['nick']) ?></span>
+                                <span class="text-[9px] font-mono font-black px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
+                                    Burned
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
 
         <!-- Selection Deadline & One-and-Done Notice (When open for selection) -->
         <?php if (!$isPickLocked && !$isSurvivorClosed && !$isEliminated): ?>
@@ -321,13 +383,20 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
 
                     $matchupTitle = "{$awayTeam['name']} @ {$homeTeam['name']}";
                     ?>
-                    <div class="matchup-card rounded-2xl border border-slate-800/80 bg-slate-900/80 overflow-hidden shadow-xl">
-                        <!-- Game Row Header -->
-                        <div class="matchup-header-bar flex items-center justify-between px-5 py-3 bg-slate-950/80 border-b border-slate-800/80 text-xs">
-                            <div class="flex items-center gap-2.5">
-                                <span class="font-mono text-[11px] text-slate-400 font-semibold"><?= htmlspecialchars($kickoffEt) ?></span>
-                                <span class="text-slate-600">&bull;</span>
-                                <span class="text-slate-400 text-xs font-semibold"><?= htmlspecialchars($matchupTitle) ?></span>
+                    <div class="matchup-card rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg border-slate-800 bg-slate-900"
+                         data-game-id="<?= $game['id'] ?>"
+                         data-unlocked="<?= (!$awayDisabled || !$homeDisabled) ? 'true' : 'false' ?>"
+                         data-away-abbr="<?= htmlspecialchars($awayAbbr) ?>"
+                         data-away-name="<?= htmlspecialchars($awayTeam['name']) ?>"
+                         data-home-abbr="<?= htmlspecialchars($homeAbbr) ?>"
+                         data-home-name="<?= htmlspecialchars($homeTeam['name']) ?>">
+                        
+                        <!-- Matchup Broadcast Header -->
+                        <div class="matchup-header-bar flex items-center justify-between px-4 py-2.5 bg-slate-950 border-b border-slate-800 text-xs">
+                            <div class="flex items-center gap-2 text-slate-400">
+                                <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
+                                <span class="text-slate-600 hidden sm:inline">&bull;</span>
+                                <span class="text-slate-400 text-xs font-semibold hidden sm:inline"><?= htmlspecialchars($matchupTitle) ?></span>
                             </div>
                             <div>
                                 <?php if ($isLocked): ?>
@@ -340,128 +409,176 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                             </div>
                         </div>
 
-                        <!-- Matchup Row Teams (Side by Side in this Row) -->
-                        <div class="p-4 grid grid-cols-2 gap-4" data-game-id="<?= $game['id'] ?>">
-                            
-                            <!-- Away Team -->
-                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none <?= $awayPicked ? 'is-picked' : '' ?>
-                                <?= $awayDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                                style="<?= $awayPicked ? "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>"
-                                data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
-                                data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
-                                data-nick="<?= htmlspecialchars($awayTeam['nick']) ?>"
-                                data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
-                                data-color="<?= htmlspecialchars($awayColor) ?>"
-                                data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
-                                data-kickoff="<?= htmlspecialchars($kickoffEt) ?>">
+                        <!-- Teams Selection Grid -->
+                        <div class="p-3.5 relative">
+                            <div class="grid grid-cols-2 gap-3.5">
                                 
-                                <input type="radio" 
-                                       name="selected_team" 
-                                       value="<?= htmlspecialchars($awayAbbr) ?>" 
-                                       class="sr-only survivor-radio"
-                                       data-color="<?= htmlspecialchars($awayColor) ?>"
-                                       data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
-                                       data-nick="<?= htmlspecialchars($awayTeam['nick']) ?>"
-                                       data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
-                                       data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
-                                       data-kickoff="<?= htmlspecialchars($kickoffEt) ?>"
-                                       <?= $awayPicked ? 'checked' : '' ?>
-                                       <?= $awayDisabled ? 'disabled' : '' ?>>
+                                <!-- Away Team Card -->
+                                <?php
+                                $awayCardStyle = "";
+                                if ($awayUsed) {
+                                    $awayCardStyle = "border-color: #4c0519; background-color: #181116;";
+                                } elseif ($awayPicked) {
+                                    $awayCardStyle = "border-color: {$awayColor}; background: linear-gradient(135deg, {$awayColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$awayColor}44;";
+                                } else {
+                                    $awayCardStyle = "border-color: var(--card-surface-border); background-color: var(--card-surface);";
+                                }
+                                ?>
+                                <label class="team-card survivor-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $awayPicked ? 'is-picked' : '' ?>
+                                    <?= $awayDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                                    style="<?= $awayCardStyle ?>"
+                                    data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
+                                    data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
+                                    data-nick="<?= htmlspecialchars($awayTeam['nick']) ?>"
+                                    data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
+                                    data-color="<?= htmlspecialchars($awayColor) ?>"
+                                    data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
+                                    data-kickoff="<?= htmlspecialchars($kickoffEt) ?>">
+                                    
+                                    <!-- Team Color Top Accent Stripe -->
+                                    <div class="absolute top-0 left-0 right-0 h-1.5 <?= $awayUsed ? 'opacity-30' : '' ?>" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
 
-                                <div class="w-full flex items-center justify-between mb-1">
-                                    <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Away</span>
+                                    <input type="radio" 
+                                           name="selected_team" 
+                                           value="<?= htmlspecialchars($awayAbbr) ?>" 
+                                           class="sr-only survivor-radio"
+                                           data-abbr="<?= htmlspecialchars($awayAbbr) ?>"
+                                           data-color="<?= htmlspecialchars($awayColor) ?>"
+                                           data-name="<?= htmlspecialchars($awayTeam['name']) ?>"
+                                           data-nick="<?= htmlspecialchars($awayTeam['nick']) ?>"
+                                           data-logo="<?= htmlspecialchars($awayTeam['logo']) ?>"
+                                           data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
+                                           data-kickoff="<?= htmlspecialchars($kickoffEt) ?>"
+                                           <?= $awayPicked ? 'checked' : '' ?>
+                                           <?= $awayDisabled ? 'disabled' : '' ?>>
+
+                                    <!-- Burned Badge (if team was used in prior week) -->
                                     <?php if ($awayUsed): ?>
-                                        <span class="text-[10px] font-bold text-rose-400 font-mono">BURNED</span>
+                                        <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-rose-500/25 border border-rose-500/50 text-rose-300 font-mono font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                            <span>🔥</span>
+                                            <span>BURNED</span>
+                                        </div>
+                                    <?php else: ?>
+                                        <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
+                                        <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $awayPicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                            🛡️
+                                        </div>
                                     <?php endif; ?>
-                                </div>
 
-                                <div class="my-2 h-16 flex items-center justify-center">
-                                    <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
-                                         alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
-                                         class="w-14 h-14 object-contain filter drop-shadow-md"
-                                         loading="lazy">
-                                </div>
+                                    <!-- Official ESPN Logo -->
+                                    <div class="my-2 h-16 flex items-center justify-center">
+                                        <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
+                                             alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
+                                             class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 <?= $awayUsed ? 'grayscale opacity-50' : 'group-hover:scale-110' ?>"
+                                             loading="lazy">
+                                    </div>
 
-                                <div class="text-center w-full mt-1">
-                                    <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block truncate">
-                                        <?= htmlspecialchars($awayTeam['name']) ?>
-                                    </span>
-                                    <span class="text-base font-black tracking-tight text-white block leading-tight">
-                                        <?= htmlspecialchars($awayTeam['nick']) ?>
-                                    </span>
-                                    <span class="text-xs font-mono font-bold text-slate-500">
-                                        <?= htmlspecialchars($awayAbbr) ?>
-                                    </span>
-                                </div>
+                                    <!-- Single-line Team Name & Subtitle if Burned -->
+                                    <div class="text-center w-full mt-2">
+                                        <span class="text-sm sm:text-base font-bold <?= $awayUsed ? 'text-slate-400 line-through' : 'text-white' ?> block truncate">
+                                            <?= htmlspecialchars($awayTeam['name']) ?>
+                                        </span>
+                                        <?php if ($awayUsed): ?>
+                                            <span class="text-[10px] font-mono font-bold text-rose-400 block mt-0.5">
+                                                Already Used (Burned)
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </label>
 
-                                <div class="survivor-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $awayPicked ? 'block' : 'hidden' ?>">
-                                    <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isPickLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
-                                        <span><?= $isPickLocked ? '🔒' : '🛡️' ?></span>
-                                        <span><?= $isPickLocked ? 'LOCKED IN (ONE &amp; DONE)' : 'SURVIVOR PICK' ?></span>
-                                    </span>
-                                </div>
-                            </label>
+                                <!-- Home Team Card -->
+                                <?php
+                                $homeCardStyle = "";
+                                if ($homeUsed) {
+                                    $homeCardStyle = "border-color: #4c0519; background-color: #181116;";
+                                } elseif ($homePicked) {
+                                    $homeCardStyle = "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}44;";
+                                } else {
+                                    $homeCardStyle = "border-color: var(--card-surface-border); background-color: var(--card-surface);";
+                                }
+                                ?>
+                                <label class="team-card survivor-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $homePicked ? 'is-picked' : '' ?>
+                                    <?= $homeDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                                    style="<?= $homeCardStyle ?>"
+                                    data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
+                                    data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
+                                    data-nick="<?= htmlspecialchars($homeTeam['nick']) ?>"
+                                    data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
+                                    data-color="<?= htmlspecialchars($homeColor) ?>"
+                                    data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
+                                    data-kickoff="<?= htmlspecialchars($kickoffEt) ?>">
+                                    
+                                    <!-- Team Color Top Accent Stripe -->
+                                    <div class="absolute top-0 left-0 right-0 h-1.5 <?= $homeUsed ? 'opacity-30' : '' ?>" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
 
-                            <!-- Home Team -->
-                            <label class="survivor-card relative flex flex-col items-center justify-between p-4 rounded-xl border-2 transition-all select-none <?= $homePicked ? 'is-picked' : '' ?>
-                                <?= $homeDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02]' ?>"
-                                style="<?= $homePicked ? "border-color: {$homeColor}; background: linear-gradient(135deg, {$homeColor}28 0%, var(--picked-end) 100%); box-shadow: 0 0 22px {$homeColor}40;" : "border-color: var(--card-surface-border); background: var(--card-surface);" ?>"
-                                data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
-                                data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
-                                data-nick="<?= htmlspecialchars($homeTeam['nick']) ?>"
-                                data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
-                                data-color="<?= htmlspecialchars($homeColor) ?>"
-                                data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
-                                data-kickoff="<?= htmlspecialchars($kickoffEt) ?>">
-                                
-                                <input type="radio" 
-                                       name="selected_team" 
-                                       value="<?= htmlspecialchars($homeAbbr) ?>" 
-                                       class="sr-only survivor-radio"
-                                       data-color="<?= htmlspecialchars($homeColor) ?>"
-                                       data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
-                                       data-nick="<?= htmlspecialchars($homeTeam['nick']) ?>"
-                                       data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
-                                       data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
-                                       data-kickoff="<?= htmlspecialchars($kickoffEt) ?>"
-                                       <?= $homePicked ? 'checked' : '' ?>
-                                       <?= $homeDisabled ? 'disabled' : '' ?>>
+                                    <input type="radio" 
+                                           name="selected_team" 
+                                           value="<?= htmlspecialchars($homeAbbr) ?>" 
+                                           class="sr-only survivor-radio"
+                                           data-abbr="<?= htmlspecialchars($homeAbbr) ?>"
+                                           data-color="<?= htmlspecialchars($homeColor) ?>"
+                                           data-name="<?= htmlspecialchars($homeTeam['name']) ?>"
+                                           data-nick="<?= htmlspecialchars($homeTeam['nick']) ?>"
+                                           data-logo="<?= htmlspecialchars($homeTeam['logo']) ?>"
+                                           data-matchup="<?= htmlspecialchars($matchupTitle) ?>"
+                                           data-kickoff="<?= htmlspecialchars($kickoffEt) ?>"
+                                           <?= $homePicked ? 'checked' : '' ?>
+                                           <?= $homeDisabled ? 'disabled' : '' ?>>
 
-                                <div class="w-full flex items-center justify-between mb-1">
-                                    <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">Home</span>
+                                    <!-- Burned Badge (if team was used in prior week) -->
                                     <?php if ($homeUsed): ?>
-                                        <span class="text-[10px] font-bold text-rose-400 font-mono">BURNED</span>
+                                        <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-rose-500/25 border border-rose-500/50 text-rose-300 font-mono font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                            <span>🔥</span>
+                                            <span>BURNED</span>
+                                        </div>
+                                    <?php else: ?>
+                                        <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
+                                        <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $homePicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                            🛡️
+                                        </div>
                                     <?php endif; ?>
-                                </div>
 
-                                <div class="my-2 h-16 flex items-center justify-center">
-                                    <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
-                                         alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
-                                         class="w-14 h-14 object-contain filter drop-shadow-md"
-                                         loading="lazy">
-                                </div>
+                                    <!-- Official ESPN Logo -->
+                                    <div class="my-2 h-16 flex items-center justify-center">
+                                        <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
+                                             alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
+                                             class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 <?= $homeUsed ? 'grayscale opacity-50' : 'group-hover:scale-110' ?>"
+                                             loading="lazy">
+                                    </div>
 
-                                <div class="text-center w-full mt-1">
-                                    <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block truncate">
-                                        <?= htmlspecialchars($homeTeam['name']) ?>
-                                    </span>
-                                    <span class="text-base font-black tracking-tight text-white block leading-tight">
-                                        <?= htmlspecialchars($homeTeam['nick']) ?>
-                                    </span>
-                                    <span class="text-xs font-mono font-bold text-slate-500">
-                                        <?= htmlspecialchars($homeAbbr) ?>
-                                    </span>
-                                </div>
+                                    <!-- Single-line Team Name & Subtitle if Burned -->
+                                    <div class="text-center w-full mt-2">
+                                        <span class="text-sm sm:text-base font-bold <?= $homeUsed ? 'text-slate-400 line-through' : 'text-white' ?> block truncate">
+                                            <?= htmlspecialchars($homeTeam['name']) ?>
+                                        </span>
+                                        <?php if ($homeUsed): ?>
+                                            <span class="text-[10px] font-mono font-bold text-rose-400 block mt-0.5">
+                                                Already Used (Burned)
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </label>
 
-                                <div class="survivor-badge w-full mt-2 pt-2 border-t border-slate-800/80 text-center <?= $homePicked ? 'block' : 'hidden' ?>">
-                                    <span class="inline-flex items-center justify-center gap-1 w-full py-1 rounded-md text-[10px] font-black uppercase tracking-wider <?= $isPickLocked ? 'bg-emerald-600 text-white shadow' : 'bg-emerald-500 text-slate-950 shadow-md' ?>">
-                                        <span><?= $isPickLocked ? '🔒' : '🛡️' ?></span>
-                                        <span><?= $isPickLocked ? 'LOCKED IN (ONE &amp; DONE)' : 'SURVIVOR PICK' ?></span>
-                                    </span>
+                            </div>
+
+                            <!-- Cool Broadcast-Style VS Circle Overlay (centered between two cards) -->
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                                <div class="relative w-12 h-12 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.8)] overflow-hidden ring-4 ring-slate-900 border border-slate-700/60 flex items-center justify-center">
+                                    <!-- Away color left half -->
+                                    <div class="absolute left-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
+                                    <!-- Home color right half -->
+                                    <div class="absolute right-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
+                                    <!-- Subtle depth overlay -->
+                                    <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40"></div>
+                                    <!-- Inner VS circular badge -->
+                                    <div class="relative w-7 h-7 rounded-full bg-slate-950/90 border border-slate-700 shadow-inner flex items-center justify-center">
+                                        <span class="text-[10px] font-black font-mono text-amber-400 tracking-wider">VS</span>
+                                    </div>
                                 </div>
-                            </label>
+                            </div>
 
                         </div>
+
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -509,11 +626,14 @@ $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
                     </button>
                 <?php else: ?>
                     <!-- Eligible to Pick: Opens Confirmation Modal before locking in -->
+                    <?php 
+                    $currentPickNick = !empty($currentPick['selected_team']) ? (TeamData::get($currentPick['selected_team'])['nick'] ?? '') : '';
+                    ?>
                     <button type="button" 
                             id="btnOpenSurvivorConfirm"
                             class="w-full sm:w-auto px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2">
                         <span>🛡️</span>
-                        <span><?= $hasCurrentPick ? 'Review &amp; Confirm Survivor Pick' : "Confirm Week {$week} Survivor Pick" ?></span>
+                        <span class="btn-confirm-label"><?= !empty($currentPickNick) ? "Review &amp; Confirm {$currentPickNick} Pick" : ($hasCurrentPick ? 'Review &amp; Confirm Survivor Pick' : "Confirm Week {$week} Survivor Pick") ?></span>
                         <?php if ($isCashEligible): ?>
                             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-400/50 text-emerald-300">
                                 $10 CASH
@@ -796,22 +916,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     c.style.borderColor = 'var(--card-surface-border)';
                     c.style.background = 'var(--card-surface)';
                     c.style.boxShadow = 'none';
-                    const badge = c.querySelector('.survivor-badge');
-                    if (badge) badge.classList.add('hidden');
+                    const check = c.querySelector('.pick-check');
+                    if (check) {
+                        check.classList.remove('scale-100', 'opacity-100');
+                        check.classList.add('scale-0', 'opacity-0');
+                    }
                 }
             });
 
             // Highlight selected card
             const color = radio.getAttribute('data-color') || '#10b981';
+            const nick = radio.getAttribute('data-nick') || radio.value;
             this.classList.add('is-picked');
             this.style.borderColor = color;
             this.style.background = `linear-gradient(135deg, ${color}28 0%, var(--picked-end) 100%)`;
-            this.style.boxShadow = `0 0 22px ${color}40`;
+            this.style.boxShadow = `0 0 22px ${color}44`;
 
-            const badge = this.querySelector('.survivor-badge');
-            if (badge) badge.classList.remove('hidden');
+            const check = this.querySelector('.pick-check');
+            if (check) {
+                check.classList.remove('scale-0', 'opacity-0');
+                check.classList.add('scale-100', 'opacity-100');
+            }
 
             radio.checked = true;
+
+            // Dynamically update confirm button label
+            if (btnOpenConfirm) {
+                const labelSpan = btnOpenConfirm.querySelector('.btn-confirm-label');
+                if (labelSpan) {
+                    labelSpan.textContent = `Review & Confirm ${nick} Pick`;
+                }
+            }
 
             // Silent auto-save behind the scenes
             const teamVal = radio.value;
@@ -826,7 +961,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     })
                 }).then(r => r.json()).then(data => {
                     if (data && data.success) {
-                        showAutoSaveToast(teamVal + ' Pick Auto-Saved ✓');
+                        showAutoSaveToast(nick + ' Pick Auto-Saved ✓');
                     }
                 }).catch(e => console.warn('Survivor autosave notice:', e));
             }
