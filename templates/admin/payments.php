@@ -436,23 +436,21 @@ $survivorPot = $survivorPaidCount * 10.00;
                                         </form>
 
                                         <!-- Elimination Manual Override -->
-                                        <?php if ($isSvrPaid): ?>
-                                            <form action="/admin/survivor/eliminate" method="POST" class="inline">
-                                                <input type="hidden" name="user_id" value="<?= $s['user_id'] ?>">
-                                                <input type="hidden" name="season_year" value="<?= $season ?>">
-                                                <input type="hidden" name="week_number" value="<?= $week ?>">
+                                        <form action="/admin/survivor/eliminate" method="POST" class="inline">
+                                            <input type="hidden" name="user_id" value="<?= $s['user_id'] ?>">
+                                            <input type="hidden" name="season_year" value="<?= $season ?>">
+                                            <input type="hidden" name="week_number" value="<?= $week ?>">
 
-                                                <?php if (!$isElim): ?>
-                                                    <button type="submit" name="eliminate" value="1" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-300 border border-rose-900/50 transition" title="Manual knock out">
-                                                        Eliminate
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button type="submit" name="eliminate" value="0" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-900/50 transition" title="Revive back to alive">
-                                                        Revive
-                                                    </button>
-                                                <?php endif; ?>
-                                            </form>
-                                        <?php endif; ?>
+                                            <?php if (!$isElim): ?>
+                                                <button type="submit" name="eliminate" value="1" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-rose-500/20 text-rose-300 border border-rose-900/50 transition" title="Manual knock out">
+                                                    Eliminate
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="submit" name="eliminate" value="0" class="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-900/50 transition" title="Revive back to alive">
+                                                    Revive
+                                                </button>
+                                            <?php endif; ?>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

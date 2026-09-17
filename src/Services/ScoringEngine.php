@@ -250,6 +250,16 @@ class ScoringEngine
             }
 
             if (!$won) {
+                // Check if user has been explicitly revived/kept alive by commissioner
+                $entry = $this->db->queryOne(
+                    'SELECT is_eliminated FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+                    ['uid' => $p['user_id'], 'season' => $season]
+                );
+                $currentWeek = (int) (getenv('NFL_CURRENT_WEEK') ?: 2);
+                if ($entry && isset($entry['is_eliminated']) && (int) $entry['is_eliminated'] === 0 && $week < $currentWeek) {
+                    continue;
+                }
+
                 $this->db->execute(
                     'UPDATE survivor_picks SET is_eliminated = 1 WHERE id = :id',
                     ['id' => $p['id']]
