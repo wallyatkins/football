@@ -97,6 +97,46 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
             }
         }
 
+        /* Static Centered Official NFL Midfield Watermark */
+        .nfl-static-watermark-container {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .nfl-static-watermark {
+            width: min(540px, 75vw);
+            max-height: 65vh;
+            object-fit: contain;
+            opacity: 0.20;
+            filter: drop-shadow(0 0 50px rgba(0, 0, 0, 0.7));
+            user-select: none;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        html[data-theme="light"] .nfl-static-watermark {
+            opacity: 0.18;
+            filter: drop-shadow(0 0 35px rgba(0, 0, 0, 0.25));
+        }
+
+        @media (max-width: 640px) {
+            .nfl-static-watermark {
+                width: min(340px, 80vw);
+                max-height: 50vh;
+                opacity: 0.16;
+            }
+            html[data-theme="light"] .nfl-static-watermark {
+                opacity: 0.14;
+            }
+        }
+
         /* Card and Matchup Surface Defaults */
         .matchup-card, .game-row-card {
             background-color: var(--matchup-card-bg);
@@ -259,7 +299,15 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         }
     </style>
 </head>
-<body class="football-field text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black">
+<body class="football-field text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-500 selection:text-black relative">
+
+    <!-- Static Centered Official NFL Midfield Logo Background Item -->
+    <div class="nfl-static-watermark-container" aria-hidden="true">
+        <img src="/assets/nfl-logo-vector.svg" 
+             alt="NFL Shield Watermark" 
+             class="nfl-static-watermark"
+             loading="eager">
+    </div>
 
     <!-- Global Top Navigation -->
     <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
@@ -420,7 +468,7 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
     </nav>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 pb-20 md:pb-8">
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 pb-20 md:pb-8 relative z-10">
         <?php if (!empty($_SESSION['flash'])): ?>
             <div class="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-sm flex items-center justify-between">
                 <span><?= htmlspecialchars($_SESSION['flash']) ?></span>
@@ -440,7 +488,7 @@ $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true)
         <?= $content ?? '' ?>
     </main>
 
-    <footer class="hidden md:block border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+    <footer class="hidden md:block border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 relative z-10">
         <p>&copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; <a href="https://wallyatkins.com/privacy" class="hover:text-slate-400 transition underline">Privacy Policy</a> &bull; <a href="https://wallyatkins.com/terms" class="hover:text-slate-400 transition underline">Terms of Use</a> &bull; <a href="https://wallyatkins.com/#contact" class="hover:text-slate-400 transition underline">Get in Touch</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
     </footer>
 

@@ -441,44 +441,5 @@
   <line x1="0" y1="2500" x2="1400" y2="2500" stroke="#f59e0b" stroke-width="7"/>
   <text x="700" y="2482" class="goal-text">★ GOAL LINE ★</text>
 
-  <!-- Midfield Circle -->
-  <circle cx="700" cy="1250" r="105" fill="none" stroke="rgba(245,158,11,0.4)" stroke-width="4" stroke-dasharray="20,10"/>
-  <circle cx="700" cy="1250" r="85" fill="rgba(0,0,0,0.3)"/>
-
-  <!-- Midfield NFL Shield Logo -->
-  <g id="midfieldNflLogo" transform="translate(700, 1250) scale(1.15)">
-    <!-- Outer Shield Halo/Shadow -->
-    <path d="M-46,-58 L46,-58 C46,-58 48,8 39,36 C31,58 0,76 0,76 C0,76 -31,58 -39,36 C-48,8 -46,-58 -46,-58 Z" 
-          fill="none" stroke="#ffffff" stroke-width="5" stroke-linejoin="round"/>
-
-    <!-- Shield Blue Upper Half -->
-    <path d="M-44,-56 L44,-56 C44,-56 46,6 38,34 C30,55 0,73 0,73 C0,73 -30,55 -38,34 C-46,6 -44,-56 -44,-56 Z" 
-          fill="#013369"/>
-
-    <!-- Shield Red Lower Section -->
-    <path d="M-42,-8 L42,-8 C42,-8 44,8 36,32 C29,51 0,69 0,69 C0,69 -29,51 -36,32 C-44,8 -42,-8 -42,-8 Z" 
-          fill="#d50a0a"/>
-
-    <!-- White Football at Top -->
-    <ellipse cx="0" cy="-36" rx="13" ry="18" fill="#ffffff" transform="rotate(32, 0, -36)"/>
-    <path d="M-9,-36 Q0,-41 9,-36" stroke="#013369" stroke-width="2" fill="none" transform="rotate(32, 0, -36)"/>
-    <line x1="-5" y1="-36" x2="5" y2="-36" stroke="#013369" stroke-width="1.8" transform="rotate(32, 0, -36)"/>
-
-    <!-- 8 White Stars (4 left, 4 right) -->
-    <!-- Left stars -->
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(-28,-44) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(-28,-30) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(-28,-16) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(-17,-19) scale(0.9)"/>
-
-    <!-- Right stars -->
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(28,-44) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(28,-30) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(28,-16) scale(0.9)"/>
-    <polygon points="0,-3.5 1,-1 3.5,-1 1.5,0.5 2.2,3 0,1.5 -2.2,3 -1.5,0.5 -3.5,-1 -1,-1" fill="#ffffff" transform="translate(17,-19) scale(0.9)"/>
-
-    <!-- NFL Bold Italic Letters -->
-    <text x="0" y="32" font-family="'Arial Black', 'Impact', sans-serif" font-size="34" font-weight="900" font-style="italic" fill="#ffffff" text-anchor="middle" letter-spacing="2">NFL</text>
-  </g>
-  <rect width="1400" height="2500" fill="url(#stadiumLighting)" pointer-events="none"/>
+  <rect width="1400" height="2500" fill="url(#stadiumLighting)" pointer-events-none/>
 </svg>
