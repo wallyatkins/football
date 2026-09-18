@@ -6,6 +6,8 @@ ob_start();
 $tbAwayData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['away_team']) : null;
 $tbHomeData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['home_team']) : null;
 $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData['name']}" : null;
+$cutoffFormatted = $cutoffFormatted ?? ($firstKickoffFormatted ?? 'Cutoff');
+$cutoffPassed = !empty($cutoffPassed);
 ?>
 
 <div class="space-y-6">
@@ -189,7 +191,7 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
                 <span class="text-xl">🔓</span>
                 <div>
                     <strong class="text-emerald-300 text-sm block font-bold"><?= $isWeekComplete ? 'Final Week Standings & Picks' : 'Opponent Picks Unlocked!' ?></strong>
-                    <span><?= $isWeekComplete ? 'All games for Week ' . $week . ' are final. Inspect all participant selections and results below or open the full league matrix.' : 'The opening game has kicked off and your picks are locked in. You can now inspect all participant selections below or open the full league matrix.' ?></span>
+                    <span><?= $isWeekComplete ? 'All games for Week ' . $week . ' are final. Inspect all participant selections and results below or open the full league matrix.' : 'The selection cutoff has passed and picks are locked in. You can now inspect all participant selections below or open the full league matrix.' ?></span>
                 </div>
             </div>
             <button type="button" onclick="openPicksMatrixModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow shrink-0 flex items-center gap-1.5">
@@ -197,23 +199,33 @@ $tbLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHomeData[
                 <span>Full League Matrix</span>
             </button>
         </div>
-    <?php elseif ($firstGameStarted && !$viewerHasSubmitted): ?>
+    <?php elseif ($firstGameStarted && !$cutoffPassed): ?>
         <div class="px-5 py-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
             <div class="flex items-center gap-2.5">
-                <span class="text-xl">🔒</span>
+                <span class="text-xl">⏱️</span>
                 <div>
-                    <strong class="text-amber-300 text-sm block font-bold">Opponent Picks Locked</strong>
-                    <span>The first game of Week <?= $week ?> has kicked off, but you have not locked in your picks yet. Lock in your picks now to unlock what everyone else picked!</span>
+                    <strong class="text-amber-300 text-sm block font-bold">Game In Progress &bull; Picks Still Open!</strong>
+                    <span>The opening game has kicked off, but you can still make or modify your picks! The cutoff deadline is <strong><?= htmlspecialchars($cutoffFormatted) ?></strong> (1 hour into the first game). Opponent picks unlock after the cutoff.</span>
                 </div>
             </div>
             <a href="/pickem?week=<?= $week ?>&season=<?= $season ?>" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shadow shrink-0">
-                Lock In Your Picks &rarr;
+                <?= $viewerHasSubmitted ? 'Review / Edit Picks &rarr;' : 'Make Your Picks &rarr;' ?>
             </a>
+        </div>
+    <?php elseif ($cutoffPassed && !$viewerHasSubmitted): ?>
+        <div class="px-5 py-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xl">🔒</span>
+                <div>
+                    <strong class="text-rose-300 text-sm block font-bold">Picks Closed for Week <?= $week ?></strong>
+                    <span>The selection cutoff passed at <?= htmlspecialchars($cutoffFormatted) ?> (1 hour into the opening game). Picks are locked for the week.</span>
+                </div>
+            </div>
         </div>
     <?php else: ?>
         <div class="px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center gap-2.5">
             <span class="text-lg">🔒</span>
-            <span><strong>Opponent Picks Confidential:</strong> All participant selections remain confidential until the opening kickoff (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
+            <span><strong>Opponent Picks Confidential:</strong> All participant selections remain confidential until the selection cutoff at <strong><?= htmlspecialchars($cutoffFormatted) ?></strong> (1 hour into the opening game).</span>
         </div>
     <?php endif; ?>
 

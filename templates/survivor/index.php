@@ -8,6 +8,7 @@ $isPickLocked = !empty($isPickLocked);
 $isSurvivorClosed = !empty($isSurvivorClosed);
 $hasCurrentPick = !empty($currentPick);
 $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
+$cutoffFormatted = $cutoffFormatted ?? ($firstKickoffFormatted ?? 'Cutoff of Week ' . $week);
 
 $usedPicksByTeam = [];
 if (!empty($usedPicks)) {
@@ -94,7 +95,7 @@ if (!empty($usedPicks)) {
                 <div>
                     <h3 class="text-base font-black text-rose-300">Survivor Selections Closed for Week <?= htmlspecialchars((string) $week) ?></h3>
                     <p class="text-xs text-slate-400 mt-1 leading-relaxed">
-                        The first game of Week <?= htmlspecialchars((string) $week) ?> kicked off at <strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>. Per league rules, survivor picks close at the kickoff of the week's first game.
+                        The selection deadline for Week <?= htmlspecialchars((string) $week) ?> passed at <strong><?= htmlspecialchars($cutoffFormatted) ?></strong> (1 hour into the week's first game). Per league rules, survivor picks are now closed.
                     </p>
                 </div>
             </div>
@@ -168,7 +169,7 @@ if (!empty($usedPicks)) {
                         </div>
                         <span class="text-2xl font-black text-white"><?= htmlspecialchars($pickedTeamData['name']) ?></span>
                         <span class="text-xs text-slate-300 block mt-0.5">
-                            Auto-saved behind the scenes. You can switch to any eligible team anytime until kickoff of the first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
+                            Auto-saved behind the scenes. You can switch to any eligible team anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong>).
                         </span>
                     </div>
                 </div>
@@ -337,11 +338,11 @@ if (!empty($usedPicks)) {
                     <span class="text-2xl">⏱️</span>
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-white font-black">Selection Deadline: <?= htmlspecialchars($firstKickoffFormatted) ?></span>
-                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">First Game Kickoff</span>
+                            <span class="text-white font-black">Selection Deadline: <?= htmlspecialchars($cutoffFormatted) ?></span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">1 Hr Into First Game</span>
                         </div>
                         <span class="text-slate-400 text-[11px] block mt-0.5">
-                            Selections auto-save behind the scenes as you pick! You can change your selection anytime before the week's first kickoff. Once the opening game begins, your pick locks permanently and the team is burned for the season.
+                            Selections auto-save behind the scenes as you pick! You can change your selection anytime before the cutoff (1 hour into the week's first game). Once the cutoff passes, your pick locks permanently and the team is burned for the season.
                         </span>
                     </div>
                 </div>
@@ -592,13 +593,13 @@ if (!empty($usedPicks)) {
                         <?php if ($isEliminated): ?>
                             <span class="text-rose-400 font-semibold">Eliminated from the season-long pool in Week <?= htmlspecialchars((string) ($eliminationWeek ?? 'earlier')) ?>.</span>
                         <?php elseif ($isPickLocked): ?>
-                            <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. First game kicked off at <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                            <span class="text-emerald-400 font-semibold">Your Week <?= htmlspecialchars((string) $week) ?> pick is locked in. Cutoff deadline passed at <?= htmlspecialchars($cutoffFormatted) ?>.</span>
                         <?php elseif ($isSurvivorClosed): ?>
-                            <span class="text-rose-400 font-semibold">Survivor selections closed at kickoff of the first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
+                            <span class="text-rose-400 font-semibold">Survivor selections closed at <?= htmlspecialchars($cutoffFormatted) ?> (1 hour into the first game).</span>
                         <?php elseif ($hasCurrentPick): ?>
-                            <span class="text-emerald-400 font-semibold">Pick Auto-Saved! You can change your selection to another eligible team anytime before kickoff (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
+                            <span class="text-emerald-400 font-semibold">Pick Auto-Saved! You can change your selection to another eligible team anytime before cutoff (<?= htmlspecialchars($cutoffFormatted) ?>).</span>
                         <?php else: ?>
-                            <span class="text-amber-400 font-semibold">Picks auto-save behind the scenes. Deadline: Kickoff of the week's first game (<?= htmlspecialchars($firstKickoffFormatted) ?>).</span>
+                            <span class="text-amber-400 font-semibold">Picks auto-save behind the scenes. Deadline: 1 hour into the week's first game (<?= htmlspecialchars($cutoffFormatted) ?>).</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -698,10 +699,10 @@ if (!empty($usedPicks)) {
                     <span>One and Done Rule &bull; Season-Long Exclusivity</span>
                 </div>
                 <p class="leading-relaxed">
-                    You can freely change your pick to another eligible team anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
+                    You can freely change your pick to another eligible team anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the first game).
                 </p>
                 <p class="leading-relaxed text-slate-300">
-                    Once the first game kicks off, your selection locks permanently, and you will <strong>burn</strong> this team (cannot pick them again for the rest of the season).
+                    Once the 1-hour cutoff deadline passes, your selection locks permanently, and you will <strong>burn</strong> this team (cannot pick them again for the rest of the season).
                 </p>
             </div>
 
@@ -709,8 +710,8 @@ if (!empty($usedPicks)) {
             <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-start gap-3">
                 <span class="text-base">⏱️</span>
                 <div>
-                    <strong class="text-white block mb-0.5">Editable Before Kickoff:</strong>
-                    <span>You have until the kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>) to make or modify your choice.</span>
+                    <strong class="text-white block mb-0.5">Editable Until Cutoff:</strong>
+                    <span>You have until 1 hour into the week's first game (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong>) to make or modify your choice.</span>
                 </div>
             </div>
 

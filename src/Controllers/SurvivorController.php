@@ -123,18 +123,27 @@ class SurvivorController
             if ($firstGameKickoff === null || $kickoff < $firstGameKickoff) {
                 $firstGameKickoff = $kickoff;
             }
-            $games[$idx]['is_locked'] = ($kickoff <= $now);
             $games[$idx]['home_used'] = in_array($g['home_team'], $usedTeams, true);
             $games[$idx]['away_used'] = in_array($g['away_team'], $usedTeams, true);
         }
 
+        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
         $isFirstGameStarted = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
+        $isCutoffPassed = ($cutoffTime !== null && $now >= $cutoffTime);
+
+        foreach ($games as $idx => $g) {
+            $games[$idx]['is_locked'] = $isCutoffPassed;
+        }
+
         $firstKickoffFormatted = $firstGameKickoff 
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
+        $cutoffFormatted = $cutoffTime
+            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Cutoff of Week ' . $week;
 
-        $isPickLocked = !empty($currentPick) && $isFirstGameStarted;
-        $isSurvivorClosed = $isFirstGameStarted;
+        $isPickLocked = !empty($currentPick) && $isCutoffPassed;
+        $isSurvivorClosed = $isCutoffPassed;
 
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';
@@ -175,9 +184,10 @@ class SurvivorController
             ['season' => $season, 'week' => $week]
         );
         $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
-        if ($firstKickoff !== null && time() >= $firstKickoff) {
+        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
+        if ($cutoffTime !== null && time() >= $cutoffTime) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => "Survivor picks for Week {$week} are locked (first game kickoff has passed)."]);
+            echo json_encode(['success' => false, 'error' => "Survivor picks for Week {$week} are locked (cutoff deadline of 1 hour into the first game has passed)."]);
             exit;
         }
 
@@ -268,18 +278,22 @@ class SurvivorController
             exit;
         }
 
-        // 1. First-game deadline rule: Verify first game of the week has not kicked off yet
+        // 1. Cutoff deadline rule: Verify cutoff deadline (1 hour into first game) has not passed yet
         $firstGame = $this->db->queryOne(
             'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
             ['season' => $season, 'week' => $week]
         );
         $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
+        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
         $firstKickoffFormatted = $firstKickoff
             ? (new \DateTimeImmutable("@{$firstKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
+        $cutoffFormatted = $cutoffTime
+            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Cutoff of Week ' . $week;
 
-        if ($firstKickoff !== null && time() >= $firstKickoff) {
-            $_SESSION['error'] = "Survivor selections for Week {$week} closed at the kickoff of the week's first game ({$firstKickoffFormatted}).";
+        if ($cutoffTime !== null && time() >= $cutoffTime) {
+            $_SESSION['error'] = "Survivor selections for Week {$week} closed at {$cutoffFormatted} (1 hour after the week's first game kicked off).";
             header("Location: /survivor?week={$week}&season={$season}");
             exit;
         }
@@ -372,7 +386,7 @@ class SurvivorController
             // Notification failures should never disrupt player experience
         }
 
-        $_SESSION['flash'] = "✅ Your Survivor pick for Week {$week} has been {$actionWord} {$selectedTeam}! You can adjust your pick anytime until kickoff of the first game ({$firstKickoffFormatted}).";
+        $_SESSION['flash'] = "✅ Your Survivor pick for Week {$week} has been {$actionWord} {$selectedTeam}! You can adjust your pick anytime until the cutoff deadline ({$cutoffFormatted}).";
         header("Location: /survivor?week={$week}&season={$season}");
         exit;
     }

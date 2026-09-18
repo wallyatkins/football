@@ -91,7 +91,7 @@ class PickemController
         $userGradedCount = 0;
         $userPendingCount = 0;
 
-        // Check first game kickoff deadline for the entire week
+        // Check first game kickoff and calculate 1-hour cutoff deadline for the entire week
         $firstGameKickoff = null;
         foreach ($games as $g) {
             $kt = strtotime($g['kickoff_time']);
@@ -99,14 +99,17 @@ class PickemController
                 $firstGameKickoff = $kt;
             }
         }
-        $isWeekLocked = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
+        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
+        $isWeekLocked = ($cutoffTime !== null && $now >= $cutoffTime);
         $firstKickoffFormatted = $firstGameKickoff
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
+        $cutoffFormatted = $cutoffTime
+            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Cutoff of Week ' . $week;
 
         foreach ($games as $idx => $g) {
-            $kickoff = strtotime($g['kickoff_time']);
-            $games[$idx]['is_locked'] = $isWeekLocked || ($kickoff <= $now);
+            $games[$idx]['is_locked'] = $isWeekLocked;
             $userPick = $userPicks[$g['id']] ?? null;
             $games[$idx]['user_pick'] = $userPick;
 
@@ -237,15 +240,16 @@ class PickemController
             ? (int) $input['mnf_total_points']
             : null;
 
-        // Check first game kickoff deadline
+        // Check first game kickoff deadline (cutoff is 1 hour into the first game)
         $firstGame = $this->db->queryOne(
             'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
             ['season' => $season, 'week' => $week]
         );
         $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
-        if ($firstKickoff !== null && time() >= $firstKickoff) {
+        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
+        if ($cutoffTime !== null && time() >= $cutoffTime) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'error' => "Picks for Week {$week} are locked (first game kickoff has passed)."]);
+            echo json_encode(['success' => false, 'error' => "Picks for Week {$week} are locked (cutoff deadline of 1 hour into the first game has passed)."]);
             exit;
         }
 
@@ -357,13 +361,17 @@ class PickemController
             }
         }
 
+        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
         $firstKickoffFormatted = $firstGameKickoff
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
+        $cutoffFormatted = $cutoffTime
+            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Cutoff of Week ' . $week;
 
-        // Check if week is locked (Kickoff of the first game deadline rule)
-        if ($firstGameKickoff !== null && $now >= $firstGameKickoff) {
-            $_SESSION['error'] = "Picks for Week {$week} closed at the kickoff of the week's first game ({$firstKickoffFormatted}).";
+        // Check if week is locked (Cutoff is 1 hour into the first game)
+        if ($cutoffTime !== null && $now >= $cutoffTime) {
+            $_SESSION['error'] = "Picks for Week {$week} closed at {$cutoffFormatted} (1 hour after the week's first game kicked off).";
             header("Location: /pickem?week={$week}&season={$season}");
             exit;
         }
@@ -467,7 +475,7 @@ class PickemController
             // Notification failures should never disrupt player experience
         }
 
-        $_SESSION['flash'] = "✅ Your Week {$week} picks are confirmed and saved! You can adjust your picks anytime before the first game kicks off ({$firstKickoffFormatted}).";
+        $_SESSION['flash'] = "✅ Your Week {$week} picks are confirmed and saved! You can adjust your picks anytime before the cutoff deadline ({$cutoffFormatted}).";
         header("Location: /pickem?week={$week}&season={$season}");
         exit;
     }
@@ -522,9 +530,14 @@ class PickemController
         }
         $now = time();
         $firstGameStarted = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
+        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
+        $cutoffPassed = ($cutoffTime !== null && $now >= $cutoffTime);
         $firstKickoffFormatted = $firstGameKickoff 
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff';
+        $cutoffFormatted = $cutoffTime 
+            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
+            : 'Cutoff';
 
         $viewerId = !empty($user['id']) ? (int) $user['id'] : null;
         $viewerEntry = null;
@@ -538,10 +551,10 @@ class PickemController
         }
         $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
-        // Core Rule: Participant picks remain confidential until the first game kicks off.
-        // Once the opening game starts, users who have submitted their picks (or the commissioner)
+        // Core Rule: Participant picks remain confidential until the selection cutoff (1 hour into first game).
+        // Once the cutoff time passes, users who have submitted their picks (or the commissioner)
         // can view opponent picks. For past/completed weeks, picks are always visible.
-        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
 
         // Fetch picks mapped by entry_id
         $picksByEntryId = [];

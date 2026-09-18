@@ -70,52 +70,56 @@ class LockoutTest extends TestCase
         $this->assertSame([15, 16], $rendered, 'The final game must not be overwritten by by-reference foreach mutation.');
     }
 
-    public function testSurvivorAllowsChangingPickBeforeFirstGameKickoff(): void
+    public function testSurvivorAllowsChangingPickBeforeCutoff(): void
     {
         $existingPick = ['id' => 101, 'selected_team' => 'KC', 'week_number' => 1];
-        $firstGameKickoff = time() + 3600; // 1 hour in future
+        $firstGameKickoff = time() - 1200; // 20 minutes ago (game in progress)
+        $cutoffTime = $firstGameKickoff + 3600; // 40 minutes in future
         $now = time();
 
-        $isFirstGameStarted = ($now >= $firstGameKickoff);
-        $isPickLocked = !empty($existingPick) && $isFirstGameStarted;
+        $isCutoffPassed = ($now >= $cutoffTime);
+        $isPickLocked = !empty($existingPick) && $isCutoffPassed;
 
-        $this->assertFalse($isPickLocked, 'Before the first game kickoff, survivor picks must remain editable.');
+        $this->assertFalse($isPickLocked, 'During the first hour of the opening game, survivor picks must remain editable.');
     }
 
-    public function testSurvivorLocksPickOnceFirstGameKicksOff(): void
+    public function testSurvivorLocksPickOnceCutoffPasses(): void
     {
         $existingPick = ['id' => 101, 'selected_team' => 'KC', 'week_number' => 1];
-        $firstGameKickoff = time() - 300; // 5 minutes ago
+        $firstGameKickoff = time() - 4000; // 66 minutes ago
+        $cutoffTime = $firstGameKickoff + 3600; // 6 minutes ago
         $now = time();
 
-        $isFirstGameStarted = ($now >= $firstGameKickoff);
-        $isPickLocked = !empty($existingPick) && $isFirstGameStarted;
+        $isCutoffPassed = ($now >= $cutoffTime);
+        $isPickLocked = !empty($existingPick) && $isCutoffPassed;
 
-        $this->assertTrue($isPickLocked, 'After the first game kicks off, survivor picks must be locked permanently.');
+        $this->assertTrue($isPickLocked, 'Once 1 hour into the first game passes, survivor picks must lock permanently.');
     }
 
-    public function testPickemAllowsModifyingPicksBeforeFirstGameKickoff(): void
+    public function testPickemAllowsModifyingPicksBeforeCutoffEvenAfterKickoff(): void
     {
-        $firstGameKickoff = time() + 7200; // 2 hours in future
+        $firstGameKickoff = time() - 1800; // 30 minutes ago (game in progress)
+        $cutoffTime = $firstGameKickoff + 3600; // 30 minutes in future
         $now = time();
 
-        $isWeekLocked = ($now >= $firstGameKickoff);
-        $this->assertFalse($isWeekLocked, 'Pickem matchups must remain unlocked and editable before the first game kicks off.');
+        $isWeekLocked = ($now >= $cutoffTime);
+        $this->assertFalse($isWeekLocked, 'Pickem matchups must remain unlocked and editable during the first hour of the opening game.');
     }
 
-    public function testPickemLocksPicksOnceFirstGameKicksOff(): void
+    public function testPickemLocksPicksOnceCutoffPasses(): void
     {
-        $firstGameKickoff = time() - 60; // 1 minute ago
+        $firstGameKickoff = time() - 3900; // 65 minutes ago
+        $cutoffTime = $firstGameKickoff + 3600; // 5 minutes ago
         $now = time();
 
-        $isWeekLocked = ($now >= $firstGameKickoff);
-        $this->assertTrue($isWeekLocked, 'Pickem matchups must lock for the week once the first game kicks off.');
+        $isWeekLocked = ($now >= $cutoffTime);
+        $this->assertTrue($isWeekLocked, 'Pickem matchups must lock for the week once the 1-hour cutoff passes.');
     }
 
-    public function testSurvivorRejectsPickAfterFirstGameKickoff(): void
+    public function testSurvivorRejectsPickAfterCutoff(): void
     {
         $games = [
-            ['kickoff_time' => date('Y-m-d H:i:s', time() - 3600)], // Thursday opener (1 hr ago)
+            ['kickoff_time' => date('Y-m-d H:i:s', time() - 4000)], // Thursday opener (66 mins ago)
             ['kickoff_time' => date('Y-m-d H:i:s', time() + 72000)], // Sunday game
         ];
 
@@ -128,8 +132,9 @@ class LockoutTest extends TestCase
         }
 
         $now = time();
-        $isSurvivorWindowClosed = ($firstKickoff !== null && $now >= $firstKickoff);
-        $this->assertTrue($isSurvivorWindowClosed, 'Survivor picks must close at the kickoff of the first game of that week.');
+        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
+        $isSurvivorWindowClosed = ($cutoffTime !== null && $now >= $cutoffTime);
+        $this->assertTrue($isSurvivorWindowClosed, 'Survivor picks must close once 1 hour into the first game has passed.');
     }
 
     public function testSurvivorOneAndDonePermitsSwitchingTeamWithinSameWeekBeforeKickoff(): void
@@ -162,47 +167,51 @@ class LockoutTest extends TestCase
         \WallyFootball\Database\Connection::resetInstance();
     }
 
-    public function testOpponentPicksConfidentialBeforeFirstGameKickoff(): void
+    public function testOpponentPicksConfidentialBeforeCutoff(): void
     {
-        $firstGameKickoff = time() + 7200; // 2 hours in the future
+        $firstGameKickoff = time() - 1200; // 20 minutes ago (game started)
+        $cutoffTime = $firstGameKickoff + 3600; // 40 minutes in the future
         $now = time();
         $firstGameStarted = ($now >= $firstGameKickoff);
+        $cutoffPassed = ($now >= $cutoffTime);
         $isWeekComplete = false;
 
         $viewerHasSubmitted = true;
         $isCommissioner = true;
 
-        // Core Rule: Participant picks remain confidential until the first game kicks off.
-        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+        // Core Rule: Participant picks remain confidential until the cutoff time (1 hour into first game).
+        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
 
-        $this->assertFalse($firstGameStarted, 'First game has not started yet.');
-        $this->assertFalse($canViewOpponentPicks, 'Before the first game kicks off, opponent picks must remain confidential even for commissioner.');
+        $this->assertTrue($firstGameStarted, 'First game is underway.');
+        $this->assertFalse($cutoffPassed, 'Cutoff deadline has not passed yet.');
+        $this->assertFalse($canViewOpponentPicks, 'During the first hour, picks remain confidential to protect fair play while picks are still open.');
     }
 
-    public function testOpponentPicksUnlockedAfterFirstGameKickoffWhenSubmitted(): void
+    public function testOpponentPicksUnlockedAfterCutoffWhenSubmitted(): void
     {
-        $firstGameKickoff = time() - 300; // 5 minutes ago
+        $firstGameKickoff = time() - 4000; // 66 minutes ago
+        $cutoffTime = $firstGameKickoff + 3600; // 6 minutes ago
         $now = time();
-        $firstGameStarted = ($now >= $firstGameKickoff);
+        $cutoffPassed = ($now >= $cutoffTime);
         $isWeekComplete = false;
 
         $viewerHasSubmitted = true;
         $isCommissioner = false;
 
-        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
 
-        $this->assertTrue($firstGameStarted);
-        $this->assertTrue($canViewOpponentPicks, 'Once the first game kicks off, submitted players can view opponent picks.');
+        $this->assertTrue($cutoffPassed);
+        $this->assertTrue($canViewOpponentPicks, 'Once the cutoff passes, submitted players can view opponent picks.');
 
         // Non-submitted player cannot view opponent picks
         $viewerNotSubmitted = false;
-        $canViewUnsubmitted = ($firstGameStarted && ($viewerNotSubmitted || $isCommissioner)) || $isWeekComplete;
+        $canViewUnsubmitted = ($cutoffPassed && ($viewerNotSubmitted || $isCommissioner)) || $isWeekComplete;
         $this->assertFalse($canViewUnsubmitted, 'Unsubmitted players cannot view opponent picks until they lock in their picks.');
 
-        // Commissioner can view once first game kicks off even if not submitted
+        // Commissioner can view once cutoff passes even if not submitted
         $commissionerNotSubmitted = true;
-        $canViewCommissioner = ($firstGameStarted && ($viewerNotSubmitted || $commissionerNotSubmitted)) || $isWeekComplete;
-        $this->assertTrue($canViewCommissioner, 'Commissioner can view picks once the first game has kicked off.');
+        $canViewCommissioner = ($cutoffPassed && ($viewerNotSubmitted || $commissionerNotSubmitted)) || $isWeekComplete;
+        $this->assertTrue($canViewCommissioner, 'Commissioner can view picks once the cutoff has passed.');
     }
 
     public function testOpponentPicksAlwaysViewableForCompletedWeeks(): void

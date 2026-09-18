@@ -7,6 +7,7 @@ $isPaid = in_array($entryStatus, ['paid', 'exempt'], true);
 $isUserLocked = !empty($isWeekLocked);
 $hasConfirmedPicks = !empty($entry['is_locked']);
 $firstKickoffFormatted = $firstKickoffFormatted ?? 'Kickoff of Week ' . $week;
+$cutoffFormatted = $cutoffFormatted ?? ($firstKickoffFormatted ?? 'Cutoff of Week ' . $week);
 $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
 $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
@@ -199,7 +200,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             <?php endif; ?>
                         </div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Picks closed at the kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
+                            Picks closed at the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the first game).
                             <?php if ($isPaid): ?>
                                 Your picks and $10.00 entry fee are verified. You are fully active in this week's prize pool!
                             <?php else: ?>
@@ -257,7 +258,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             <?php endif; ?>
                         </div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Your ballot has been confirmed and saved! You can still change any pick or your tiebreaker score anytime before kickoff of the first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>). All changes are saved automatically behind the scenes.
+                            Your ballot has been confirmed and saved! You can still change any pick or your tiebreaker score anytime before the cutoff deadline (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong>). All changes are saved automatically behind the scenes.
                         </p>
                         <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/90 border border-slate-700/80 text-xs">
                             <span class="text-slate-400">Payment Memo Note:</span>
@@ -301,7 +302,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                             </span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Your selections and tiebreaker score auto-save silently behind the scenes.</strong> You can change your picks anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).
+                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Your selections and tiebreaker score auto-save silently behind the scenes.</strong> You can change your picks anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the opening game).
                         </p>
                         <div class="mt-2 text-[11px] text-slate-400">
                             Remember to add note <span class="font-mono text-amber-300 font-bold">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span> when sending your $10 stake.
@@ -652,17 +653,17 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 <?php if ($isUserLocked): ?>
                     <div>
                         <span class="text-emerald-400 font-semibold text-sm">Picks for Week <?= $week ?> are locked in.</span>
-                        <span class="text-slate-400 block text-xs">First game kicked off at <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                        <span class="text-slate-400 block text-xs">Selection cutoff passed at <?= htmlspecialchars($cutoffFormatted) ?> (1 hr into first game).</span>
                     </div>
                 <?php elseif ($hasConfirmedPicks): ?>
                     <div>
                         <span class="font-bold text-emerald-400 block text-sm mb-0.5">Week <?= $week ?> Ballot Confirmed &amp; Auto-Saved!</span>
-                        <span class="text-slate-400">All picks auto-save behind the scenes. You can adjust your picks or tiebreaker score anytime before <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                        <span class="text-slate-400">All picks auto-save behind the scenes. You can adjust your picks or tiebreaker score anytime before <?= htmlspecialchars($cutoffFormatted) ?>.</span>
                     </div>
                 <?php else: ?>
                     <div>
                         <span class="font-bold text-white block text-sm mb-0.5">Picks Auto-Save As You Go</span>
-                        <span class="text-slate-400">Selections save behind the scenes. Click Review &amp; Submit whenever you're ready to confirm your ballot before <?= htmlspecialchars($firstKickoffFormatted) ?>.</span>
+                        <span class="text-slate-400">Selections save behind the scenes. Click Review &amp; Submit whenever you're ready to confirm your ballot before <?= htmlspecialchars($cutoffFormatted) ?>.</span>
                     </div>
                 <?php endif; ?>
             </div>
@@ -713,7 +714,7 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             <span class="text-lg">✓</span>
             <div>
                 <strong class="font-bold">Ballot Confirmation:</strong>
-                <span>Confirming your picks records your official submission. You can continue to modify any pick or tiebreaker score anytime until kickoff of the week's first game (<strong><?= htmlspecialchars($firstKickoffFormatted) ?></strong>).</span>
+                <span>Confirming your picks records your official submission. You can continue to modify any pick or tiebreaker score anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the opening game).</span>
             </div>
         </div>
 
