@@ -13,265 +13,233 @@ $cutoffPassed = !empty($cutoffPassed);
 <div class="space-y-6">
 
     <!-- Standings Navigation Tabs -->
-    <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+    <div class="flex items-center gap-2 border-b border-[#243247] pb-3">
         <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" 
-           class="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 text-slate-950 font-black transition shadow-sm flex items-center gap-2">
-            <span>🎯</span>
-            <span>Weekly Pick'em Standings</span>
+           class="px-4 py-2 text-xs font-bold rounded-lg bg-[#EAB308] text-[#0B1626] uppercase tracking-wider transition shadow-sm">
+            Weekly Pick'em Standings
         </a>
         <a href="/survivor/standings?season=<?= $season ?>" 
-           class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
-            <span>🛡️</span>
-            <span>Survivor Pool Standings</span>
+           class="px-4 py-2 text-xs font-bold rounded-lg bg-[#162235] border border-[#243247] text-[#94A3B8] hover:text-white hover:bg-[#1f2e44] transition uppercase tracking-wider">
+            Survivor Pool Standings
         </a>
     </div>
 
-    <!-- Header & Week Selector -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#243247] pb-4">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Official Leaderboard</span>
-                <span class="text-xs text-slate-400">Season <?= htmlspecialchars((string) $season) ?></span>
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-[#162235] text-[#EAB308] border border-[#243247]">Official Leaderboard</span>
+                <span class="text-xs text-[#94A3B8] font-mono">Season <?= htmlspecialchars((string) $season) ?></span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Week <?= htmlspecialchars((string) $week) ?> Standings</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[#F8FAFC]">Week <?= htmlspecialchars((string) $week) ?> Standings</h1>
         </div>
 
-        <!-- Single-Week Focus Action Bar -->
-        <div class="flex items-center gap-2 flex-wrap">
-            <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5">
-                <span>🏆</span> Week <?= $week ?> Leaderboard
+        <div class="flex items-center gap-2 flex-wrap font-mono text-xs">
+            <span class="px-3 py-1.5 font-bold rounded-lg bg-[#EAB308] text-[#0B1626]">
+                Week <?= $week ?> Leaderboard
             </span>
             <a href="/fantasy/vault?tab=pools" 
-               class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
-               title="View historical results in the Dynasty Vault">
-                <span>🏛️</span>
-                <span class="hidden sm:inline">Historical Vault</span>
+               class="px-3 py-1.5 rounded-lg bg-[#162235] hover:bg-[#1f2e44] text-[#94A3B8] hover:text-white border border-[#243247] transition">
+                Dynasty Vault
             </a>
-            <a href="/pickem" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition">
+            <a href="/pickem?week=<?= $week ?>&season=<?= $season ?>" 
+               class="px-3 py-1.5 rounded-lg bg-[#15803D] hover:bg-emerald-600 text-white font-bold transition">
                 &larr; Make Picks
             </a>
         </div>
     </div>
 
-    <!-- Week Navigation -->
+    <!-- Week Navigation Pills -->
     <?php if (!empty($availableWeeks) && count($availableWeeks) > 1): ?>
         <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[11px] font-mono text-slate-500 uppercase tracking-wider">View Week:</span>
+            <span class="text-[11px] font-mono text-[#94A3B8] uppercase tracking-wider">Week:</span>
             <?php foreach ($availableWeeks as $wk): ?>
                 <a href="/pickem/standings?week=<?= $wk ?>&season=<?= $season ?>"
-                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition <?= (int)$wk === (int)$week ? 'bg-amber-500 text-slate-950 shadow-sm' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' ?>">
+                   class="px-3 py-1 text-xs font-bold rounded-lg font-mono tabular-nums transition <?= (int)$wk === (int)$week ? 'bg-[#EAB308] text-[#0B1626]' : 'bg-[#162235] border border-[#243247] text-[#94A3B8] hover:text-white' ?>">
                     Wk <?= $wk ?>
                 </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <!-- Three-Way Week Champion Banner (Displayed when all games in week are final) -->
+    <!-- Completed Week Champions (Collapsible) -->
     <?php if (!empty($isWeekComplete)): ?>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-            <!-- Overall Champion -->
-            <div class="p-5 rounded-2xl <?= !empty($winnersOverall) ? 'bg-gradient-to-br from-amber-500/20 via-yellow-500/10 to-amber-500/10 border-2 border-amber-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="text-xl">🏆</span>
-                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">Overall Champion</span>
+        <details class="rounded-xl border border-[#243247] bg-[#162235] p-4 text-xs shadow-sm group">
+            <summary class="cursor-pointer flex items-center justify-between font-bold text-[#F8FAFC] select-none">
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-[#EAB308] text-[#0B1626] uppercase">
+                        Official Results
+                    </span>
+                    <span class="text-sm">Week <?= $week ?> Champions &amp; Payouts</span>
                 </div>
-                <?php if (!empty($winnersOverall)): ?>
-                    <div class="text-lg font-black text-white">
-                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersOverall)) ?>
-                    </div>
-                    <p class="text-xs text-slate-300 mt-1">
-                        <strong class="text-amber-300"><?= $winnersOverall[0]['correct_picks'] ?></strong> correct picks
-                        <?= count($winnersOverall) > 1 ? ' <span class="text-amber-400">(Tied)</span>' : '' ?>
-                    </p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">All entrants combined</p>
-                <?php else: ?>
-                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
-                <?php endif; ?>
-            </div>
+                <span class="text-[#94A3B8] font-mono text-xs group-open:rotate-180 transition-transform">&darr;</span>
+            </summary>
 
-            <!-- Cash Pool Winner -->
-            <div class="p-5 rounded-2xl <?= !empty($winnersPaid) ? 'bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-emerald-500/10 border-2 border-emerald-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="text-xl">💰</span>
-                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-emerald-500 text-white uppercase tracking-wider">Cash Pool Winner</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-3 border-t border-[#243247]">
+                <!-- Overall Champion -->
+                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-[#EAB308] block mb-1">Overall Champion</span>
+                    <?php if (!empty($winnersOverall)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
+                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersOverall)) ?>
+                        </div>
+                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
+                            <?= $winnersOverall[0]['correct_picks'] ?> correct picks <?= count($winnersOverall) > 1 ? '(Tied)' : '' ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
                 </div>
-                <?php if (!empty($winnersPaid)): ?>
-                    <div class="text-lg font-black text-white">
-                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersPaid)) ?>
-                    </div>
-                    <p class="text-xs text-slate-300 mt-1">
-                        <strong class="text-emerald-300"><?= $winnersPaid[0]['correct_picks'] ?></strong> correct picks
-                        <?php if (!empty($pot['total_pot']) && $pot['total_pot'] > 0): ?>
-                            &bull; Payout: <strong class="font-mono text-emerald-300">$<?= number_format($pot['payout_per_winner'] / max(1, count($winnersPaid)), 2) ?></strong>
-                        <?php endif; ?>
-                    </p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">$10 stake verified entrants</p>
-                <?php elseif ($pot['verified_entries_count'] === 0): ?>
-                    <p class="text-sm text-slate-500 italic">No cash entrants this week</p>
-                <?php else: ?>
-                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
-                <?php endif; ?>
-            </div>
 
-            <!-- Free/Fun Pool Winner -->
-            <div class="p-5 rounded-2xl <?= !empty($winnersFree) ? 'bg-gradient-to-br from-violet-500/20 via-purple-500/10 to-violet-500/10 border-2 border-violet-400/60' : 'bg-slate-900/60 border border-slate-800' ?> shadow-xl relative overflow-hidden">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="text-xl">🎮</span>
-                    <span class="text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-violet-500 text-white uppercase tracking-wider">Free / Fun Winner</span>
+                <!-- Cash Winner -->
+                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-emerald-400 block mb-1">Cash Pool Winner</span>
+                    <?php if (!empty($winnersPaid)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
+                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersPaid)) ?>
+                        </div>
+                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
+                            <?= $winnersPaid[0]['correct_picks'] ?> correct &bull; $<?= number_format($pot['payout_per_winner'] / max(1, count($winnersPaid)), 2) ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">No cash verified</span>
+                    <?php endif; ?>
                 </div>
-                <?php if (!empty($winnersFree)): ?>
-                    <div class="text-lg font-black text-white">
-                        <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersFree)) ?>
-                    </div>
-                    <p class="text-xs text-slate-300 mt-1">
-                        <strong class="text-violet-300"><?= $winnersFree[0]['correct_picks'] ?></strong> correct picks &bull; Bragging Rights
-                        <?= count($winnersFree) > 1 ? ' <span class="text-violet-400">(Tied)</span>' : '' ?>
-                    </p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Free / for-fun entrants</p>
-                <?php else: ?>
-                    <p class="text-sm text-slate-500 italic">Pending completed games</p>
-                <?php endif; ?>
-            </div>
 
-        </div>
+                <!-- Free / Fun Winner -->
+                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-purple-300 block mb-1">Free / Fun Winner</span>
+                    <?php if (!empty($winnersFree)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
+                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersFree)) ?>
+                        </div>
+                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
+                            <?= $winnersFree[0]['correct_picks'] ?> correct
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </details>
     <?php endif; ?>
 
-
-    <!-- Pot Overview Card -->
+    <!-- Pot Overview Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span class="text-xs font-semibold text-slate-400 block mb-1">Weekly Prize Pot</span>
-            <div class="text-3xl font-black text-amber-400 font-mono">$<?= number_format($pot['total_pot'], 2) ?></div>
-            <span class="text-[11px] text-slate-500 mt-1 block"><?= $pot['verified_entries_count'] ?> verified entries @ $<?= number_format($pot['entry_stake'], 2) ?></span>
+        <div class="p-4 rounded-xl bg-[#162235] border border-[#243247]">
+            <span class="text-xs font-semibold text-[#94A3B8] block mb-1">Weekly Prize Pot</span>
+            <div class="text-2xl font-bold text-[#EAB308] font-mono tabular-nums">$<?= number_format($pot['total_pot'], 2) ?></div>
+            <span class="text-[11px] text-[#94A3B8] font-mono mt-1 block tabular-nums">
+                <?= $pot['verified_entries_count'] ?> verified entries @ $<?= number_format($pot['entry_stake'], 2) ?>
+            </span>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span class="text-xs font-semibold text-slate-400 block mb-1">Current Leader / Winner</span>
+        <div class="p-4 rounded-xl bg-[#162235] border border-[#243247]">
+            <span class="text-xs font-semibold text-[#94A3B8] block mb-1">Current Leader / Winner</span>
             <?php if (!empty($pot['winners'])): ?>
-                <div class="text-lg font-bold text-white flex items-center gap-2">
-                    <span>👑</span>
-                    <span><?= htmlspecialchars(implode(', ', array_column($pot['winners'], 'username'))) ?></span>
+                <div class="text-base font-bold text-[#F8FAFC] truncate">
+                    <?= htmlspecialchars(implode(', ', array_column($pot['winners'], 'username'))) ?>
                 </div>
-                <span class="text-[11px] text-emerald-400 font-mono mt-1 block">Payout: $<?= number_format($pot['payout_per_winner'], 2) ?><?= $pot['is_split'] ? ' (Split)' : '' ?></span>
+                <span class="text-[11px] text-emerald-400 font-mono mt-1 block tabular-nums">
+                    Payout: $<?= number_format($pot['payout_per_winner'], 2) ?><?= $pot['is_split'] ? ' (Split)' : '' ?>
+                </span>
             <?php else: ?>
-                <div class="text-sm font-semibold text-slate-500 italic mt-1">Pending completed games</div>
+                <div class="text-sm text-[#94A3B8] italic mt-1">Pending completed games</div>
             <?php endif; ?>
         </div>
 
-        <div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span class="text-xs font-semibold text-slate-400 block mb-1">Total Pool Participation</span>
-            <div class="text-2xl font-black text-white font-mono"><?= $pot['total_entries_count'] ?> Entrants</div>
-            <span class="text-[11px] text-slate-400 mt-1 block"><?= $pot['verified_entries_count'] ?> Paid &bull; <?= $pot['total_entries_count'] - $pot['verified_entries_count'] ?> Pending</span>
+        <div class="p-4 rounded-xl bg-[#162235] border border-[#243247]">
+            <span class="text-xs font-semibold text-[#94A3B8] block mb-1">Pool Participation</span>
+            <div class="text-2xl font-bold text-[#F8FAFC] font-mono tabular-nums"><?= $pot['total_entries_count'] ?> Entrants</div>
+            <span class="text-[11px] text-[#94A3B8] font-mono mt-1 block tabular-nums">
+                <?= $pot['verified_entries_count'] ?> Paid &bull; <?= $pot['total_entries_count'] - $pot['verified_entries_count'] ?> Pending
+            </span>
         </div>
     </div>
 
     <?php if ($tbLabel): ?>
         <!-- Designated Tiebreaker Contest Info -->
-        <div class="px-4 py-3 rounded-xl bg-slate-900/80 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="px-4 py-3 rounded-xl bg-[#162235] border border-[#243247] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] uppercase">
-                    🎲 Official Tiebreaker
+                <span class="font-mono font-bold text-[#EAB308] px-2 py-0.5 rounded bg-[#0B1626] border border-[#243247] text-[10px] uppercase">
+                    Tiebreaker Game
                 </span>
-                <span class="font-bold text-white"><?= htmlspecialchars($tbLabel) ?></span>
-                <?php if ($tiebreakerGame['status'] === 'final'): ?>
-                    <span class="font-mono text-emerald-400 font-bold">(Final: <?= $tiebreakerGame['away_score'] ?> - <?= $tiebreakerGame['home_score'] ?>, Total: <?= (int)$tiebreakerGame['home_score'] + (int)$tiebreakerGame['away_score'] ?> pts)</span>
+                <span class="font-bold text-[#F8FAFC]"><?= htmlspecialchars($tbLabel) ?></span>
+                <?php if (!empty($tiebreakerGame) && $tiebreakerGame['status'] === 'final'): ?>
+                    <span class="font-mono text-emerald-400 font-bold tabular-nums">
+                        (Final: <?= $tiebreakerGame['away_score'] ?> - <?= $tiebreakerGame['home_score'] ?>, Total: <?= (int)$tiebreakerGame['home_score'] + (int)$tiebreakerGame['away_score'] ?> pts)
+                    </span>
                 <?php else: ?>
-                    <span class="text-slate-400 italic">(Final score pending)</span>
+                    <span class="text-[#94A3B8] italic">(Final score pending)</span>
                 <?php endif; ?>
             </div>
-            <span class="text-[11px] font-mono text-slate-400">Lowest absolute &Delta; wins ties</span>
+            <span class="text-[11px] font-mono text-[#94A3B8]">Lowest absolute &Delta; wins ties</span>
         </div>
     <?php endif; ?>
 
-    <!-- Opponent Picks Visibility Callout -->
-    <?php if ($canViewOpponentPicks): ?>
-        <div class="px-5 py-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div class="flex items-center gap-2.5">
-                <span class="text-xl">🔓</span>
-                <div>
-                    <strong class="text-emerald-300 text-sm block font-bold"><?= $isWeekComplete ? 'Final Week Standings & Picks' : 'Opponent Picks Unlocked!' ?></strong>
-                    <span><?= $isWeekComplete ? 'All games for Week ' . $week . ' are final. Inspect all participant selections and results below or open the full league matrix.' : 'The selection cutoff has passed and picks are locked in. You can now inspect all participant selections below or open the full league matrix.' ?></span>
-                </div>
+    <!-- Opponent Picks Visibility Notice -->
+    <div class="px-4 py-3 rounded-xl bg-[#162235] border border-[#243247] text-xs text-[#94A3B8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-[#0B1626] border border-[#243247] flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-[#EAB308]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
             </div>
-            <button type="button" onclick="openPicksMatrixModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow shrink-0 flex items-center gap-1.5">
-                <span>📋</span>
-                <span>Full League Matrix</span>
+            <div>
+                <strong class="text-[#F8FAFC] font-semibold block">Per-Game Kickoff Transparency</strong>
+                <span>Opponent selections are revealed in real time as each game kicks off. Unstarted games remain confidential.</span>
+            </div>
+        </div>
+
+        <?php if ($canViewOpponentPicks): ?>
+            <button type="button" onclick="openPicksMatrixModal()" class="px-3 py-1.5 rounded-lg bg-[#0B1626] hover:bg-[#1f2e44] text-[#F8FAFC] border border-[#243247] font-bold transition shrink-0 font-mono text-[11px] uppercase tracking-wider">
+                Full League Matrix
             </button>
-        </div>
-    <?php elseif ($firstGameStarted && !$cutoffPassed): ?>
-        <div class="px-5 py-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div class="flex items-center gap-2.5">
-                <span class="text-xl">⏱️</span>
-                <div>
-                    <strong class="text-amber-300 text-sm block font-bold">Game In Progress &bull; Picks Still Open!</strong>
-                    <span>The opening game has kicked off, but you can still make or modify your picks! The cutoff deadline is <strong><?= htmlspecialchars($cutoffFormatted) ?></strong> (1 hour into the first game). Opponent picks unlock after the cutoff.</span>
-                </div>
-            </div>
-            <a href="/pickem?week=<?= $week ?>&season=<?= $season ?>" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shadow shrink-0">
-                <?= $viewerHasSubmitted ? 'Review / Edit Picks &rarr;' : 'Make Your Picks &rarr;' ?>
-            </a>
-        </div>
-    <?php elseif ($cutoffPassed && !$viewerHasSubmitted): ?>
-        <div class="px-5 py-3.5 rounded-2xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div class="flex items-center gap-2.5">
-                <span class="text-xl">🔒</span>
-                <div>
-                    <strong class="text-rose-300 text-sm block font-bold">Picks Closed for Week <?= $week ?></strong>
-                    <span>The selection cutoff passed at <?= htmlspecialchars($cutoffFormatted) ?> (1 hour into the opening game). Picks are locked for the week.</span>
-                </div>
-            </div>
-        </div>
-    <?php else: ?>
-        <div class="px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400 flex items-center gap-2.5">
-            <span class="text-lg">🔒</span>
-            <span><strong>Opponent Picks Confidential:</strong> All participant selections remain confidential until the selection cutoff at <strong><?= htmlspecialchars($cutoffFormatted) ?></strong> (1 hour into the opening game).</span>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+    </div>
 
-    <!-- Tier Filter Tabs -->
-    <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2 flex-wrap">
+    <!-- Tier Filter Tabs & Action Bar -->
+    <div class="flex items-center justify-between gap-2 border-b border-[#243247] pb-2 flex-wrap">
         <div class="flex items-center gap-2">
             <button type="button" onclick="filterPickem('all')" id="pickem-tab-all"
-                    class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition shadow-sm">
+                    class="pickem-tab px-3 py-1.5 text-xs font-bold rounded-lg bg-[#EAB308] text-[#0B1626] transition">
                 All Entrants (<?= count($standings) ?>)
             </button>
             <button type="button" onclick="filterPickem('cash')" id="pickem-tab-cash"
-                    class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition">
-                🟢 Cash Prize Pool ($) (<?= $pot['verified_entries_count'] ?>)
+                    class="pickem-tab px-3 py-1.5 text-xs font-bold rounded-lg bg-[#162235] border border-[#243247] text-[#94A3B8] hover:text-white transition">
+                Cash Pool (<?= $pot['verified_entries_count'] ?>)
             </button>
             <button type="button" onclick="filterPickem('free')" id="pickem-tab-free"
-                    class="pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition">
-                🎮 Free / For Fun (<?= $pot['total_entries_count'] - $pot['verified_entries_count'] ?>)
+                    class="pickem-tab px-3 py-1.5 text-xs font-bold rounded-lg bg-[#162235] border border-[#243247] text-[#94A3B8] hover:text-white transition">
+                Free / Fun (<?= $pot['total_entries_count'] - $pot['verified_entries_count'] ?>)
             </button>
         </div>
 
         <?php if ($canViewOpponentPicks): ?>
-            <button type="button" onclick="openPicksMatrixModal()" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold text-xs transition flex items-center gap-1.5">
-                <span>📋</span>
-                <span>Picks Matrix</span>
+            <button type="button" onclick="openPicksMatrixModal()" class="px-3 py-1.5 rounded-lg bg-[#162235] border border-[#243247] hover:bg-[#1f2e44] text-[#94A3B8] hover:text-white font-bold text-xs transition font-mono">
+                Matrix View
             </button>
         <?php endif; ?>
     </div>
 
     <!-- Standings Table -->
-    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 shadow-xl">
+    <div class="overflow-x-auto rounded-xl border border-[#243247] bg-[#162235] shadow-sm">
         <table class="w-full text-left text-sm" id="pickemTable">
             <thead>
-                <tr class="border-b border-slate-800 bg-slate-900/80 text-[11px] font-mono uppercase tracking-wider text-slate-400">
-                    <th class="py-3 px-4 text-center w-12">Rank</th>
+                <tr class="border-b border-[#243247] bg-[#0B1626] text-[11px] font-mono uppercase tracking-wider text-[#94A3B8]">
+                    <th class="py-3 px-4 text-center w-14">Rank</th>
                     <th class="py-3 px-4">Participant</th>
-                    <th class="py-3 px-4 text-center">Play Mode</th>
-                    <th class="py-3 px-4 text-center">Correct Picks</th>
+                    <th class="py-3 px-4 text-center">Entry</th>
+                    <th class="py-3 px-4 text-center">Correct</th>
                     <th class="py-3 px-4 text-center">Tiebreaker Pred / Delta</th>
                     <th class="py-3 px-4 text-center">Selections</th>
-                    <th class="py-3 px-4 text-right">Cash Prize Status</th>
+                    <th class="py-3 px-4 text-right">Prize Status</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800/60">
+            <tbody class="divide-y divide-[#243247] text-xs">
                 <?php if (empty($standings)): ?>
                     <tr>
-                        <td colspan="7" class="py-8 text-center text-slate-500 italic">No entries recorded for Week <?= htmlspecialchars((string) $week) ?> yet.</td>
+                        <td colspan="7" class="py-8 text-center text-[#94A3B8] italic">No entries recorded for Week <?= htmlspecialchars((string) $week) ?> yet.</td>
                     </tr>
                 <?php else: ?>
                     <?php foreach ($standings as $row): ?>
@@ -279,36 +247,40 @@ $cutoffPassed = !empty($cutoffPassed);
                         $isWinner = in_array($row['username'], array_column($pot['winners'] ?? [], 'username'), true);
                         $canSeeThisRow = $canViewOpponentPicks || (($user['id'] ?? 0) === $row['user_id']);
                         ?>
-                        <tr class="transition pickem-row <?= $isWinner ? 'bg-amber-500/10 hover:bg-amber-500/15' : 'hover:bg-slate-800/30' ?>"
+                        <tr class="transition pickem-row <?= $isWinner ? 'bg-[#EAB308]/10' : 'hover:bg-[#1f2e44]/40' ?>"
                             data-tier="<?= $row['is_paid'] ? 'cash' : 'free' ?>">
-                            <td class="py-3.5 px-4 text-center font-mono font-bold text-slate-300">
-                                <?= $isWinner ? '👑' : '#' . $row['rank'] ?>
+                            <td class="py-3.5 px-4 text-center font-mono font-bold text-[#F8FAFC]">
+                                <?php if ($isWinner): ?>
+                                    <span class="px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] text-[10px] font-black">#1</span>
+                                <?php else: ?>
+                                    #<?= $row['rank'] ?>
+                                <?php endif; ?>
                             </td>
-                            <td class="py-3.5 px-4 font-semibold text-white">
+                            <td class="py-3.5 px-4 font-bold text-[#F8FAFC]">
                                 <?= htmlspecialchars($row['username']) ?>
                                 <?php if (($user['id'] ?? 0) === $row['user_id']): ?>
-                                    <span class="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">You</span>
+                                    <span class="text-[10px] ml-1 px-1.5 py-0.2 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247] font-mono">You</span>
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-center">
                                 <?php if ($row['is_paid']): ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                        🟢 Cash ($10)
+                                    <span class="inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 uppercase">
+                                        Cash ($10)
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                        🎮 Free / Fun
+                                    <span class="inline-block text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247] uppercase">
+                                        Free
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="py-3.5 px-4 text-center font-mono font-bold text-emerald-400">
-                                <?= $row['correct_picks'] ?> <span class="text-xs text-slate-500 font-normal">/ <?= $row['total_graded'] ?></span>
+                            <td class="py-3.5 px-4 text-center font-mono tabular-nums font-bold text-emerald-400">
+                                <?= $row['correct_picks'] ?> <span class="text-[11px] text-[#94A3B8] font-normal">/ <?= $row['total_graded'] ?></span>
                             </td>
-                            <td class="py-3.5 px-4 text-center font-mono text-xs">
+                            <td class="py-3.5 px-4 text-center font-mono tabular-nums text-xs">
                                 <?php if ($row['predicted_mnf'] !== null): ?>
-                                    <span class="text-slate-300 font-bold"><?= $row['predicted_mnf'] ?> pts</span>
+                                    <span class="text-[#F8FAFC] font-bold"><?= $row['predicted_mnf'] ?> pts</span>
                                     <?php if ($row['tiebreaker_delta'] !== null): ?>
-                                        <span class="text-amber-400 ml-1">(&Delta; <?= $row['tiebreaker_delta'] ?>)</span>
+                                        <span class="text-[#EAB308] ml-1">(&Delta; <?= $row['tiebreaker_delta'] ?>)</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span class="text-slate-600">—</span>
@@ -317,29 +289,26 @@ $cutoffPassed = !empty($cutoffPassed);
                             <td class="py-3.5 px-4 text-center">
                                 <?php if ($canSeeThisRow): ?>
                                     <button type="button" onclick="toggleUserPicks(<?= $row['entry_id'] ?>)" 
-                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition hover:border-slate-600 shadow-sm">
-                                        <span>👁️</span>
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#0B1626] hover:bg-[#1f2e44] text-[#F8FAFC] border border-[#243247] text-[11px] font-semibold transition font-mono">
                                         <span id="btnText-<?= $row['entry_id'] ?>">View Picks</span>
-                                        <span class="text-[10px] text-slate-400 font-mono">(<?= $row['total_picks'] ?>)</span>
+                                        <span class="text-[10px] text-[#94A3B8]">(<?= $row['total_picks'] ?>)</span>
                                     </button>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-slate-500 text-xs font-mono" title="<?= $firstGameStarted ? 'Lock in your picks to reveal opponent picks' : 'Picks remain confidential until kickoff' ?>">
-                                        <span>🔒</span> Hidden
-                                    </span>
+                                    <span class="text-[#94A3B8] font-mono text-xs">LOCKED</span>
                                 <?php endif; ?>
                             </td>
                             <td class="py-3.5 px-4 text-right">
                                 <?php if ($isWinner): ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 border border-amber-500/50 animate-pulse">
-                                        👑 Cash Winner
+                                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] uppercase">
+                                        Cash Winner
                                     </span>
                                 <?php elseif ($row['is_paid']): ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                        ✓ Cash Verified
+                                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 uppercase">
+                                        Verified
                                     </span>
                                 <?php else: ?>
-                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
-                                        🎮 Bragging Rights
+                                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247] uppercase">
+                                        Free Entry
                                     </span>
                                 <?php endif; ?>
                             </td>
@@ -347,18 +316,24 @@ $cutoffPassed = !empty($cutoffPassed);
 
                         <!-- Accordion Row with Detailed Picks -->
                         <?php if ($canSeeThisRow): ?>
-                            <tr id="picksRow-<?= $row['entry_id'] ?>" class="hidden bg-slate-950/90 border-b border-slate-800/80 transition-all duration-200">
-                                <td colspan="7" class="p-4 sm:p-5">
-                                    <div class="rounded-xl border border-slate-800/90 bg-slate-900/60 p-4 space-y-3">
-                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
-                                            <div class="flex items-center gap-2.5 flex-wrap">
-                                                <span class="font-bold text-white text-xs"><?= htmlspecialchars($row['username']) ?>'s Week <?= $week ?> Selections:</span>
-                                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold">✓ <?= $row['correct_picks'] ?> Correct</span>
-                                                <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[10px] font-bold">✗ <?= $row['total_graded'] - $row['correct_picks'] ?> Missed</span>
-                                                <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-[10px] font-bold">⏳ <?= $row['pending_picks'] ?> Pending</span>
+                            <tr id="picksRow-<?= $row['entry_id'] ?>" class="hidden bg-[#0B1626] border-b border-[#243247]">
+                                <td colspan="7" class="p-4">
+                                    <div class="rounded-lg border border-[#243247] bg-[#162235] p-3.5 space-y-3">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#243247] pb-2 text-xs">
+                                            <div class="flex items-center gap-2 flex-wrap font-mono">
+                                                <span class="font-bold text-[#F8FAFC]"><?= htmlspecialchars($row['username']) ?>'s Selections:</span>
+                                                <span class="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold tabular-nums">
+                                                    <?= $row['correct_picks'] ?> Correct
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-500/40 text-[10px] font-bold tabular-nums">
+                                                    <?= $row['total_graded'] - $row['correct_picks'] ?> Missed
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247] text-[10px] font-bold tabular-nums">
+                                                    <?= $row['pending_picks'] ?> Pending
+                                                </span>
                                             </div>
                                             <?php if ($row['predicted_mnf'] !== null): ?>
-                                                <div class="text-[11px] font-mono text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+                                                <div class="text-[11px] font-mono text-[#EAB308] bg-[#0B1626] border border-[#243247] px-2 py-0.5 rounded tabular-nums">
                                                     Tiebreaker Pred: <strong><?= $row['predicted_mnf'] ?> pts</strong>
                                                 </div>
                                             <?php endif; ?>
@@ -371,30 +346,38 @@ $cutoffPassed = !empty($cutoffPassed);
                                                 $isIncorrect = ($pd['result'] === 'incorrect');
                                                 $isFinal = ($pd['status'] === 'final');
                                                 $isLive = ($pd['status'] === 'in_progress');
+                                                $isRevealed = !empty($pd['is_revealed']);
                                                 $selected = $pd['selected_team'];
                                                 $selData = $selected ? TeamData::get($selected) : null;
                                                 ?>
-                                                <div class="p-2 rounded-xl border text-center flex flex-col justify-between items-center transition <?= $isCorrect ? 'border-emerald-500/60 bg-emerald-950/30' : ($isIncorrect ? 'border-rose-500/60 bg-rose-950/30' : ($isLive ? 'border-amber-500/50 bg-amber-950/20 animate-pulse' : 'border-slate-800 bg-slate-950/60')) ?>">
-                                                    <span class="text-[9px] font-mono text-slate-400 block truncate w-full">
+                                                <div class="p-2 rounded-lg border text-center flex flex-col justify-between items-center bg-[#0B1626] <?= $isCorrect ? 'border-emerald-500/50' : ($isIncorrect ? 'border-rose-500/50' : ($isLive ? 'border-amber-500/50' : 'border-[#243247]')) ?>">
+                                                    <span class="text-[9px] font-mono text-[#94A3B8] block truncate w-full">
                                                         <?= $pd['away_team'] ?> @ <?= $pd['home_team'] ?>
                                                     </span>
-                                                    <?php if ($selData): ?>
+
+                                                    <?php if (!$isRevealed): ?>
+                                                        <div class="my-2 py-1 px-2 rounded bg-[#162235] border border-[#243247] text-[10px] font-mono text-[#94A3B8]">
+                                                            LOCKED
+                                                        </div>
+                                                        <span class="text-[9px] font-mono text-[#94A3B8]">Before Kickoff</span>
+                                                    <?php elseif ($selData): ?>
                                                         <img src="<?= htmlspecialchars($selData['logo']) ?>" alt="<?= $selected ?>" class="w-6 h-6 object-contain my-1">
-                                                        <span class="text-xs font-black text-white font-mono"><?= $selected ?></span>
+                                                        <span class="text-xs font-bold text-[#F8FAFC] font-mono"><?= $selected ?></span>
+                                                        <div class="mt-1">
+                                                            <?php if ($isCorrect): ?>
+                                                                <span class="text-[9px] font-mono font-bold text-emerald-400">WIN (+1)</span>
+                                                            <?php elseif ($isIncorrect): ?>
+                                                                <span class="text-[9px] font-mono font-bold text-rose-400">LOSS (0)</span>
+                                                            <?php elseif ($isLive): ?>
+                                                                <span class="text-[9px] font-mono font-bold text-[#EAB308]">LIVE</span>
+                                                            <?php else: ?>
+                                                                <span class="text-[9px] font-mono text-[#94A3B8]">PENDING</span>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     <?php else: ?>
                                                         <span class="text-xs text-slate-600 font-mono my-2">—</span>
+                                                        <span class="text-[9px] font-mono text-[#94A3B8]">UNPICKED</span>
                                                     <?php endif; ?>
-                                                    <div class="mt-1">
-                                                        <?php if ($isCorrect): ?>
-                                                            <span class="text-[9px] font-mono font-black text-emerald-400">✓ Win (+1)</span>
-                                                        <?php elseif ($isIncorrect): ?>
-                                                            <span class="text-[9px] font-mono font-black text-rose-400">✗ Loss (0)</span>
-                                                        <?php elseif ($isLive): ?>
-                                                            <span class="text-[9px] font-mono font-bold text-amber-300">⚡ Live</span>
-                                                        <?php else: ?>
-                                                            <span class="text-[9px] font-mono font-medium text-slate-500">⏳ Pending</span>
-                                                        <?php endif; ?>
-                                                    </div>
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
@@ -414,58 +397,58 @@ $cutoffPassed = !empty($cutoffPassed);
 <!-- Full League Picks Matrix Modal -->
 <?php if ($canViewOpponentPicks): ?>
     <div id="picksMatrixModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div class="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 text-xl border border-amber-500/30">📋</span>
-                    <div>
-                        <h3 class="text-lg font-black text-white">Week <?= $week ?> Complete League Picks Matrix</h3>
-                        <span class="text-xs text-slate-400">Side-by-side comparison of all participant selections</span>
-                    </div>
+        <div class="bg-[#162235] border border-[#243247] rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="p-4 border-b border-[#243247] bg-[#0B1626] flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-[#F8FAFC]">Week <?= $week ?> Picks Matrix</h3>
+                    <span class="text-xs text-[#94A3B8]">League-wide selections overview</span>
                 </div>
-                <button type="button" onclick="closePicksMatrixModal()" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
+                <button type="button" onclick="closePicksMatrixModal()" class="text-[#94A3B8] hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
             </div>
-            <div class="p-5 overflow-auto flex-1">
+            <div class="p-4 overflow-auto flex-1">
                 <table class="w-full text-xs text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-slate-800 bg-slate-950 font-mono text-[10px] uppercase text-slate-400">
-                            <th class="py-2.5 px-3 sticky left-0 bg-slate-950 z-10">Participant</th>
+                        <tr class="border-b border-[#243247] bg-[#0B1626] font-mono text-[10px] uppercase text-[#94A3B8]">
+                            <th class="py-2.5 px-3 sticky left-0 bg-[#0B1626] z-10">Participant</th>
                             <th class="py-2.5 px-2 text-center">Score</th>
                             <?php foreach ($games as $g): ?>
                                 <th class="py-2.5 px-2 text-center min-w-[75px]">
                                     <span class="block truncate font-bold"><?= $g['away_team'] ?> @ <?= $g['home_team'] ?></span>
-                                    <span class="text-[9px] text-slate-500"><?= $g['status'] === 'final' ? "({$g['away_score']}-{$g['home_score']})" : ($g['status'] === 'in_progress' ? 'Live' : 'Sched') ?></span>
+                                    <span class="text-[9px] text-[#94A3B8] tabular-nums"><?= $g['status'] === 'final' ? "({$g['away_score']}-{$g['home_score']})" : ($g['status'] === 'in_progress' ? 'Live' : 'Sched') ?></span>
                                 </th>
                             <?php endforeach; ?>
                             <th class="py-2.5 px-2 text-center">Tiebreaker</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-mono">
+                    <tbody class="divide-y divide-[#243247] font-mono text-xs">
                         <?php foreach ($standings as $row): ?>
-                            <tr class="hover:bg-slate-800/30">
-                                <td class="py-2 px-3 font-bold text-white sticky left-0 bg-slate-900/95 z-10 truncate">
+                            <tr class="hover:bg-[#1f2e44]/40">
+                                <td class="py-2 px-3 font-bold text-[#F8FAFC] sticky left-0 bg-[#162235] z-10 truncate">
                                     <?= htmlspecialchars($row['username']) ?>
                                     <?php if (($user['id'] ?? 0) === $row['user_id']): ?>
-                                        <span class="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">You</span>
+                                        <span class="text-[9px] px-1 py-0.2 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247]">You</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="py-2 px-2 text-center text-emerald-400 font-bold">
+                                <td class="py-2 px-2 text-center text-emerald-400 font-bold tabular-nums">
                                     <?= $row['correct_picks'] ?>/<?= $row['total_graded'] ?>
                                 </td>
                                 <?php foreach ($games as $g): ?>
                                     <?php
                                     $pd = $row['picks_detail'][$g['id']] ?? null;
+                                    $isRev = !empty($pd['is_revealed']);
                                     $sel = $pd['selected_team'] ?? null;
                                     $res = $pd['result'] ?? 'pending';
-                                    $cellClass = "bg-slate-800/40 text-slate-400 border-slate-700";
+                                    $cellClass = "bg-[#0B1626] text-[#94A3B8] border-[#243247]";
                                     if ($res === 'correct') {
-                                        $cellClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold";
+                                        $cellClass = "bg-emerald-950 text-emerald-400 border-emerald-500/40 font-bold";
                                     } elseif ($res === 'incorrect') {
-                                        $cellClass = "bg-rose-500/20 text-rose-300 border-rose-500/40";
+                                        $cellClass = "bg-rose-950 text-rose-400 border-rose-500/40";
                                     }
                                     ?>
                                     <td class="py-1.5 px-2 text-center">
-                                        <?php if ($sel): ?>
+                                        <?php if (!$isRev): ?>
+                                            <span class="text-[10px] text-[#94A3B8]">LOCKED</span>
+                                        <?php elseif ($sel): ?>
                                             <span class="inline-block px-1.5 py-0.5 rounded border text-[10px] <?= $cellClass ?>">
                                                 <?= $sel ?>
                                             </span>
@@ -474,7 +457,7 @@ $cutoffPassed = !empty($cutoffPassed);
                                         <?php endif; ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td class="py-2 px-2 text-center text-amber-400 font-bold">
+                                <td class="py-2 px-2 text-center text-[#EAB308] font-bold tabular-nums">
                                     <?= $row['predicted_mnf'] !== null ? $row['predicted_mnf'] : '—' ?>
                                 </td>
                             </tr>
@@ -482,9 +465,9 @@ $cutoffPassed = !empty($cutoffPassed);
                     </tbody>
                 </table>
             </div>
-            <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex justify-end">
-                <button type="button" onclick="closePicksMatrixModal()" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition shadow">
-                    Close Matrix
+            <div class="p-3.5 border-t border-[#243247] bg-[#0B1626] flex justify-end">
+                <button type="button" onclick="closePicksMatrixModal()" class="px-4 py-2 rounded-lg bg-[#162235] hover:bg-[#1f2e44] text-[#F8FAFC] font-bold text-xs uppercase tracking-wider transition border border-[#243247]">
+                    Close
                 </button>
             </div>
         </div>
@@ -494,11 +477,11 @@ $cutoffPassed = !empty($cutoffPassed);
 <script>
 function filterPickem(tier) {
     document.querySelectorAll('.pickem-tab').forEach(el => {
-        el.className = 'pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition';
+        el.className = 'pickem-tab px-3 py-1.5 text-xs font-bold rounded-lg bg-[#162235] border border-[#243247] text-[#94A3B8] hover:text-white transition';
     });
     const activeBtn = document.getElementById('pickem-tab-' + tier);
     if (activeBtn) {
-        activeBtn.className = 'pickem-tab px-3.5 py-1.5 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 transition shadow-sm';
+        activeBtn.className = 'pickem-tab px-3 py-1.5 text-xs font-bold rounded-lg bg-[#EAB308] text-[#0B1626] transition';
     }
 
     const rows = document.querySelectorAll('.pickem-row');
@@ -539,6 +522,12 @@ function closePicksMatrixModal() {
         modal.classList.remove('flex');
     }
 }
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        closePicksMatrixModal();
+    }
+});
 </script>
 
 <?php

@@ -333,7 +333,7 @@ class ScoringEngine
 
                 // Mask current week pick for other users if game has not kicked off yet
                 if ($isCurrentWeek && !$isViewer && !$hasStarted) {
-                    $p['display_team'] = '🔒 Hidden';
+                    $p['display_team'] = 'LOCKED';
                     $p['is_hidden'] = true;
                 } else {
                     $p['display_team'] = $p['selected_team'];

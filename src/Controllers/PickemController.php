@@ -85,13 +85,15 @@ class PickemController
         }
 
         // Check lock status and pick grading per game
+        // Per-game kickoff locking and pick grading
         $now = time();
         $userCorrectCount = 0;
         $userIncorrectCount = 0;
         $userGradedCount = 0;
         $userPendingCount = 0;
+        $openGamesCount = 0;
+        $lockedGamesCount = 0;
 
-        // Check first game kickoff and calculate 1-hour cutoff deadline for the entire week
         $firstGameKickoff = null;
         foreach ($games as $g) {
             $kt = strtotime($g['kickoff_time']);
@@ -99,17 +101,20 @@ class PickemController
                 $firstGameKickoff = $kt;
             }
         }
-        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
-        $isWeekLocked = ($cutoffTime !== null && $now >= $cutoffTime);
         $firstKickoffFormatted = $firstGameKickoff
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
-        $cutoffFormatted = $cutoffTime
-            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
-            : 'Cutoff of Week ' . $week;
 
         foreach ($games as $idx => $g) {
-            $games[$idx]['is_locked'] = $isWeekLocked;
+            $kt = strtotime($g['kickoff_time']);
+            $isGameLocked = ($kt <= $now);
+            $games[$idx]['is_locked'] = $isGameLocked;
+            if ($isGameLocked) {
+                $lockedGamesCount++;
+            } else {
+                $openGamesCount++;
+            }
+
             $userPick = $userPicks[$g['id']] ?? null;
             $games[$idx]['user_pick'] = $userPick;
 
@@ -145,6 +150,9 @@ class PickemController
             }
             $games[$idx]['pick_result'] = $pickResult;
         }
+
+        $isWeekLocked = ($openGamesCount === 0);
+        $cutoffFormatted = $isWeekLocked ? 'All games locked' : "{$openGamesCount} game(s) open";
 
         // Find designated tiebreaker game
         $tiebreakerGame = null;
@@ -240,17 +248,35 @@ class PickemController
             ? (int) $input['mnf_total_points']
             : null;
 
-        // Check first game kickoff deadline (cutoff is 1 hour into the first game)
-        $firstGame = $this->db->queryOne(
-            'SELECT MIN(kickoff_time) as first_kickoff FROM games WHERE season_year = :season AND week_number = :week',
-            ['season' => $season, 'week' => $week]
-        );
-        $firstKickoff = !empty($firstGame['first_kickoff']) ? strtotime($firstGame['first_kickoff']) : null;
-        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
-        if ($cutoffTime !== null && time() >= $cutoffTime) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => "Picks for Week {$week} are locked (cutoff deadline of 1 hour into the first game has passed)."]);
-            exit;
+        // Per-game kickoff lock check: verify specific game has not kicked off yet
+        if ($gameId !== null) {
+            $targetGame = $this->db->queryOne(
+                'SELECT home_team, away_team, kickoff_time FROM games WHERE id = :gid AND season_year = :season AND week_number = :week',
+                ['gid' => $gameId, 'season' => $season, 'week' => $week]
+            );
+            if (!$targetGame) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'Game not found for this matchup.']);
+                exit;
+            }
+            if (strtotime($targetGame['kickoff_time']) <= time()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'This game has already kicked off and is locked.']);
+                exit;
+            }
+        }
+
+        // Check if tiebreaker game has kicked off if mnf points passed
+        if (array_key_exists('mnf_total_points', $input)) {
+            $tbGame = $this->db->queryOne(
+                'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
+                ['season' => $season, 'week' => $week]
+            );
+            if ($tbGame && strtotime($tbGame['kickoff_time']) <= time()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'The tiebreaker game has already kicked off and is locked.']);
+                exit;
+            }
         }
 
         // Get or create pickem_entries record
@@ -347,47 +373,42 @@ class PickemController
         );
 
         $now = time();
-        $firstGameKickoff = null;
         $validGames = [];
+        $openGames = [];
+        $lockedGames = [];
         $mnfGame = null;
         foreach ($games as $g) {
             $validGames[$g['id']] = $g;
             if ($g['is_mnf']) {
                 $mnfGame = $g;
             }
-            $kt = strtotime($g['kickoff_time']);
-            if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
-                $firstGameKickoff = $kt;
+            if (strtotime($g['kickoff_time']) > $now) {
+                $openGames[$g['id']] = $g;
+            } else {
+                $lockedGames[$g['id']] = $g;
             }
         }
 
-        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
-        $firstKickoffFormatted = $firstGameKickoff
-            ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
-            : 'Kickoff of Week ' . $week;
-        $cutoffFormatted = $cutoffTime
-            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
-            : 'Cutoff of Week ' . $week;
-
-        // Check if week is locked (Cutoff is 1 hour into the first game)
-        if ($cutoffTime !== null && $now >= $cutoffTime) {
-            $_SESSION['error'] = "Picks for Week {$week} closed at {$cutoffFormatted} (1 hour after the week's first game kicked off).";
+        // Check if all games for the week are locked
+        if (empty($openGames)) {
+            $_SESSION['error'] = "All games for Week {$week} have already kicked off. Picks can no longer be submitted.";
             header("Location: /pickem?week={$week}&season={$season}");
             exit;
         }
 
-        // Validate that all games are picked for final submission
+        // Validate that all OPEN games are picked for final submission
         $unpickedCount = 0;
-        foreach ($games as $g) {
+        foreach ($openGames as $g) {
             $pick = $submittedPicks[$g['id']] ?? null;
             if (empty($pick) || ($pick !== $g['home_team'] && $pick !== $g['away_team'])) {
                 $unpickedCount++;
             }
         }
 
-        // Validate tiebreaker if designated game is present
+        // Validate tiebreaker if designated game is still open
         $tiebreakerMissing = false;
-        if ($mnfGame) {
+        $isMnfOpen = $mnfGame && (strtotime($mnfGame['kickoff_time']) > $now);
+        if ($isMnfOpen) {
             if ($mnfPrediction === null || $mnfPrediction <= 0) {
                 $tiebreakerMissing = true;
             }
@@ -396,10 +417,10 @@ class PickemController
         if ($unpickedCount > 0 || $tiebreakerMissing) {
             $reasons = [];
             if ($unpickedCount > 0) {
-                $reasons[] = "select a winner for all {$unpickedCount} remaining game(s)";
+                $reasons[] = "select a winner for all {$unpickedCount} remaining open game(s)";
             }
             if ($tiebreakerMissing) {
-                $tbDesc = $mnfGame ? "{$mnfGame['away_team']} @ {$mnfGame['home_team']}" : "Game of the Week";
+                $tbDesc = "{$mnfGame['away_team']} @ {$mnfGame['home_team']}";
                 $reasons[] = "enter the combined total points tiebreaker for {$tbDesc}";
             }
             $_SESSION['error'] = 'Incomplete submission: You must ' . implode(' and ', $reasons) . '.';
@@ -421,19 +442,27 @@ class PickemController
             );
         } else {
             $entryId = (int) $entry['id'];
-            $this->db->execute(
-                'UPDATE pickem_entries SET mnf_total_points_prediction = :mnf, is_locked = 1, locked_at = CURRENT_TIMESTAMP WHERE id = :id',
-                ['mnf' => $mnfPrediction, 'id' => $entryId]
-            );
+            if ($isMnfOpen && $mnfPrediction !== null) {
+                $this->db->execute(
+                    'UPDATE pickem_entries SET mnf_total_points_prediction = :mnf, is_locked = 1, locked_at = CURRENT_TIMESTAMP WHERE id = :id',
+                    ['mnf' => $mnfPrediction, 'id' => $entryId]
+                );
+            } else {
+                $this->db->execute(
+                    'UPDATE pickem_entries SET is_locked = 1, locked_at = CURRENT_TIMESTAMP WHERE id = :id',
+                    ['id' => $entryId]
+                );
+            }
         }
 
-        // Process submitted picks
+        // Process submitted picks for open games only (never alter locked games)
         $savedCount = 0;
         foreach ($submittedPicks as $gameId => $selectedTeam) {
             $gameId = (int) $gameId;
             $selectedTeam = strtoupper(trim((string) $selectedTeam));
 
-            $game = $validGames[$gameId] ?? null;
+            // Only allow saving picks for games that have not kicked off
+            $game = $openGames[$gameId] ?? null;
             if (!$game) {
                 continue;
             }
@@ -475,7 +504,7 @@ class PickemController
             // Notification failures should never disrupt player experience
         }
 
-        $_SESSION['flash'] = "✅ Your Week {$week} picks are confirmed and saved! You can adjust your picks anytime before the cutoff deadline ({$cutoffFormatted}).";
+        $_SESSION['flash'] = "Your Week {$week} picks are confirmed! Each game locks strictly at its individual kickoff time.";
         header("Location: /pickem?week={$week}&season={$season}");
         exit;
     }
@@ -520,25 +549,8 @@ class PickemController
         );
         $availableWeeks = array_column($availableWeeks, 'week_number');
 
-        // Determine opponent picks visibility:
-        $firstGameKickoff = null;
-        foreach ($games as $g) {
-            $kt = strtotime($g['kickoff_time']);
-            if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
-                $firstGameKickoff = $kt;
-            }
-        }
+        // Determine opponent picks visibility (Per-game kickoff rule)
         $now = time();
-        $firstGameStarted = ($firstGameKickoff !== null && $now >= $firstGameKickoff);
-        $cutoffTime = $firstGameKickoff !== null ? ($firstGameKickoff + 3600) : null;
-        $cutoffPassed = ($cutoffTime !== null && $now >= $cutoffTime);
-        $firstKickoffFormatted = $firstGameKickoff 
-            ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
-            : 'Kickoff';
-        $cutoffFormatted = $cutoffTime 
-            ? (new \DateTimeImmutable("@{$cutoffTime}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
-            : 'Cutoff';
-
         $viewerId = !empty($user['id']) ? (int) $user['id'] : null;
         $viewerEntry = null;
         $viewerHasSubmitted = false;
@@ -551,10 +563,16 @@ class PickemController
         }
         $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 
-        // Core Rule: Participant picks remain confidential until the selection cutoff (1 hour into first game).
-        // Once the cutoff time passes, users who have submitted their picks (or the commissioner)
-        // can view opponent picks. For past/completed weeks, picks are always visible.
-        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
+        $hasAnyGameStarted = false;
+        foreach ($games as $g) {
+            if (strtotime($g['kickoff_time']) <= $now || in_array($g['status'], ['in_progress', 'final'], true)) {
+                $hasAnyGameStarted = true;
+                break;
+            }
+        }
+
+        // Opponents' picks for started games are revealed to anyone who has submitted (or commissioner), or when week complete
+        $canViewOpponentPicks = $hasAnyGameStarted || $isWeekComplete || $isCommissioner;
 
         // Fetch picks mapped by entry_id
         $picksByEntryId = [];
@@ -569,12 +587,17 @@ class PickemController
             $picksByEntryId[$rp['entry_id']][$rp['game_id']] = $rp['selected_team'];
         }
 
-        // Enrich standing rows with detailed game picks
+        // Enrich standing rows with detailed game picks (revealed per-game)
         foreach ($standings as $idx => $st) {
             $ePicks = $picksByEntryId[$st['entry_id']] ?? [];
             $userPicksDetail = [];
             foreach ($games as $g) {
                 $sel = $ePicks[$g['id']] ?? null;
+                $gameStarted = (strtotime($g['kickoff_time']) <= $now || in_array($g['status'], ['in_progress', 'final'], true));
+                $isViewer = ($viewerId !== null && (int)$st['user_id'] === $viewerId);
+                // Reveal if game started, or commissioner, or week complete, or viewer is owner
+                $isRevealed = $isCommissioner || $isWeekComplete || $isViewer || $gameStarted;
+
                 $win = null;
                 if ($g['status'] === 'final' && $g['home_score'] !== null && $g['away_score'] !== null) {
                     if ($g['home_score'] > $g['away_score']) {
@@ -598,7 +621,11 @@ class PickemController
                     'away_score' => $g['away_score'],
                     'home_score' => $g['home_score'],
                     'status' => $g['status'],
-                    'selected_team' => $sel,
+                    'kickoff_time' => $g['kickoff_time'],
+                    'is_started' => $gameStarted,
+                    'is_revealed' => $isRevealed,
+                    'selected_team' => $isRevealed ? $sel : null,
+                    'raw_selected_team' => $isViewer ? $sel : null,
                     'winning_team' => $win,
                     'result' => $res,
                 ];

@@ -245,7 +245,7 @@ class ScoringEngineTest extends TestCase
         // Alice's week 2 pick should be HIDDEN from Bob
         $standingsForBob = $this->engine->getSurvivorStandings(2026, 2, 2);
         $aliceRowForBob = array_values(array_filter($standingsForBob, fn($s) => $s['user_id'] === 1))[0];
-        $this->assertSame('🔒 Hidden', $aliceRowForBob['history'][0]['display_team']);
+        $this->assertSame('LOCKED', $aliceRowForBob['history'][0]['display_team']);
         $this->assertTrue($aliceRowForBob['history'][0]['is_hidden']);
         $this->assertNotContains('BUF', $aliceRowForBob['teams_used'], 'Unstarted pick should not appear in opponent teams_used');
 

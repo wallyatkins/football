@@ -23,370 +23,216 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 <div class="space-y-6">
 
     <!-- Header & Single-Week Focus -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#243247] pb-5">
         <div>
             <div class="flex items-center gap-2 mb-1.5">
-                <span class="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">NFL Regular Season</span>
-                <span class="text-xs text-slate-400">Season <?= htmlspecialchars((string) $season) ?></span>
+                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#162235] text-[#EAB308] border border-[#243247] uppercase tracking-wider">NFL Regular Season</span>
+                <span class="text-xs font-mono text-[#94A3B8]">Season <?= htmlspecialchars((string) $season) ?></span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-[#F8FAFC] flex items-center gap-3">
                 <span>Week <?= htmlspecialchars((string) $week) ?> Matchups</span>
-                <span class="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300">
+                <span class="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#162235] border border-[#243247] text-[#94A3B8] tabular-nums">
                     <?= count($games) ?> Games
                 </span>
             </h1>
         </div>
 
-        <!-- Single-Week Focus Action Bar -->
-        <div class="flex items-center gap-2">
-            <span class="px-3.5 py-1.5 text-xs font-black font-mono rounded-lg bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1.5">
-                <span>🎯</span> Active Week <?= $week ?>
+        <!-- Action Bar -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-3 py-1.5 text-xs font-black font-mono rounded-lg bg-[#EAB308] text-[#0B1626] shadow-sm uppercase tracking-wider">
+                Week <?= $week ?>
             </span>
-            <a href="/fantasy/vault?tab=pools" 
-               class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition flex items-center gap-1.5"
-               title="View historical results in the Dynasty Vault">
-                <span>🏛️</span>
-                <span class="hidden sm:inline">Archives</span>
-            </a>
-
-            <!-- How It Works Modal Button -->
             <button type="button" 
                     id="btnOpenHowItWorks"
-                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 shadow-sm">
-                <span>💡</span>
-                <span>How It Works</span>
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#162235] hover:bg-[#0B1626] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#243247] transition">
+                Rules &amp; Scoring
             </button>
-
             <?php if (!empty($isCommissioner)): ?>
                 <a href="/admin/payments?week=<?= $week ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-900/60 border border-purple-500/40 text-purple-300 hover:bg-purple-800 hover:text-white transition flex items-center gap-1.5 shadow-sm">
-                    <span>👑</span>
-                    <span class="hidden sm:inline">Commissioner Portal</span>
+                   class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/80 hover:text-white transition shadow-sm">
+                    Commissioner
                 </a>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- Center Column Gridiron Layout (One Game Per Row) -->
+    <!-- Center Column Layout (One Game Per Row) -->
     <div class="max-w-3xl mx-auto space-y-6">
 
-    <!-- Week Champion Congratulatory Banners (Displayed when games are final) -->
+    <!-- Week Champion Summary (Collapsible, Auto-collapsed Once Games Kick Off) -->
     <?php 
     $activeCelebrateWeek = !empty($isWeekComplete) ? $week : (!empty($lastCompletedWeek) ? $lastCompletedWeek : null);
     $activeWinnersOverall = !empty($isWeekComplete) ? ($weeklyWinnersOverall ?? []) : ($lastWeekWinnersOverall ?? []);
     $activeWinnersPaid    = !empty($isWeekComplete) ? ($weeklyWinnersPaid ?? []) : ($lastWeekWinnersPaid ?? []);
     $activeWinnersFree    = !empty($isWeekComplete) ? ($weeklyWinnersFree ?? []) : ($lastWeekWinnersFree ?? []);
     $activePotInfo        = !empty($isWeekComplete) ? ($potInfo ?? null) : ($lastWeekPotInfo ?? null);
+    $shouldCollapseWinners = ($openGamesCount < count($games)) || !empty($userGradedCount);
     ?>
 
     <?php if ($activeCelebrateWeek !== null && (!empty($activeWinnersOverall) || !empty($activeWinnersPaid) || !empty($activeWinnersFree))): ?>
-        <div class="p-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-emerald-500/15 border-2 border-amber-400/50 shadow-2xl relative overflow-hidden space-y-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                <div class="flex items-center gap-3">
-                    <span class="p-2.5 rounded-xl bg-amber-500/25 text-amber-300 text-2xl border border-amber-400/50 shadow-sm">🏆</span>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-                                Week <?= $activeCelebrateWeek ?> Winners Circle
-                            </span>
-                            <span class="text-xs font-mono text-emerald-400 font-bold"><?= !empty($isWeekComplete) ? 'Week Complete' : 'Last Week Wrapup' ?></span>
-                        </div>
-                        <h2 class="text-lg sm:text-xl font-black text-white mt-0.5">Week <?= $activeCelebrateWeek ?> Pool Champions</h2>
-                    </div>
+        <details class="group rounded-xl border border-[#243247] bg-[#162235] overflow-hidden" <?= $shouldCollapseWinners ? '' : 'open' ?>>
+            <summary class="p-3.5 px-4 flex items-center justify-between cursor-pointer list-none select-none hover:bg-[#0B1626]/40 transition">
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-black bg-[#EAB308] text-[#0B1626] uppercase tracking-wider">WINNERS CIRCLE</span>
+                    <span class="text-xs font-bold text-[#F8FAFC]">Week <?= $activeCelebrateWeek ?> Champions</span>
                 </div>
-                <a href="/pickem/standings?week=<?= $activeCelebrateWeek ?>&season=<?= $season ?>" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm shrink-0">
-                    Week <?= $activeCelebrateWeek ?> Standings &rarr;
-                </a>
+                <div class="flex items-center gap-2 text-[11px] font-mono text-[#94A3B8]">
+                    <a href="/pickem/standings?week=<?= $activeCelebrateWeek ?>&season=<?= $season ?>" class="text-[#EAB308] hover:underline mr-2" onclick="event.stopPropagation()">View Board &rarr;</a>
+                    <span class="group-open:hidden">Show &darr;</span>
+                    <span class="hidden group-open:inline">Hide &uarr;</span>
+                </div>
+            </summary>
+
+            <div class="p-4 pt-1 border-t border-[#243247] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <!-- 1. Overall -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-[#EAB308] block mb-1">Overall Winner</span>
+                    <?php if (!empty($activeWinnersOverall)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate">
+                            <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersOverall)) ?>
+                        </div>
+                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
+                            <?= $activeWinnersOverall[0]['correct_picks'] ?> correct picks
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- 2. Cash -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-emerald-400 block mb-1">Cash Pool Winner</span>
+                    <?php if (!empty($activeWinnersPaid)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate">
+                            <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersPaid)) ?>
+                        </div>
+                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
+                            <?= $activeWinnersPaid[0]['correct_picks'] ?> correct &bull; $<?= number_format($activePotInfo['payout_per_winner'] / max(1, count($activeWinnersPaid)), 2) ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">No cash verified</span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- 3. Free -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <span class="font-mono font-bold text-[10px] uppercase text-purple-300 block mb-1">Free / Fun Winner</span>
+                    <?php if (!empty($activeWinnersFree)): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate">
+                            <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersFree)) ?>
+                        </div>
+                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
+                            <?= $activeWinnersFree[0]['correct_picks'] ?> correct
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
+                </div>
             </div>
-
-            <!-- Three Winner Categories Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-                
-                <!-- 1. Overall Champion -->
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-400/50 shadow-md flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 mb-2">
-                            <span class="text-base">👑</span>
-                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-amber-400">Overall Champion</span>
-                        </div>
-                        <?php if (!empty($activeWinnersOverall)): ?>
-                            <div class="font-black text-white text-base truncate">
-                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersOverall)) ?>
-                            </div>
-                            <div class="text-slate-300 font-semibold mt-1">
-                                <span class="text-amber-300 font-bold"><?= $activeWinnersOverall[0]['correct_picks'] ?></span> correct picks
-                                <?= count($activeWinnersOverall) > 1 ? '<span class="text-amber-400 text-[10px] ml-1">(Tied)</span>' : '' ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-slate-500 italic">Pending final games</div>
-                        <?php endif; ?>
-                    </div>
-                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">All entrants combined</span>
-                </div>
-
-                <!-- 2. Money Pool Winner -->
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-emerald-400/50 shadow-md flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 mb-2">
-                            <span class="text-base">💰</span>
-                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-emerald-400">Money Pool Winner</span>
-                        </div>
-                        <?php if (!empty($activeWinnersPaid)): ?>
-                            <div class="font-black text-white text-base truncate">
-                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersPaid)) ?>
-                            </div>
-                            <div class="text-slate-300 font-semibold mt-1">
-                                <span class="text-emerald-300 font-bold"><?= $activeWinnersPaid[0]['correct_picks'] ?></span> correct
-                                <?php if (!empty($activePotInfo['total_pot']) && $activePotInfo['total_pot'] > 0): ?>
-                                    &bull; Won <strong class="font-mono text-emerald-300">$<?= number_format($activePotInfo['payout_per_winner'] / max(1, count($activeWinnersPaid)), 2) ?></strong>
-                                <?php endif; ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-slate-500 italic">No cash entries verified</div>
-                        <?php endif; ?>
-                    </div>
-                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">$10 stake cash pool</span>
-                </div>
-
-                <!-- 3. For Fun / Free Pool Winner -->
-                <div class="p-4 rounded-xl bg-slate-900/90 border border-violet-400/50 shadow-md flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center gap-1.5 mb-2">
-                            <span class="text-base">🎮</span>
-                            <span class="font-mono font-black text-[10px] uppercase tracking-wider text-violet-400">Free / Fun Winner</span>
-                        </div>
-                        <?php if (!empty($activeWinnersFree)): ?>
-                            <div class="font-black text-white text-base truncate">
-                                <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersFree)) ?>
-                            </div>
-                            <div class="text-slate-300 font-semibold mt-1">
-                                <span class="text-violet-300 font-bold"><?= $activeWinnersFree[0]['correct_picks'] ?></span> correct
-                                <?= count($activeWinnersFree) > 1 ? '<span class="text-violet-400 text-[10px] ml-1">(Tied)</span>' : '' ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="text-slate-500 italic">No free entries</div>
-                        <?php endif; ?>
-                    </div>
-                    <span class="text-[10px] text-slate-500 font-mono mt-2 pt-1.5 border-t border-slate-800">Free tier &bull; Bragging rights</span>
-                </div>
-
-            </div>
-        </div>
+        </details>
     <?php endif; ?>
 
+    <!-- User Ballot Status & Payment Info (Editorial Strip) -->
+    <div class="rounded-xl border border-[#243247] bg-[#162235] p-4 text-xs shadow-sm space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="font-bold text-sm text-[#F8FAFC]">Week <?= $week ?> Ballot Status:</span>
+                <?php if ($isWeekLocked): ?>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-800 text-[#94A3B8] border border-[#243247] uppercase">
+                        ALL GAMES LOCKED
+                    </span>
+                <?php elseif ($hasConfirmedPicks): ?>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 uppercase">
+                        BALLOT CONFIRMED
+                    </span>
+                <?php else: ?>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-950/80 text-[#EAB308] border border-amber-500/40 uppercase">
+                        DRAFT &bull; AUTO-SAVING
+                    </span>
+                <?php endif; ?>
 
-    <!-- User Pick Lock & Payment Callout -->
-    <?php if ($isUserLocked): ?>
-        <div class="locked-banner p-6 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-950 border border-emerald-500/40 shadow-xl space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
-                <div class="flex items-start gap-4">
-                    <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 text-3xl border border-emerald-500/30 shrink-0">
-                        🔒
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2.5 flex-wrap">
-                            <h2 class="text-lg font-black text-white">Your Week <?= $week ?> Picks Are Locked In!</h2>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                                LOCKED &bull; GAME STARTED
-                            </span>
-                            <?php if ($isPaid): ?>
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
-                                    ✓ STAKE VERIFIED
-                                </span>
-                            <?php else: ?>
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                                    AWAITING $10 PAYMENT
-                                </span>
-                            <?php endif; ?>
-                        </div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Picks closed at the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the first game).
-                            <?php if ($isPaid): ?>
-                                Your picks and $10.00 entry fee are verified. You are fully active in this week's prize pool!
-                            <?php else: ?>
-                                Your picks are officially recorded! Please send your <strong>$10.00</strong> entry stake to Commissioner Wally below so your picks count toward this week's cash pot.
-                            <?php endif; ?>
-                        </p>
-                        <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/90 border border-slate-700/80 text-xs">
-                            <span class="text-slate-400">Payment Memo Note:</span>
-                            <span class="font-mono font-bold text-amber-300 select-all">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Verified Payment Action Buttons -->
-                <?php if (!$isPaid): ?>
-                    <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008CFF]/20 hover:bg-[#008CFF]/30 border border-[#008CFF]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>📱</span> Venmo (@WallyAtkins) &rarr;
-                        </a>
-                        <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0079C1]/20 hover:bg-[#0079C1]/30 border border-[#0079C1]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>💳</span> PayPal (paypal.me/WallyAtkins) &rarr;
-                        </a>
-                        <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00D632]/20 hover:bg-[#00D632]/30 border border-[#00D632]/50 text-[#4ade80] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>⚡</span> Cash App ($WallyAtkins) &rarr;
-                        </a>
-                    </div>
+                <?php if ($isPaid): ?>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 uppercase">
+                        CASH VERIFIED
+                    </span>
+                <?php else: ?>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-[#0B1626] text-[#94A3B8] border border-[#243247] uppercase">
+                        AWAITING $10 STAKE
+                    </span>
                 <?php endif; ?>
             </div>
+
+            <span class="font-mono text-[11px] text-[#94A3B8]">
+                <?= $openGamesCount ?> of <?= count($games) ?> games open
+            </span>
         </div>
-    <?php elseif ($hasConfirmedPicks): ?>
-        <!-- Confirmed & Editable Banner (Pre-Kickoff) -->
-        <div class="p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-emerald-950/20 to-slate-950 border border-emerald-500/40 shadow-xl space-y-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
-                <div class="flex items-start gap-4">
-                    <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-300 text-3xl border border-emerald-500/30 shrink-0">
-                        ✓
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2.5 flex-wrap">
-                            <h2 class="text-lg font-black text-white">Your Week <?= $week ?> Picks Are Confirmed!</h2>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase tracking-wider">
-                                CONFIRMED &bull; EDITABLE UNTIL KICKOFF
-                            </span>
-                            <?php if ($isPaid): ?>
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider">
-                                    ✓ STAKE VERIFIED
-                                </span>
-                            <?php else: ?>
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
-                                    AWAITING $10 PAYMENT
-                                </span>
-                            <?php endif; ?>
-                        </div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">
-                            Your ballot has been confirmed and saved! You can still change any pick or your tiebreaker score anytime before the cutoff deadline (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong>). All changes are saved automatically behind the scenes.
-                        </p>
-                        <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-950/90 border border-slate-700/80 text-xs">
-                            <span class="text-slate-400">Payment Memo Note:</span>
-                            <span class="font-mono font-bold text-amber-300 select-all">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span>
-                        </div>
+
+        <p class="text-[#94A3B8] leading-relaxed">
+            Picks lock on a <strong>per-game kickoff basis</strong>. You can modify any pick or tiebreaker prediction up until that specific game kicks off.
+        </p>
+
+        <?php if (!$isPaid): ?>
+            <details class="pt-1.5 border-t border-[#243247] text-[11px]">
+                <summary class="cursor-pointer text-[#EAB308] hover:underline select-none font-semibold">
+                    Payment Options ($10.00 Cash Stake) &amp; Memo Note &rarr;
+                </summary>
+                <div class="mt-2.5 p-3 rounded-lg bg-[#0B1626] border border-[#243247] space-y-2">
+                    <p class="text-[#94A3B8]">
+                        Send your $10 stake to Commissioner Wally. Include memo: <code class="font-mono font-bold text-amber-300 select-all">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></code>
+                    </p>
+                    <div class="flex items-center gap-2 flex-wrap pt-1 font-mono font-bold">
+                        <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-[#162235] border border-[#243247] text-sky-400 hover:text-white transition">
+                            Venmo (@WallyAtkins)
+                        </a>
+                        <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-[#162235] border border-[#243247] text-sky-400 hover:text-white transition">
+                            PayPal (paypal.me/WallyAtkins)
+                        </a>
+                        <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded bg-[#162235] border border-[#243247] text-emerald-400 hover:text-white transition">
+                            Cash App ($WallyAtkins)
+                        </a>
                     </div>
                 </div>
+            </details>
+        <?php endif; ?>
+    </div>
 
-                <!-- Verified Payment Action Buttons -->
-                <?php if (!$isPaid): ?>
-                    <div class="flex items-center gap-2 flex-wrap shrink-0">
-                        <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#008CFF]/20 hover:bg-[#008CFF]/30 border border-[#008CFF]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>📱</span> Venmo (@WallyAtkins) &rarr;
-                        </a>
-                        <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0079C1]/20 hover:bg-[#0079C1]/30 border border-[#0079C1]/50 text-[#38bdf8] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>💳</span> PayPal (paypal.me/WallyAtkins) &rarr;
-                        </a>
-                        <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#00D632]/20 hover:bg-[#00D632]/30 border border-[#00D632]/50 text-[#4ade80] font-bold text-xs transition shadow-sm hover:scale-105 transform">
-                            <span>⚡</span> Cash App ($WallyAtkins) &rarr;
-                        </a>
-                    </div>
-                <?php endif; ?>
+    <!-- User Live Performance Scorecard (When any game is final) -->
+    <?php if (!empty($userGradedCount) && $userGradedCount > 0): ?>
+        <div class="p-4 rounded-xl bg-[#162235] border border-[#243247] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+                <span class="font-bold text-[#F8FAFC] block mb-0.5">Week <?= $week ?> Performance</span>
+                <span class="text-[#94A3B8] font-mono tabular-nums">
+                    <?= $userGradedCount ?> of <?= count($games) ?> games graded &bull; Accuracy: <?= $userGradedCount > 0 ? round(($userCorrectCount / $userGradedCount) * 100) : 0 ?>%
+                </span>
             </div>
-        </div>
-    <?php else: ?>
-        <!-- Pre-Lock Reminder Banner (Auto-saving Draft) -->
-        <div class="prelock-banner p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-amber-500/30 shadow-xl space-y-3">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-start gap-3.5">
-                    <div class="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 text-2xl border border-amber-500/20 shrink-0">
-                        🏈
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-bold text-white">Weekly Pick'em Stake: $10.00</h3>
-                            <span class="text-[10px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                                Auto-Saving Draft
-                            </span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                            Pick a winner for each matchup and enter the tiebreaker score for <strong><?= htmlspecialchars($tbMatchupLabel) ?></strong>. <strong>Your selections and tiebreaker score auto-save silently behind the scenes.</strong> You can change your picks anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the opening game).
-                        </p>
-                        <div class="mt-2 text-[11px] text-slate-400">
-                            Remember to add note <span class="font-mono text-amber-300 font-bold">Pickem - <?= htmlspecialchars($user['username'] ?? 'username') ?> - Week <?= $week ?></span> when sending your $10 stake.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Payment Channels -->
-                <div class="flex items-center gap-2 flex-wrap">
-                    <a href="<?= htmlspecialchars($venmoUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#008CFF]/15 hover:bg-[#008CFF]/25 border border-[#008CFF]/40 text-[#38bdf8] font-bold text-xs transition">
-                        <span>📱</span> Venmo
-                    </a>
-                    <a href="<?= htmlspecialchars($payPalUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0079C1]/15 hover:bg-[#0079C1]/25 border border-[#0079C1]/40 text-[#38bdf8] font-bold text-xs transition">
-                        <span>💳</span> PayPal
-                    </a>
-                    <a href="<?= htmlspecialchars($cashAppUrl) ?>" target="_blank" rel="noopener noreferrer" 
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00D632]/15 hover:bg-[#00D632]/25 border border-[#00D632]/40 text-[#4ade80] font-bold text-xs transition">
-                        <span>⚡</span> Cash App
-                    </a>
-                </div>
+            <div class="flex items-center gap-2 font-mono tabular-nums font-bold">
+                <span class="px-2.5 py-1 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
+                    <?= $userCorrectCount ?> Correct
+                </span>
+                <span class="px-2.5 py-1 rounded bg-rose-950/80 text-rose-400 border border-rose-500/40">
+                    <?= $userIncorrectCount ?> Missed
+                </span>
+                <span class="px-2.5 py-1 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247]">
+                    <?= $userPendingCount ?> Pending
+                </span>
+                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" class="px-2.5 py-1 rounded bg-[#EAB308] text-[#0B1626] uppercase text-[11px] font-black hover:bg-amber-400 transition">
+                    Standings
+                </a>
             </div>
         </div>
     <?php endif; ?>
 
     <!-- Real-Time Validation Notification Box (Dynamic) -->
-    <div id="validationAlert" class="hidden p-4 rounded-xl bg-rose-500/15 border-2 border-rose-500/60 shadow-xl transition-all duration-300">
+    <div id="validationAlert" class="hidden p-4 rounded-xl bg-rose-950/80 border border-rose-500/60 shadow-lg transition-all duration-200">
         <div class="flex items-start gap-3 text-rose-300 text-xs font-semibold">
-            <span class="text-xl">⚠️</span>
+            <svg class="w-4 h-4 text-rose-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
             <div id="validationAlertMessage" class="flex-1 space-y-1">
                 <!-- Injected via JavaScript -->
             </div>
         </div>
     </div>
-
-    <!-- User's Live Performance Scorecard (When any game is final or user has submitted) -->
-    <?php if (!empty($userGradedCount) && $userGradedCount > 0): ?>
-        <div class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-700/80 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-                <div class="p-3 rounded-2xl bg-amber-500/15 text-amber-400 text-2xl border border-amber-500/30 shrink-0">
-                    📊
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-base font-bold text-white">Your Week <?= $week ?> Pick'em Performance</h3>
-                        <span class="text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                            Live Grading
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-0.5">
-                        <?= $userGradedCount ?> of <?= count($games) ?> games graded &bull; Current Accuracy: <strong class="text-amber-300 font-mono"><?= $userGradedCount > 0 ? round(($userCorrectCount / $userGradedCount) * 100) : 0 ?>%</strong>
-                    </p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2.5 font-mono flex-wrap">
-                <div class="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center gap-2 shadow-sm">
-                    <span class="text-lg font-black">✓</span>
-                    <div>
-                        <span class="text-base font-black"><?= $userCorrectCount ?></span>
-                        <span class="text-[10px] uppercase block text-emerald-400/80">Correct</span>
-                    </div>
-                </div>
-                <div class="px-3.5 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 flex items-center gap-2 shadow-sm">
-                    <span class="text-lg font-black">✗</span>
-                    <div>
-                        <span class="text-base font-black"><?= $userIncorrectCount ?></span>
-                        <span class="text-[10px] uppercase block text-rose-400/80">Missed</span>
-                    </div>
-                </div>
-                <div class="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-300 flex items-center gap-2 shadow-sm">
-                    <span class="text-lg">⏳</span>
-                    <div>
-                        <span class="text-base font-black"><?= $userPendingCount ?></span>
-                        <span class="text-[10px] uppercase block text-slate-400">Pending</span>
-                    </div>
-                </div>
-                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow flex items-center gap-1.5">
-                    <span>🏆</span>
-                    <span>Standings</span>
-                </a>
-            </div>
-        </div>
-    <?php endif; ?>
 
     <!-- Pick'em Form -->
     <form action="/pickem/save" method="POST" id="pickemForm" class="space-y-6">
@@ -404,8 +250,8 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 $isFinal = ($game['status'] === 'final');
                 $inProgress = ($game['status'] === 'in_progress');
 
-                // Card interaction lock state
-                $cardDisabled = $isKickoffLocked || $isUserLocked;
+                // Card interaction lock state: per-game kickoff lockout
+                $cardDisabled = $isKickoffLocked;
 
                 // Away Team Data
                 $awayAbbr = $game['away_team'];
@@ -428,27 +274,27 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                 $awayCardStyle = "";
                 if ($isCorrectAway) {
-                    $awayCardStyle = "border-color: #10b981; background-color: #064e3b; box-shadow: 0 0 20px rgba(16,185,129,0.3);";
+                    $awayCardStyle = "border-color: #15803D; background-color: #064e3b; box-shadow: 0 0 16px rgba(21,128,61,0.3);";
                 } elseif ($isIncorrectAway) {
-                    $awayCardStyle = "border-color: #f43f5e; background-color: #4c0519; box-shadow: 0 0 16px rgba(244,63,94,0.25);";
+                    $awayCardStyle = "border-color: #e11d48; background-color: #4c0519; box-shadow: 0 0 16px rgba(225,29,72,0.25);";
                 } elseif ($awayPicked) {
-                    $awayCardStyle = "border-color: {$awayColor}; background-color: #1e293b; box-shadow: 0 0 20px {$awayColor}44;";
+                    $awayCardStyle = "border-color: {$awayColor}; background-color: #1a2a3f; box-shadow: 0 0 16px {$awayColor}33;";
                 } else {
-                    $awayCardStyle = "border-color: #334155; background-color: #0f172a;";
+                    $awayCardStyle = "border-color: #243247; background-color: #162235;";
                 }
 
                 $homeCardStyle = "";
                 if ($isCorrectHome) {
-                    $homeCardStyle = "border-color: #10b981; background-color: #064e3b; box-shadow: 0 0 20px rgba(16,185,129,0.3);";
+                    $homeCardStyle = "border-color: #15803D; background-color: #064e3b; box-shadow: 0 0 16px rgba(21,128,61,0.3);";
                 } elseif ($isIncorrectHome) {
-                    $homeCardStyle = "border-color: #f43f5e; background-color: #4c0519; box-shadow: 0 0 16px rgba(244,63,94,0.25);";
+                    $homeCardStyle = "border-color: #e11d48; background-color: #4c0519; box-shadow: 0 0 16px rgba(225,29,72,0.25);";
                 } elseif ($homePicked) {
-                    $homeCardStyle = "border-color: {$homeColor}; background-color: #1e293b; box-shadow: 0 0 20px {$homeColor}44;";
+                    $homeCardStyle = "border-color: {$homeColor}; background-color: #1a2a3f; box-shadow: 0 0 16px {$homeColor}33;";
                 } else {
-                    $homeCardStyle = "border-color: #334155; background-color: #0f172a;";
+                    $homeCardStyle = "border-color: #243247; background-color: #162235;";
                 }
                 ?>
-                <div class="matchup-card rounded-2xl border transition-all duration-200 overflow-hidden shadow-lg <?= $isMnf ? 'border-amber-500/60 bg-slate-900 ring-1 ring-amber-500/30' : 'border-slate-800 bg-slate-900' ?>"
+                <div class="matchup-card rounded-xl border transition-all duration-200 overflow-hidden shadow-sm <?= $isMnf ? 'border-amber-500/50 bg-[#162235]' : 'border-[#243247] bg-[#162235]' ?>"
                      data-game-id="<?= $game['id'] ?>"
                      data-unlocked="<?= $cardDisabled ? 'false' : 'true' ?>"
                      data-away-abbr="<?= htmlspecialchars($awayAbbr) ?>"
@@ -457,36 +303,32 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                      data-home-name="<?= htmlspecialchars($homeTeam['name']) ?>">
                     
                     <!-- Matchup Broadcast Header -->
-                    <div class="matchup-header-bar flex items-center justify-between px-4 py-2.5 bg-slate-950 border-b border-slate-800 text-xs">
-                        <div class="flex items-center gap-2 text-slate-400">
-                            <span class="font-mono text-[11px]"><?= htmlspecialchars($kickoffEt) ?></span>
+                    <div class="matchup-header-bar flex items-center justify-between px-4 py-2 bg-[#0B1626] border-b border-[#243247] text-xs">
+                        <div class="flex items-center gap-2 text-[#94A3B8]">
+                            <span class="font-mono text-[11px] tabular-nums"><?= htmlspecialchars($kickoffEt) ?></span>
                             <?php if ($isMnf): ?>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                    ⭐ Official Tiebreaker Game
+                                <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-[#EAB308] text-[#0B1626] uppercase tracking-wider">
+                                    Tiebreaker Game
                                 </span>
                             <?php endif; ?>
                         </div>
                         <div>
                             <?php if ($isFinal): ?>
                                 <?php if (($game['pick_result'] ?? '') === 'correct'): ?>
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-black bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm flex items-center gap-1">
-                                        <span>✓</span>
-                                        <span>CORRECT (+1)</span>
+                                    <span class="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/50">
+                                        CORRECT (+1)
                                     </span>
                                 <?php elseif (($game['pick_result'] ?? '') === 'incorrect'): ?>
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-mono font-black bg-rose-500/25 text-rose-300 border border-rose-500/50 shadow-sm flex items-center gap-1">
-                                        <span>✗</span>
-                                        <span>MISSED (0)</span>
+                                    <span class="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-500/50">
+                                        MISSED (0)
                                     </span>
                                 <?php else: ?>
-                                    <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">FINAL</span>
+                                    <span class="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-[#162235] text-[#94A3B8] border border-[#243247]">FINAL</span>
                                 <?php endif; ?>
                             <?php elseif ($inProgress): ?>
-                                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">LIVE</span>
+                                <span class="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/40">LIVE</span>
                             <?php elseif ($isKickoffLocked): ?>
-                                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">🔒 KICKOFF</span>
-                            <?php elseif ($isUserLocked): ?>
-                                <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LOCKED</span>
+                                <span class="px-2.5 py-0.5 rounded font-mono text-[10px] font-bold bg-[#0B1626] text-[#94A3B8] border border-[#243247]">LOCKED</span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -496,12 +338,12 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         <div class="grid grid-cols-2 gap-3.5">
                         
                             <!-- Away Team Card -->
-                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $awayPicked ? 'is-picked' : '' ?>
-                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border transition-all select-none group overflow-hidden <?= $awayPicked ? 'is-picked' : '' ?>
+                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:border-slate-500' ?>"
                                 style="<?= $awayCardStyle ?>">
                                 
                                 <!-- Team Color Top Accent Stripe -->
-                                <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
+                                <div class="absolute top-0 left-0 right-0 h-1" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
 
                                 <input type="radio" 
                                        name="picks[<?= $game['id'] ?>]" 
@@ -514,34 +356,36 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                                        <?= $awayPicked ? 'checked' : '' ?>
                                        <?= $cardDisabled ? 'disabled' : '' ?>>
 
-                                <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
-                                <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $awayPicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
-                                    ✓
+                                <!-- Selection Indicator -->
+                                <div class="pick-check absolute top-2 right-2 w-5 h-5 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow transition-all duration-150 <?= $awayPicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                    <svg class="w-3 h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
                                 </div>
 
                                 <!-- Official ESPN Logo -->
-                                <div class="my-2 h-16 flex items-center justify-center">
+                                <div class="my-2 h-14 flex items-center justify-center">
                                     <img src="<?= htmlspecialchars($awayTeam['logo']) ?>" 
                                          alt="<?= htmlspecialchars($awayTeam['name']) ?>" 
-                                         class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
+                                         class="w-12 h-12 object-contain filter drop-shadow transition-transform duration-200 group-hover:scale-105"
                                          loading="lazy">
                                 </div>
 
-                                <!-- Single-line Team Name -->
-                                <div class="text-center w-full mt-2">
-                                    <span class="text-sm sm:text-base font-bold text-white block truncate">
+                                <!-- Team Name -->
+                                <div class="text-center w-full mt-1.5">
+                                    <span class="text-xs sm:text-sm font-bold text-[#F8FAFC] block truncate">
                                         <?= htmlspecialchars($awayTeam['name']) ?>
                                     </span>
                                 </div>
                             </label>
 
                             <!-- Home Team Card -->
-                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border-2 transition-all select-none group overflow-hidden <?= $homePicked ? 'is-picked' : '' ?>
-                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:scale-[1.01]' ?>"
+                            <label class="team-card relative flex flex-col items-center justify-center p-4 pt-5 rounded-xl border transition-all select-none group overflow-hidden <?= $homePicked ? 'is-picked' : '' ?>
+                                <?= $cardDisabled ? 'pointer-events-none' : 'cursor-pointer hover:border-slate-500' ?>"
                                 style="<?= $homeCardStyle ?>">
                                 
                                 <!-- Team Color Top Accent Stripe -->
-                                <div class="absolute top-0 left-0 right-0 h-1.5" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
+                                <div class="absolute top-0 left-0 right-0 h-1" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
 
                                 <input type="radio" 
                                        name="picks[<?= $game['id'] ?>]" 
@@ -554,22 +398,24 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                                        <?= $homePicked ? 'checked' : '' ?>
                                        <?= $cardDisabled ? 'disabled' : '' ?>>
 
-                                <!-- Highlight Selection Indicator (Absolute: No layout shift) -->
-                                <div class="pick-check absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-md transition-all duration-150 <?= $homePicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
-                                    ✓
+                                <!-- Selection Indicator -->
+                                <div class="pick-check absolute top-2 right-2 w-5 h-5 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow transition-all duration-150 <?= $homePicked ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none' ?>" title="Selected Pick">
+                                    <svg class="w-3 h-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
                                 </div>
 
                                 <!-- Official ESPN Logo -->
-                                <div class="my-2 h-16 flex items-center justify-center">
+                                <div class="my-2 h-14 flex items-center justify-center">
                                     <img src="<?= htmlspecialchars($homeTeam['logo']) ?>" 
                                          alt="<?= htmlspecialchars($homeTeam['name']) ?>" 
-                                         class="w-14 h-14 object-contain filter drop-shadow-md transition-transform duration-200 group-hover:scale-110"
+                                         class="w-12 h-12 object-contain filter drop-shadow transition-transform duration-200 group-hover:scale-105"
                                          loading="lazy">
                                 </div>
 
-                                <!-- Single-line Team Name -->
-                                <div class="text-center w-full mt-2">
-                                    <span class="text-sm sm:text-base font-bold text-white block truncate">
+                                <!-- Team Name -->
+                                <div class="text-center w-full mt-1.5">
+                                    <span class="text-xs sm:text-sm font-bold text-[#F8FAFC] block truncate">
                                         <?= htmlspecialchars($homeTeam['name']) ?>
                                     </span>
                                 </div>
@@ -577,19 +423,10 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
                         </div>
 
-                        <!-- Cool Broadcast-Style VS Circle Overlay (centered between two cards) -->
+                        <!-- Broadcast-Style VS Badge (centered between two cards) -->
                         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                            <div class="relative w-12 h-12 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.8)] overflow-hidden ring-4 ring-slate-900 border border-slate-700/60 flex items-center justify-center">
-                                <!-- Away color left half -->
-                                <div class="absolute left-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($awayColor) ?>;"></div>
-                                <!-- Home color right half -->
-                                <div class="absolute right-0 top-0 w-1/2 h-full" style="background-color: <?= htmlspecialchars($homeColor) ?>;"></div>
-                                <!-- Subtle depth overlay -->
-                                <div class="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/40"></div>
-                                <!-- Inner VS circular badge -->
-                                <div class="relative w-7 h-7 rounded-full bg-slate-950/90 border border-slate-700 shadow-inner flex items-center justify-center">
-                                    <span class="text-[10px] font-black font-mono text-amber-400 tracking-wider">VS</span>
-                                </div>
+                            <div class="w-8 h-8 rounded-full bg-[#0B1626] border border-[#243247] shadow-lg flex items-center justify-center">
+                                <span class="text-[10px] font-mono font-bold text-[#94A3B8]">VS</span>
                             </div>
                         </div>
 
@@ -599,33 +436,36 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             <?php endforeach; ?>
         </div>
 
+        <?php
+        $tbIsLocked = !empty($tiebreakerGame) && (strtotime($tiebreakerGame['kickoff_time']) <= time());
+        ?>
         <!-- Tiebreaker Input Section -->
-        <div id="mnfTiebreakerContainer" class="p-6 rounded-2xl border transition-all duration-300 border-amber-500/40 bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/20 shadow-xl">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div id="mnfTiebreakerContainer" class="p-5 rounded-xl border border-[#243247] bg-[#162235] shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
-                        <span class="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold">Official Tiebreaker Question</span>
-                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Game of the Week</span>
+                        <span class="text-xs font-mono uppercase tracking-wider text-[#EAB308] font-bold">Official Tiebreaker</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-[#0B1626] text-[#94A3B8] border border-[#243247] font-mono font-bold">Game of the Week</span>
                     </div>
                     <?php if (isset($tbAwayData) && isset($tbHomeData)): ?>
                         <div class="flex items-center gap-3 my-1.5 flex-wrap">
                             <div class="flex items-center gap-2">
-                                <img src="<?= htmlspecialchars($tbAwayData['logo']) ?>" alt="<?= htmlspecialchars($tbAwayData['name']) ?>" class="w-7 h-7 object-contain">
-                                <span class="font-bold text-white text-base sm:text-lg"><?= htmlspecialchars($tbAwayData['name']) ?></span>
+                                <img src="<?= htmlspecialchars($tbAwayData['logo']) ?>" alt="<?= htmlspecialchars($tbAwayData['name']) ?>" class="w-6 h-6 object-contain">
+                                <span class="font-bold text-[#F8FAFC] text-sm sm:text-base"><?= htmlspecialchars($tbAwayData['name']) ?></span>
                             </div>
-                            <span class="text-slate-400 font-semibold text-sm">@</span>
+                            <span class="text-[#94A3B8] font-mono text-xs">@</span>
                             <div class="flex items-center gap-2">
-                                <img src="<?= htmlspecialchars($tbHomeData['logo']) ?>" alt="<?= htmlspecialchars($tbHomeData['name']) ?>" class="w-7 h-7 object-contain">
-                                <span class="font-bold text-white text-base sm:text-lg"><?= htmlspecialchars($tbHomeData['name']) ?></span>
+                                <img src="<?= htmlspecialchars($tbHomeData['logo']) ?>" alt="<?= htmlspecialchars($tbHomeData['name']) ?>" class="w-6 h-6 object-contain">
+                                <span class="font-bold text-[#F8FAFC] text-sm sm:text-base"><?= htmlspecialchars($tbHomeData['name']) ?></span>
                             </div>
                         </div>
-                        <p class="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-                            Predict the combined total final score for <strong><?= htmlspecialchars($tbAwayData['name']) ?> @ <?= htmlspecialchars($tbHomeData['name']) ?></strong> (our randomly selected tiebreaker game of the week). If two or more players tie in weekly picks, lowest absolute point delta wins the prize pot!
+                        <p class="text-xs text-[#94A3B8] mt-1 max-w-xl leading-relaxed">
+                            Predict the combined total final score for <strong><?= htmlspecialchars($tbAwayData['name']) ?> @ <?= htmlspecialchars($tbHomeData['name']) ?></strong>. Lowest absolute point delta breaks any weekly ties!
                         </p>
                     <?php else: ?>
-                        <h4 class="text-base sm:text-lg font-bold text-white">Weekly Tiebreaker Combined Total Score</h4>
-                        <p class="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
-                            Predict the combined total final score for our randomly selected game of the week. Lowest absolute point delta breaks ties!
+                        <h4 class="text-sm sm:text-base font-bold text-[#F8FAFC]">Weekly Tiebreaker Combined Total Score</h4>
+                        <p class="text-xs text-[#94A3B8] mt-1 max-w-xl leading-relaxed">
+                            Predict the combined total final score for our designated game of the week. Lowest absolute point delta breaks ties!
                         </p>
                     <?php endif; ?>
                 </div>
@@ -638,50 +478,63 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                                max="150" 
                                placeholder="e.g. 48"
                                value="<?= htmlspecialchars((string) ($entry['mnf_total_points_prediction'] ?? '')) ?>"
-                               <?= $isUserLocked ? 'disabled' : '' ?>
-                               class="w-32 px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-center text-lg font-black focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/40 shadow-inner transition">
+                               <?= $tbIsLocked ? 'disabled' : '' ?>
+                               class="w-28 px-3 py-2.5 rounded-lg bg-[#0B1626] border border-[#243247] text-[#F8FAFC] font-mono tabular-nums text-center text-base font-bold focus:outline-none focus:border-[#EAB308] focus:ring-1 focus:ring-[#EAB308] transition <?= $tbIsLocked ? 'opacity-60 cursor-not-allowed' : '' ?>">
                     </div>
-                    <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Points</span>
+                    <span class="text-xs text-[#94A3B8] font-mono font-bold uppercase tracking-wider">Total Points</span>
                 </div>
             </div>
         </div>
 
-        <!-- Submission & Status Card (In-flow, Non-Floating) -->
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-5">
-            <div class="flex items-center gap-3 text-xs text-slate-300">
-                <span class="text-xl"><?= $isUserLocked ? '🔒' : ($hasConfirmedPicks ? '✓' : '💾') ?></span>
-                <?php if ($isUserLocked): ?>
+        <!-- Submission & Status Card -->
+        <div class="p-5 rounded-xl bg-[#162235] border border-[#243247] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3 text-xs text-[#94A3B8]">
+                <div class="w-8 h-8 rounded-lg bg-[#0B1626] border border-[#243247] flex items-center justify-center shrink-0">
+                    <?php if ($isWeekLocked): ?>
+                        <svg class="w-4 h-4 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    <?php elseif ($hasConfirmedPicks): ?>
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    <?php else: ?>
+                        <svg class="w-4 h-4 text-[#EAB308]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($isWeekLocked): ?>
                     <div>
-                        <span class="text-emerald-400 font-semibold text-sm">Picks for Week <?= $week ?> are locked in.</span>
-                        <span class="text-slate-400 block text-xs">Selection cutoff passed at <?= htmlspecialchars($cutoffFormatted) ?> (1 hr into first game).</span>
+                        <span class="text-[#F8FAFC] font-semibold text-sm block">Week <?= $week ?> is locked.</span>
+                        <span class="text-[#94A3B8] block text-xs">All scheduled games have kicked off.</span>
                     </div>
                 <?php elseif ($hasConfirmedPicks): ?>
                     <div>
-                        <span class="font-bold text-emerald-400 block text-sm mb-0.5">Week <?= $week ?> Ballot Confirmed &amp; Auto-Saved!</span>
-                        <span class="text-slate-400">All picks auto-save behind the scenes. You can adjust your picks or tiebreaker score anytime before <?= htmlspecialchars($cutoffFormatted) ?>.</span>
+                        <span class="font-bold text-emerald-400 block text-sm mb-0.5">Ballot Confirmed &bull; Auto-Saving</span>
+                        <span class="text-[#94A3B8]">Your selections are saved. You can adjust open games until each game's scheduled kickoff.</span>
                     </div>
                 <?php else: ?>
                     <div>
-                        <span class="font-bold text-white block text-sm mb-0.5">Picks Auto-Save As You Go</span>
-                        <span class="text-slate-400">Selections save behind the scenes. Click Review &amp; Submit whenever you're ready to confirm your ballot before <?= htmlspecialchars($cutoffFormatted) ?>.</span>
+                        <span class="font-bold text-[#F8FAFC] block text-sm mb-0.5">Selections Auto-Save As You Go</span>
+                        <span class="text-[#94A3B8]">Choices save automatically. Click Review &amp; Submit whenever you want to confirm your ballot before kickoff.</span>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <?php if ($isUserLocked): ?>
+            <?php if ($isWeekLocked): ?>
                 <div class="flex items-center gap-3 shrink-0">
                     <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" 
-                       class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs uppercase tracking-wider transition shadow flex items-center justify-center gap-2">
-                        <span>📊</span>
-                        <span>View Live Standings</span>
+                       class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#0B1626] hover:bg-[#1f2e44] border border-[#243247] text-[#F8FAFC] font-bold text-xs uppercase tracking-wider transition">
+                        View Standings
                     </a>
                 </div>
             <?php else: ?>
                 <button type="button" 
                         id="btnReviewPicks"
-                        class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm uppercase tracking-wider transition shadow-lg hover:shadow-emerald-500/30 flex items-center justify-center gap-2 shrink-0">
-                    <span><?= $hasConfirmedPicks ? '✏️' : '🔍' ?></span>
-                    <span><?= $hasConfirmedPicks ? "Review &amp; Re-confirm Week {$week} Picks" : "Review &amp; Submit Week {$week} Picks" ?></span>
+                        class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#15803D] hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition shadow-sm shrink-0">
+                    <?= $hasConfirmedPicks ? "Review &amp; Re-confirm Picks" : "Review &amp; Submit Picks" ?>
                 </button>
             <?php endif; ?>
         </div>
@@ -693,55 +546,56 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
 <!-- Review & Confirmation Modal -->
 <div id="reviewModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div class="bg-[#162235] border border-[#243247] rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         <!-- Modal Header -->
-        <div class="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <div class="p-4 border-b border-[#243247] bg-[#0B1626] flex items-center justify-between">
             <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
+                <div class="flex items-center gap-2 mb-0.5">
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#162235] text-[#EAB308] border border-[#243247] uppercase">
                         Review Selections
                     </span>
-                    <span class="text-xs text-slate-400">Week <?= $week ?></span>
+                    <span class="text-xs text-[#94A3B8]">Week <?= $week ?></span>
                 </div>
-                <h3 class="text-xl font-black text-white">Review Your Picks</h3>
+                <h3 class="text-lg font-bold text-[#F8FAFC]">Confirm Your Ballot</h3>
             </div>
-            <button type="button" id="btnModalCloseX" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
+            <button type="button" id="btnModalCloseX" class="text-[#94A3B8] hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
         </div>
 
         <!-- Info Callout -->
-        <div class="p-4 bg-emerald-500/10 border-b border-emerald-500/20 text-xs text-emerald-300 flex items-start gap-2.5">
-            <span class="text-lg">✓</span>
+        <div class="p-3 bg-[#0B1626] border-b border-[#243247] text-xs text-[#94A3B8] flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
             <div>
-                <strong class="font-bold">Ballot Confirmation:</strong>
-                <span>Confirming your picks records your official submission. You can continue to modify any pick or tiebreaker score anytime until the selection cutoff (<strong><?= htmlspecialchars($cutoffFormatted) ?></strong> — 1 hour into the opening game).</span>
+                <strong class="font-bold text-[#F8FAFC]">Per-Game Lockout:</strong>
+                <span>Confirming submits your official picks. You may still adjust selections for any game until its specific scheduled kickoff.</span>
             </div>
         </div>
 
         <!-- Picks Summary List (Scrollable) -->
-        <div class="p-5 overflow-y-auto space-y-3 divide-y divide-slate-800/60" id="reviewPicksList">
+        <div class="p-4 overflow-y-auto space-y-2.5 divide-y divide-[#243247]" id="reviewPicksList">
             <!-- Populated via JS -->
         </div>
 
         <!-- Tiebreaker Summary -->
-        <div class="p-4 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-xs">
+        <div class="p-3.5 bg-[#0B1626] border-t border-[#243247] flex items-center justify-between text-xs">
             <div>
-                <span class="text-slate-400 font-semibold">Weekly Tiebreaker (Game of the Week):</span>
-                <span class="text-slate-300 block text-[11px]"><?= htmlspecialchars($tbMatchupLabel) ?></span>
+                <span class="text-[#94A3B8] font-semibold">Game of the Week Tiebreaker:</span>
+                <span class="text-[#F8FAFC] block text-[11px]"><?= htmlspecialchars($tbMatchupLabel) ?></span>
             </div>
-            <span id="reviewMnfPoints" class="font-mono text-base font-black text-amber-400">--</span>
+            <span id="reviewMnfPoints" class="font-mono tabular-nums text-base font-bold text-[#EAB308]">--</span>
         </div>
 
         <!-- Modal Footer Actions -->
-        <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
+        <div class="p-3.5 border-t border-[#243247] bg-[#0B1626] flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
             <button type="button" id="btnCancelModal" 
-                    class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider transition">
-                ✏️ Keep Editing
+                    class="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#162235] hover:bg-[#1f2e44] text-[#94A3B8] hover:text-white font-bold text-xs uppercase tracking-wider transition border border-[#243247]">
+                Keep Editing
             </button>
             <button type="button" id="btnConfirmLockIn" 
-                    class="w-full sm:w-auto px-7 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2">
-                <span>✓</span>
-                <span>Confirm &amp; Submit My Picks</span>
+                    class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#15803D] hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider shadow transition flex items-center justify-center gap-2">
+                <span>Confirm &amp; Submit Ballot</span>
             </button>
         </div>
 
@@ -750,63 +604,60 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
 <!-- Pick'em How It Works Modal -->
 <div id="howItWorksModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div class="bg-[#162235] border border-[#243247] rounded-xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         <!-- Header -->
-        <div class="p-5 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <span class="p-2 rounded-xl bg-amber-500/20 text-amber-400 text-xl border border-amber-500/30">🎯</span>
-                <div>
-                    <h3 class="text-lg font-black text-white">How Pick'em Works</h3>
-                    <span class="text-xs text-slate-400">Weekly Straight-Up Pool Rules</span>
-                </div>
+        <div class="p-4 border-b border-[#243247] bg-[#0B1626] flex items-center justify-between">
+            <div>
+                <h3 class="text-base font-bold text-[#F8FAFC]">Pick'em Rules &amp; Guidelines</h3>
+                <span class="text-xs text-[#94A3B8]">Straight-up weekly pool</span>
             </div>
-            <button type="button" id="btnCloseHowItWorksX" class="text-slate-400 hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
+            <button type="button" id="btnCloseHowItWorksX" class="text-[#94A3B8] hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
         </div>
 
         <!-- Content (Scrollable) -->
-        <div class="p-5 overflow-y-auto space-y-3.5 text-xs">
+        <div class="p-4 overflow-y-auto space-y-3 text-xs">
             
             <!-- Rule 1: Weekly Straight-Up Picks -->
-            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="p-2 rounded-lg bg-blue-500/15 text-blue-400 font-black text-sm shrink-0">1</span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="w-6 h-6 rounded bg-[#162235] text-[#EAB308] border border-[#243247] font-mono font-bold text-xs flex items-center justify-center shrink-0">1</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">Pick Straight-Up Winners</strong>
-                    <p class="text-slate-300 leading-relaxed">
+                    <strong class="text-[#F8FAFC] text-xs block mb-0.5">Pick Straight-Up Winners</strong>
+                    <p class="text-[#94A3B8] leading-relaxed">
                         For every game in the week's slate, pick which team will win straight-up (no point spreads). Each correct selection earns <strong>1 point</strong>.
                     </p>
                 </div>
             </div>
 
             <!-- Rule 2: $10 Entry Fee -->
-            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 font-black text-sm shrink-0">2</span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="w-6 h-6 rounded bg-[#162235] text-[#EAB308] border border-[#243247] font-mono font-bold text-xs flex items-center justify-center shrink-0">2</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">Weekly $10.00 Entry Stake</strong>
-                    <p class="text-slate-300 leading-relaxed">
-                        Entry is $10 per week. Send your stake directly to Commissioner Wally via Venmo (<span class="text-sky-400 font-bold font-mono">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-emerald-400 font-bold font-mono">$WallyAtkins</span>). 100% of collected stakes fund that week's cash pot!
+                    <strong class="text-[#F8FAFC] text-xs block mb-0.5">Weekly $10.00 Entry Stake</strong>
+                    <p class="text-[#94A3B8] leading-relaxed">
+                        Entry is $10 per week. Send your stake directly to Commissioner Wally via Venmo (<span class="text-[#F8FAFC] font-mono font-bold">@WallyAtkins</span>), PayPal, or Cash App (<span class="text-[#F8FAFC] font-mono font-bold">$WallyAtkins</span>). 100% of collected stakes fund that week's cash pot!
                     </p>
                 </div>
             </div>
 
             <!-- Rule 3: Tiebreaker Question -->
-            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="p-2 rounded-lg bg-amber-500/15 text-amber-400 font-black text-sm shrink-0">3</span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="w-6 h-6 rounded bg-[#162235] text-[#EAB308] border border-[#243247] font-mono font-bold text-xs flex items-center justify-center shrink-0">3</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">Game of the Week Tiebreaker</strong>
-                    <p class="text-slate-300 leading-relaxed">
-                        Each week features a designated <strong>Game of the Week Tiebreaker</strong>. Predict the combined total final score (e.g. 48). If players tie with the same number of wins, the player with the lowest absolute point difference wins the prize pot!
+                    <strong class="text-[#F8FAFC] text-xs block mb-0.5">Game of the Week Tiebreaker</strong>
+                    <p class="text-[#94A3B8] leading-relaxed">
+                        Each week features a designated tiebreaker game. Predict the combined total final score (e.g. 48). If players tie with the same number of wins, the player with the lowest absolute point difference wins the prize pot!
                     </p>
                 </div>
             </div>
 
             <!-- Rule 4: Auto-Save & Review -->
-            <div class="flex items-start gap-3.5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span class="p-2 rounded-lg bg-purple-500/15 text-purple-400 font-black text-sm shrink-0">4</span>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="w-6 h-6 rounded bg-[#162235] text-[#EAB308] border border-[#243247] font-mono font-bold text-xs flex items-center justify-center shrink-0">4</span>
                 <div>
-                    <strong class="text-white text-sm block mb-0.5">Auto-Saved As You Go &bull; Confirmed Ballot</strong>
-                    <p class="text-slate-300 leading-relaxed">
-                        Picks and tiebreaker scores are saved automatically behind the scenes! You can change your picks anytime until kickoff of the week's first game. Click <strong>Review &amp; Submit</strong> to confirm your choices whenever you're ready.
+                    <strong class="text-[#F8FAFC] text-xs block mb-0.5">Per-Game Kickoff Locks &bull; Auto-Saving</strong>
+                    <p class="text-[#94A3B8] leading-relaxed">
+                        Picks and tiebreaker scores are saved automatically. Each game locks strictly at kickoff; open games can be changed at any time prior to their individual start.
                     </p>
                 </div>
             </div>
@@ -814,19 +665,21 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
 
         <!-- Footer -->
-        <div class="p-4 border-t border-slate-800 bg-slate-950/90 flex justify-end">
-            <button type="button" id="btnCloseHowItWorks" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow">
-                Got It, Let's Play!
+        <div class="p-3.5 border-t border-[#243247] bg-[#0B1626] flex justify-end">
+            <button type="button" id="btnCloseHowItWorks" class="px-4 py-2 rounded-lg bg-[#EAB308] hover:bg-amber-400 text-[#0B1626] font-bold text-xs uppercase tracking-wider transition">
+                Close
             </button>
         </div>
 
     </div>
 </div>
 
-<!-- Silent Behind-the-Scenes Auto-Save Toast Notification -->
-<div id="autoSaveToast" class="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
-    <span class="text-sm">✓</span>
-    <span id="autoSaveToastText">Saved behind the scenes</span>
+<!-- Auto-Save Toast Notification -->
+<div id="autoSaveToast" class="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-lg bg-[#0B1626] text-emerald-400 border border-emerald-500/40 text-xs font-mono font-bold shadow-xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-200 transform translate-y-2">
+    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="autoSaveToastText">Saved</span>
 </div>
 
 <script>
@@ -950,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         })
                     }).then(r => r.json()).then(data => {
                         if (data && data.success) {
-                            showAutoSaveBadge(teamVal + ' Pick Saved ✓');
+                            showAutoSaveBadge(teamVal + ' Pick Saved');
                         }
                     }).catch(e => console.warn('Autosave notice:', e));
                 }
@@ -973,7 +826,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
         }).then(r => r.json()).then(data => {
             if (data && data.success) {
-                showAutoSaveBadge('Tiebreaker Saved (' + (val !== '' ? val : '0') + ' pts) ✓');
+                showAutoSaveBadge('Tiebreaker Saved (' + (val !== '' ? val : '0') + ' pts)');
             }
         }).catch(e => console.warn('Tiebreaker autosave notice:', e));
     }
@@ -1062,14 +915,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.className = 'pt-2.5 flex items-center justify-between gap-4 text-xs';
                 row.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <span class="font-mono text-slate-500 text-[11px] w-4">${pickIndex++}.</span>
-                        <img src="${teamLogo}" alt="${teamName}" class="w-8 h-8 object-contain">
+                        <span class="font-mono text-[#94A3B8] text-[11px] w-4 tabular-nums">${pickIndex++}.</span>
+                        <img src="${teamLogo}" alt="${teamName}" class="w-7 h-7 object-contain">
                         <div>
-                            <span class="font-bold text-white text-sm">${teamName}</span>
-                            <span class="text-slate-400 block text-[11px]">${vsOpponent}</span>
+                            <span class="font-bold text-[#F8FAFC] text-sm">${teamName}</span>
+                            <span class="text-[#94A3B8] block text-[11px]">${vsOpponent}</span>
                         </div>
                     </div>
-                    <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-[#0B1626] text-emerald-400 border border-[#243247]">
                         ${teamAbbr}
                     </span>
                 `;
@@ -1099,7 +952,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnConfirmLockIn) {
         btnConfirmLockIn.addEventListener('click', function () {
             btnConfirmLockIn.disabled = true;
-            btnConfirmLockIn.innerHTML = '<span>⏳</span> Submitting Ballot...';
+            btnConfirmLockIn.textContent = 'Submitting Ballot...';
             form.submit();
         });
     }

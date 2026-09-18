@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WallyFootball\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use WallyFootball\Database\Connection;
 
 class LockoutTest extends TestCase
 {
@@ -24,6 +25,151 @@ class LockoutTest extends TestCase
 
         $isLocked = (strtotime($kickoffFuture) <= $now);
         $this->assertFalse($isLocked, 'A game scheduled in the future should remain open for picks.');
+    }
+
+    public function testUnstartedSundayGamesRemainOpenAfterThursdayKickoff(): void
+    {
+        $now = time();
+        $thursdayKickoff = date('Y-m-d H:i:s', $now - 7200); // Thursday game kicked off 2 hours ago
+        $sundayKickoff = date('Y-m-d H:i:s', $now + 172800); // Sunday game 2 days in future
+        $mondayKickoff = date('Y-m-d H:i:s', $now + 259200); // Monday Night Football
+
+        $games = [
+            ['id' => 1, 'kickoff_time' => $thursdayKickoff, 'home_team' => 'KC', 'away_team' => 'BAL', 'status' => 'in_progress'],
+            ['id' => 2, 'kickoff_time' => $sundayKickoff, 'home_team' => 'PHI', 'away_team' => 'GB', 'status' => 'scheduled'],
+            ['id' => 3, 'kickoff_time' => $mondayKickoff, 'home_team' => 'SF', 'away_team' => 'NYJ', 'status' => 'scheduled', 'is_mnf' => 1],
+        ];
+
+        $openCount = 0;
+        $lockedCount = 0;
+        foreach ($games as $g) {
+            $kt = strtotime($g['kickoff_time']);
+            $isGameLocked = ($kt <= $now || in_array($g['status'], ['in_progress', 'final'], true));
+            if ($isGameLocked) {
+                $lockedCount++;
+            } else {
+                $openCount++;
+            }
+        }
+
+        $this->assertSame(1, $lockedCount, 'Only the Thursday game should be locked.');
+        $this->assertSame(2, $openCount, 'Sunday and Monday games must remain open for selections.');
+    }
+
+    public function testPerGameLockoutEnforcementInPickem(): void
+    {
+        $tempDb = sys_get_temp_dir() . '/test_pickem_lock_' . uniqid() . '.sqlite';
+        $db = Connection::getInstance($tempDb);
+
+        $now = time();
+        $pastKickoff = date('Y-m-d H:i:s', $now - 3600);
+        $futureKickoff = date('Y-m-d H:i:s', $now + 86400);
+
+        $db->execute("INSERT INTO users (id, oidc_sub, username, email, role) VALUES (1, 'sub-1', 'Player1', 'p1@test.com', 'player')");
+        $db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
+            (10, 2026, 2, 'KC', 'BAL', '{$pastKickoff}', 'in_progress'),
+            (11, 2026, 2, 'PHI', 'GB', '{$futureKickoff}', 'scheduled')");
+
+        // Verify game 10 has kicked off
+        $targetPast = $db->queryOne('SELECT kickoff_time, status FROM games WHERE id = 10');
+        $isPastLocked = (strtotime($targetPast['kickoff_time']) <= $now || in_array($targetPast['status'], ['in_progress', 'final'], true));
+        $this->assertTrue($isPastLocked, 'Thursday game must be locked.');
+
+        // Verify game 11 is in the future and open
+        $targetFuture = $db->queryOne('SELECT kickoff_time, status FROM games WHERE id = 11');
+        $isFutureLocked = (strtotime($targetFuture['kickoff_time']) <= $now || in_array($targetFuture['status'], ['in_progress', 'final'], true));
+        $this->assertFalse($isFutureLocked, 'Sunday game must be open.');
+
+        Connection::resetInstance();
+    }
+
+    public function testStandingsOpponentPicksRevealedPerGameKickoff(): void
+    {
+        $tempDb = sys_get_temp_dir() . '/test_standings_reveal_' . uniqid() . '.sqlite';
+        $db = Connection::getInstance($tempDb);
+
+        $now = time();
+        $pastKickoff = date('Y-m-d H:i:s', $now - 3600);
+        $futureKickoff = date('Y-m-d H:i:s', $now + 86400);
+
+        $db->execute("INSERT INTO users (id, oidc_sub, username, email, role) VALUES 
+            (1, 'sub-1', 'Alice', 'alice@test.com', 'player'),
+            (2, 'sub-2', 'Bob', 'bob@test.com', 'player')");
+
+        $db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
+            (1, 2026, 2, 'KC', 'BAL', '{$pastKickoff}', 'in_progress'),
+            (2, 2026, 2, 'PHI', 'GB', '{$futureKickoff}', 'scheduled')");
+
+        // Alice makes picks for both games
+        $db->execute("INSERT INTO pickem_entries (id, user_id, season_year, week_number, payment_status, is_locked) 
+            VALUES (1, 1, 2026, 2, 'paid', 1)");
+        $db->execute("INSERT INTO pickem_picks (entry_id, game_id, selected_team) VALUES 
+            (1, 1, 'KC'),
+            (1, 2, 'PHI')");
+
+        // Bob is viewing standings
+        $viewerId = 2;
+        $isCommissioner = false;
+        $isWeekComplete = false;
+
+        $games = $db->query('SELECT * FROM games WHERE season_year = 2026 AND week_number = 2 ORDER BY kickoff_time ASC');
+        $rawPicks = [1 => [1 => 'KC', 2 => 'PHI']];
+
+        $detail = [];
+        foreach ($games as $g) {
+            $sel = $rawPicks[1][$g['id']] ?? null;
+            $gameStarted = (strtotime($g['kickoff_time']) <= $now || in_array($g['status'], ['in_progress', 'final'], true));
+            $isViewer = ($viewerId === 1);
+            $isRevealed = $isCommissioner || $isWeekComplete || $isViewer || $gameStarted;
+
+            $detail[$g['id']] = [
+                'game_id' => $g['id'],
+                'is_revealed' => $isRevealed,
+                'selected_team' => $isRevealed ? $sel : null,
+            ];
+        }
+
+        // Game 1 (Thursday, in progress): revealed to Bob!
+        $this->assertTrue($detail[1]['is_revealed'], 'Started Thursday game must be revealed in standings.');
+        $this->assertSame('KC', $detail[1]['selected_team']);
+
+        // Game 2 (Sunday, scheduled): masked from Bob!
+        $this->assertFalse($detail[2]['is_revealed'], 'Unstarted Sunday game must remain masked from opponents.');
+        $this->assertNull($detail[2]['selected_team'], 'Masked game selected_team must be null.');
+
+        Connection::resetInstance();
+    }
+
+    public function testSurvivorPickLocksOnlyWhenSelectedTeamGameKicksOff(): void
+    {
+        $tempDb = sys_get_temp_dir() . '/test_survivor_per_game_' . uniqid() . '.sqlite';
+        $db = Connection::getInstance($tempDb);
+
+        $now = time();
+        $thursdayKickoff = date('Y-m-d H:i:s', $now - 3600); // 1 hour ago
+        $sundayKickoff = date('Y-m-d H:i:s', $now + 86400);  // tomorrow
+
+        $db->execute("INSERT INTO users (id, oidc_sub, username, email, role) VALUES 
+            (1, 'sub-1', 'Alice', 'alice@test.com', 'player'),
+            (2, 'sub-2', 'Bob', 'bob@test.com', 'player')");
+
+        $db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
+            (1, 2026, 2, 'KC', 'BAL', '{$thursdayKickoff}', 'in_progress'),
+            (2, 2026, 2, 'PHI', 'GB', '{$sundayKickoff}', 'scheduled')");
+
+        // Alice picked KC (Thursday game)
+        $alicePick = 'KC';
+        $aliceGame = $db->queryOne('SELECT kickoff_time, status FROM games WHERE home_team = :t OR away_team = :t', ['t' => $alicePick]);
+        $aliceLocked = (strtotime($aliceGame['kickoff_time']) <= $now || in_array($aliceGame['status'], ['in_progress', 'final'], true));
+        $this->assertTrue($aliceLocked, 'Alice picked KC whose game has kicked off, so her pick is locked.');
+
+        // Bob picked PHI (Sunday game)
+        $bobPick = 'PHI';
+        $bobGame = $db->queryOne('SELECT kickoff_time, status FROM games WHERE home_team = :t OR away_team = :t', ['t' => $bobPick]);
+        $bobLocked = (strtotime($bobGame['kickoff_time']) <= $now || in_array($bobGame['status'], ['in_progress', 'final'], true));
+        $this->assertFalse($bobLocked, 'Bob picked PHI whose game has not kicked off, so Bob can still switch his pick.');
+
+        Connection::resetInstance();
     }
 
     public function testSurvivorTeamExclusivityRejectsPreviouslyPickedTeam(): void
@@ -47,100 +193,10 @@ class LockoutTest extends TestCase
         $this->assertFalse(in_array('player', $allowedRoles, true));
     }
 
-    public function testGameListProcessingPreservesUniqueTailGame(): void
-    {
-        $games = [
-            ['id' => 15, 'home_team' => 'DET', 'away_team' => 'LAR', 'kickoff_time' => '2026-09-14 00:20:00+00'],
-            ['id' => 16, 'home_team' => 'SF', 'away_team' => 'NYJ', 'kickoff_time' => '2026-09-15 00:15:00+00'],
-        ];
-
-        $now = time();
-        $userPicks = [];
-        foreach ($games as $idx => $g) {
-            $kickoff = strtotime($g['kickoff_time']);
-            $games[$idx]['is_locked'] = ($kickoff <= $now);
-            $games[$idx]['user_pick'] = $userPicks[$g['id']] ?? null;
-        }
-
-        $rendered = [];
-        foreach ($games as $game) {
-            $rendered[] = $game['id'];
-        }
-
-        $this->assertSame([15, 16], $rendered, 'The final game must not be overwritten by by-reference foreach mutation.');
-    }
-
-    public function testSurvivorAllowsChangingPickBeforeCutoff(): void
-    {
-        $existingPick = ['id' => 101, 'selected_team' => 'KC', 'week_number' => 1];
-        $firstGameKickoff = time() - 1200; // 20 minutes ago (game in progress)
-        $cutoffTime = $firstGameKickoff + 3600; // 40 minutes in future
-        $now = time();
-
-        $isCutoffPassed = ($now >= $cutoffTime);
-        $isPickLocked = !empty($existingPick) && $isCutoffPassed;
-
-        $this->assertFalse($isPickLocked, 'During the first hour of the opening game, survivor picks must remain editable.');
-    }
-
-    public function testSurvivorLocksPickOnceCutoffPasses(): void
-    {
-        $existingPick = ['id' => 101, 'selected_team' => 'KC', 'week_number' => 1];
-        $firstGameKickoff = time() - 4000; // 66 minutes ago
-        $cutoffTime = $firstGameKickoff + 3600; // 6 minutes ago
-        $now = time();
-
-        $isCutoffPassed = ($now >= $cutoffTime);
-        $isPickLocked = !empty($existingPick) && $isCutoffPassed;
-
-        $this->assertTrue($isPickLocked, 'Once 1 hour into the first game passes, survivor picks must lock permanently.');
-    }
-
-    public function testPickemAllowsModifyingPicksBeforeCutoffEvenAfterKickoff(): void
-    {
-        $firstGameKickoff = time() - 1800; // 30 minutes ago (game in progress)
-        $cutoffTime = $firstGameKickoff + 3600; // 30 minutes in future
-        $now = time();
-
-        $isWeekLocked = ($now >= $cutoffTime);
-        $this->assertFalse($isWeekLocked, 'Pickem matchups must remain unlocked and editable during the first hour of the opening game.');
-    }
-
-    public function testPickemLocksPicksOnceCutoffPasses(): void
-    {
-        $firstGameKickoff = time() - 3900; // 65 minutes ago
-        $cutoffTime = $firstGameKickoff + 3600; // 5 minutes ago
-        $now = time();
-
-        $isWeekLocked = ($now >= $cutoffTime);
-        $this->assertTrue($isWeekLocked, 'Pickem matchups must lock for the week once the 1-hour cutoff passes.');
-    }
-
-    public function testSurvivorRejectsPickAfterCutoff(): void
-    {
-        $games = [
-            ['kickoff_time' => date('Y-m-d H:i:s', time() - 4000)], // Thursday opener (66 mins ago)
-            ['kickoff_time' => date('Y-m-d H:i:s', time() + 72000)], // Sunday game
-        ];
-
-        $firstKickoff = null;
-        foreach ($games as $g) {
-            $kt = strtotime($g['kickoff_time']);
-            if ($firstKickoff === null || $kt < $firstKickoff) {
-                $firstKickoff = $kt;
-            }
-        }
-
-        $now = time();
-        $cutoffTime = $firstKickoff !== null ? ($firstKickoff + 3600) : null;
-        $isSurvivorWindowClosed = ($cutoffTime !== null && $now >= $cutoffTime);
-        $this->assertTrue($isSurvivorWindowClosed, 'Survivor picks must close once 1 hour into the first game has passed.');
-    }
-
     public function testSurvivorOneAndDonePermitsSwitchingTeamWithinSameWeekBeforeKickoff(): void
     {
         $tempDb = sys_get_temp_dir() . '/test_lockout_' . uniqid() . '.sqlite';
-        $db = \WallyFootball\Database\Connection::getInstance($tempDb);
+        $db = Connection::getInstance($tempDb);
 
         // Seed user first
         $db->execute("INSERT INTO users (id, oidc_sub, username, email, role) VALUES (1, 'sub-1', 'Alice', 'alice@test.com', 'player')");
@@ -164,65 +220,6 @@ class LockoutTest extends TestCase
         $this->assertNotNull($usedInPriorWeek, 'Picking a team used in a prior week must be rejected by One and Done.');
         $this->assertSame(1, (int) $usedInPriorWeek['week_number']);
 
-        \WallyFootball\Database\Connection::resetInstance();
-    }
-
-    public function testOpponentPicksConfidentialBeforeCutoff(): void
-    {
-        $firstGameKickoff = time() - 1200; // 20 minutes ago (game started)
-        $cutoffTime = $firstGameKickoff + 3600; // 40 minutes in the future
-        $now = time();
-        $firstGameStarted = ($now >= $firstGameKickoff);
-        $cutoffPassed = ($now >= $cutoffTime);
-        $isWeekComplete = false;
-
-        $viewerHasSubmitted = true;
-        $isCommissioner = true;
-
-        // Core Rule: Participant picks remain confidential until the cutoff time (1 hour into first game).
-        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
-
-        $this->assertTrue($firstGameStarted, 'First game is underway.');
-        $this->assertFalse($cutoffPassed, 'Cutoff deadline has not passed yet.');
-        $this->assertFalse($canViewOpponentPicks, 'During the first hour, picks remain confidential to protect fair play while picks are still open.');
-    }
-
-    public function testOpponentPicksUnlockedAfterCutoffWhenSubmitted(): void
-    {
-        $firstGameKickoff = time() - 4000; // 66 minutes ago
-        $cutoffTime = $firstGameKickoff + 3600; // 6 minutes ago
-        $now = time();
-        $cutoffPassed = ($now >= $cutoffTime);
-        $isWeekComplete = false;
-
-        $viewerHasSubmitted = true;
-        $isCommissioner = false;
-
-        $canViewOpponentPicks = ($cutoffPassed && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
-
-        $this->assertTrue($cutoffPassed);
-        $this->assertTrue($canViewOpponentPicks, 'Once the cutoff passes, submitted players can view opponent picks.');
-
-        // Non-submitted player cannot view opponent picks
-        $viewerNotSubmitted = false;
-        $canViewUnsubmitted = ($cutoffPassed && ($viewerNotSubmitted || $isCommissioner)) || $isWeekComplete;
-        $this->assertFalse($canViewUnsubmitted, 'Unsubmitted players cannot view opponent picks until they lock in their picks.');
-
-        // Commissioner can view once cutoff passes even if not submitted
-        $commissionerNotSubmitted = true;
-        $canViewCommissioner = ($cutoffPassed && ($viewerNotSubmitted || $commissionerNotSubmitted)) || $isWeekComplete;
-        $this->assertTrue($canViewCommissioner, 'Commissioner can view picks once the cutoff has passed.');
-    }
-
-    public function testOpponentPicksAlwaysViewableForCompletedWeeks(): void
-    {
-        $firstGameStarted = true;
-        $isWeekComplete = true;
-        $viewerHasSubmitted = false;
-        $isCommissioner = false;
-
-        $canViewOpponentPicks = ($firstGameStarted && ($viewerHasSubmitted || $isCommissioner)) || $isWeekComplete;
-        $this->assertTrue($canViewOpponentPicks, 'For completed weeks, all picks must be viewable.');
+        Connection::resetInstance();
     }
 }
-
