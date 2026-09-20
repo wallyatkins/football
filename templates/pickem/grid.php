@@ -138,16 +138,16 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             <div class="flex items-center gap-2.5 flex-wrap">
                 <span class="font-bold text-sm text-[#F8FAFC]">Week <?= $week ?> Ballot Status:</span>
                 <?php if ($isWeekLocked): ?>
-                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-800 text-[#94A3B8] border border-[#243247] uppercase">
-                        ALL GAMES LOCKED
-                    </span>
-                <?php elseif ($hasConfirmedPicks): ?>
-                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 uppercase">
-                        BALLOT CONFIRMED
+                    <span class="px-2.5 py-1 rounded font-mono text-[11px] font-bold bg-[#0B1626] text-[#94A3B8] border border-[#243247] flex items-center gap-1.5 uppercase">
+                        <svg class="w-3.5 h-3.5 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>PICKS LOCKED</span>
                     </span>
                 <?php else: ?>
-                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-950/80 text-[#EAB308] border border-amber-500/40 uppercase">
-                        DRAFT &bull; AUTO-SAVING
+                    <span class="px-2.5 py-1 rounded font-mono text-[11px] font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Auto-saved &bull; Editable until <?= htmlspecialchars($cutoffFormatted) ?></span>
                     </span>
                 <?php endif; ?>
 
@@ -168,7 +168,11 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
         </div>
 
         <p class="text-[#94A3B8] leading-relaxed">
-            Picks lock on a <strong>per-game kickoff basis</strong>. You can modify any pick or tiebreaker prediction up until that specific game kicks off.
+            <?php if ($isWeekLocked): ?>
+                All selections for Week <?= $week ?> are locked. Live scores and standings update in real-time.
+            <?php else: ?>
+                Your selections auto-save immediately as you pick. You can modify any open game until <?= htmlspecialchars($cutoffFormatted) ?>.
+            <?php endif; ?>
         </p>
 
         <?php if (!$isPaid): ?>
@@ -486,21 +490,17 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
             </div>
         </div>
 
-        <!-- Submission & Status Card -->
-        <div class="p-5 rounded-xl bg-[#162235] border border-[#243247] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <!-- Status & Standings Action Card -->
+        <div class="p-4 sm:p-5 rounded-xl bg-[#162235] border border-[#243247] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="flex items-center gap-3 text-xs text-[#94A3B8]">
                 <div class="w-8 h-8 rounded-lg bg-[#0B1626] border border-[#243247] flex items-center justify-center shrink-0">
                     <?php if ($isWeekLocked): ?>
                         <svg class="w-4 h-4 text-[#94A3B8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                    <?php elseif ($hasConfirmedPicks): ?>
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
                     <?php else: ?>
-                        <svg class="w-4 h-4 text-[#EAB308]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                         </svg>
                     <?php endif; ?>
                 </div>
@@ -508,98 +508,27 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 <?php if ($isWeekLocked): ?>
                     <div>
                         <span class="text-[#F8FAFC] font-semibold text-sm block">Week <?= $week ?> is locked.</span>
-                        <span class="text-[#94A3B8] block text-xs">All scheduled games have kicked off.</span>
-                    </div>
-                <?php elseif ($hasConfirmedPicks): ?>
-                    <div>
-                        <span class="font-bold text-emerald-400 block text-sm mb-0.5">Ballot Confirmed &bull; Auto-Saving</span>
-                        <span class="text-[#94A3B8]">Your selections are saved. You can adjust open games until each game's scheduled kickoff.</span>
+                        <span class="text-[#94A3B8] block text-xs">The cutoff deadline has passed. Selections are final.</span>
                     </div>
                 <?php else: ?>
                     <div>
-                        <span class="font-bold text-[#F8FAFC] block text-sm mb-0.5">Selections Auto-Save As You Go</span>
-                        <span class="text-[#94A3B8]">Choices save automatically. Click Review &amp; Submit whenever you want to confirm your ballot before kickoff.</span>
+                        <span class="font-bold text-[#F8FAFC] block text-sm mb-0.5">Selections Auto-Save in Real Time</span>
+                        <span class="text-[#94A3B8]">No submit button required. Picks remain editable until <?= htmlspecialchars($cutoffFormatted) ?>.</span>
                     </div>
                 <?php endif; ?>
             </div>
 
-            <?php if ($isWeekLocked): ?>
-                <div class="flex items-center gap-3 shrink-0">
-                    <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" 
-                       class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-[#0B1626] hover:bg-[#1f2e44] border border-[#243247] text-[#F8FAFC] font-bold text-xs uppercase tracking-wider transition">
-                        View Standings
-                    </a>
-                </div>
-            <?php else: ?>
-                <button type="button" 
-                        id="btnReviewPicks"
-                        class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#15803D] hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition shadow-sm shrink-0">
-                    <?= $hasConfirmedPicks ? "Review &amp; Re-confirm Picks" : "Review &amp; Submit Picks" ?>
-                </button>
-            <?php endif; ?>
+            <div class="flex items-center gap-3 shrink-0 w-full sm:w-auto">
+                <a href="/pickem/standings?week=<?= $week ?>&season=<?= $season ?>" 
+                   class="w-full sm:w-auto px-5 py-2.5 rounded-lg <?= $isWeekLocked ? 'bg-[#EAB308] hover:bg-amber-400 text-[#0B1626]' : 'bg-[#0B1626] hover:bg-[#1f2e44] text-[#F8FAFC] border border-[#243247]' ?> font-bold text-xs uppercase tracking-wider transition text-center shadow-sm">
+                    <?= $isWeekLocked ? 'View Live Standings &rarr;' : 'View Standings &rarr;' ?>
+                </a>
+            </div>
         </div>
 
     </form>
     </div>
 
-</div>
-
-<!-- Review & Confirmation Modal -->
-<div id="reviewModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-[#162235] border border-[#243247] rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        
-        <!-- Modal Header -->
-        <div class="p-4 border-b border-[#243247] bg-[#0B1626] flex items-center justify-between">
-            <div>
-                <div class="flex items-center gap-2 mb-0.5">
-                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-[#162235] text-[#EAB308] border border-[#243247] uppercase">
-                        Review Selections
-                    </span>
-                    <span class="text-xs text-[#94A3B8]">Week <?= $week ?></span>
-                </div>
-                <h3 class="text-lg font-bold text-[#F8FAFC]">Confirm Your Ballot</h3>
-            </div>
-            <button type="button" id="btnModalCloseX" class="text-[#94A3B8] hover:text-white text-2xl font-bold leading-none p-2">&times;</button>
-        </div>
-
-        <!-- Info Callout -->
-        <div class="p-3 bg-[#0B1626] border-b border-[#243247] text-xs text-[#94A3B8] flex items-start gap-2.5">
-            <svg class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <div>
-                <strong class="font-bold text-[#F8FAFC]">Per-Game Lockout:</strong>
-                <span>Confirming submits your official picks. You may still adjust selections for any game until its specific scheduled kickoff.</span>
-            </div>
-        </div>
-
-        <!-- Picks Summary List (Scrollable) -->
-        <div class="p-4 overflow-y-auto space-y-2.5 divide-y divide-[#243247]" id="reviewPicksList">
-            <!-- Populated via JS -->
-        </div>
-
-        <!-- Tiebreaker Summary -->
-        <div class="p-3.5 bg-[#0B1626] border-t border-[#243247] flex items-center justify-between text-xs">
-            <div>
-                <span class="text-[#94A3B8] font-semibold">Game of the Week Tiebreaker:</span>
-                <span class="text-[#F8FAFC] block text-[11px]"><?= htmlspecialchars($tbMatchupLabel) ?></span>
-            </div>
-            <span id="reviewMnfPoints" class="font-mono tabular-nums text-base font-bold text-[#EAB308]">--</span>
-        </div>
-
-        <!-- Modal Footer Actions -->
-        <div class="p-3.5 border-t border-[#243247] bg-[#0B1626] flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
-            <button type="button" id="btnCancelModal" 
-                    class="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#162235] hover:bg-[#1f2e44] text-[#94A3B8] hover:text-white font-bold text-xs uppercase tracking-wider transition border border-[#243247]">
-                Keep Editing
-            </button>
-            <button type="button" id="btnConfirmLockIn" 
-                    class="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#15803D] hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider shadow transition flex items-center justify-center gap-2">
-                <span>Confirm &amp; Submit Ballot</span>
-            </button>
-        </div>
-
-    </div>
 </div>
 
 <!-- Pick'em How It Works Modal -->
@@ -684,18 +613,8 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('pickemForm');
-    const reviewBtn = document.getElementById('btnReviewPicks');
-    const reviewModal = document.getElementById('reviewModal');
-    const btnCancelModal = document.getElementById('btnCancelModal');
-    const btnModalCloseX = document.getElementById('btnModalCloseX');
-    const btnConfirmLockIn = document.getElementById('btnConfirmLockIn');
-    const validationAlert = document.getElementById('validationAlert');
-    const validationAlertMessage = document.getElementById('validationAlertMessage');
     const mnfInput = document.getElementById('mnfTotalPointsInput');
     const mnfContainer = document.getElementById('mnfTiebreakerContainer');
-    const reviewPicksList = document.getElementById('reviewPicksList');
-    const reviewMnfPoints = document.getElementById('reviewMnfPoints');
 
     // Auto-Save Toast Notification
     const autoSaveToast = document.getElementById('autoSaveToast');
@@ -843,124 +762,9 @@ document.addEventListener('DOMContentLoaded', function () {
         mnfInput.addEventListener('change', autoSaveTiebreaker);
     }
 
-    // 3. Client-side Validation & Review modal trigger
-    if (reviewBtn) {
-        reviewBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-
-            // Clear previous alerts
-            validationAlert.classList.add('hidden');
-            validationAlertMessage.innerHTML = '';
-            document.querySelectorAll('.ring-rose-500').forEach(el => el.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse'));
-
-            const unlockedMatchups = document.querySelectorAll('.matchup-card[data-unlocked="true"]');
-            let unpickedCards = [];
-
-            unlockedMatchups.forEach(card => {
-                const checked = card.querySelector('.pick-radio:checked');
-                if (!checked) {
-                    unpickedCards.push(card);
-                }
-            });
-
-            const mnfVal = mnfInput ? parseInt(mnfInput.value.trim(), 10) : 0;
-            const mnfMissing = !mnfInput || isNaN(mnfVal) || mnfVal <= 0;
-
-            if (unpickedCards.length > 0 || mnfMissing) {
-                // Build human-friendly message
-                let errorHtml = '';
-                if (unpickedCards.length > 0) {
-                    errorHtml += `<div><strong>Unpicked Games:</strong> You have <strong>${unpickedCards.length}</strong> unpicked matchup(s) remaining. Please pick a winner for every game.</div>`;
-                    unpickedCards.forEach(c => c.classList.add('ring-4', 'ring-rose-500', 'animate-pulse'));
-                }
-                if (mnfMissing) {
-                    const tbLabel = <?= json_encode($tbMatchupLabel) ?>;
-                    errorHtml += `<div><strong>Missing Tiebreaker:</strong> Please enter your predicted combined total points for <strong>${tbLabel}</strong>.</div>`;
-                    if (mnfContainer) mnfContainer.classList.add('ring-4', 'ring-rose-500', 'animate-pulse');
-                }
-
-                validationAlertMessage.innerHTML = errorHtml;
-                validationAlert.classList.remove('hidden');
-
-                // Smooth scroll to the first missing element
-                if (unpickedCards.length > 0) {
-                    unpickedCards[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } else if (mnfMissing && mnfContainer) {
-                    mnfContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    mnfInput.focus();
-                }
-
-                return;
-            }
-
-            // If valid, populate Review Modal
-            reviewPicksList.innerHTML = '';
-            let pickIndex = 1;
-
-            matchups.forEach(card => {
-                const checkedRadio = card.querySelector('.pick-radio:checked');
-                if (!checkedRadio) return;
-
-                const teamAbbr = checkedRadio.getAttribute('data-abbr');
-                const teamName = checkedRadio.getAttribute('data-name');
-                const teamLogo = checkedRadio.getAttribute('data-logo');
-                const awayName = card.getAttribute('data-away-name');
-                const homeName = card.getAttribute('data-home-name');
-                const awayAbbr = card.getAttribute('data-away-abbr');
-                const homeAbbr = card.getAttribute('data-home-abbr');
-
-                const vsOpponent = (teamAbbr === awayAbbr) ? `vs ${homeName} (${homeAbbr})` : `@ ${awayName} (${awayAbbr})`;
-
-                const row = document.createElement('div');
-                row.className = 'pt-2.5 flex items-center justify-between gap-4 text-xs';
-                row.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="font-mono text-[#94A3B8] text-[11px] w-4 tabular-nums">${pickIndex++}.</span>
-                        <img src="${teamLogo}" alt="${teamName}" class="w-7 h-7 object-contain">
-                        <div>
-                            <span class="font-bold text-[#F8FAFC] text-sm">${teamName}</span>
-                            <span class="text-[#94A3B8] block text-[11px]">${vsOpponent}</span>
-                        </div>
-                    </div>
-                    <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-[#0B1626] text-emerald-400 border border-[#243247]">
-                        ${teamAbbr}
-                    </span>
-                `;
-                reviewPicksList.appendChild(row);
-            });
-
-            if (reviewMnfPoints) {
-                reviewMnfPoints.textContent = mnfVal + ' Points';
-            }
-
-            // Show Modal
-            reviewModal.classList.remove('hidden');
-            reviewModal.classList.add('flex');
-        });
-    }
-
-    // Modal Close
-    function closeModal() {
-        reviewModal.classList.add('hidden');
-        reviewModal.classList.remove('flex');
-    }
-
-    if (btnCancelModal) btnCancelModal.addEventListener('click', closeModal);
-    if (btnModalCloseX) btnModalCloseX.addEventListener('click', closeModal);
-
-    // Confirm & Submit
-    if (btnConfirmLockIn) {
-        btnConfirmLockIn.addEventListener('click', function () {
-            btnConfirmLockIn.disabled = true;
-            btnConfirmLockIn.textContent = 'Submitting Ballot...';
-            form.submit();
-        });
-    }
-
     // Close on Escape key
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            closeModal();
             closeHowItWorks();
         }
     });

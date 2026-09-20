@@ -95,19 +95,46 @@ class PickemController
         $lockedGamesCount = 0;
 
         $firstGameKickoff = null;
+        $sundayKickoff = null;
         foreach ($games as $g) {
             $kt = strtotime($g['kickoff_time']);
             if ($firstGameKickoff === null || $kt < $firstGameKickoff) {
                 $firstGameKickoff = $kt;
+            }
+            $dayOfWeek = (int) (new \DateTimeImmutable("@{$kt}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('w');
+            if ($dayOfWeek === 0) { // Sunday
+                if ($sundayKickoff === null || $kt < $sundayKickoff) {
+                    $sundayKickoff = $kt;
+                }
             }
         }
         $firstKickoffFormatted = $firstGameKickoff
             ? (new \DateTimeImmutable("@{$firstGameKickoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Kickoff of Week ' . $week;
 
+        // Cutoff is 1 hour into the main Sunday slate (or first game if no Sunday games)
+        $mainSlateFirstKickoff = $sundayKickoff ?? $firstGameKickoff;
+        $weeklyCutoff = $mainSlateFirstKickoff ? ($mainSlateFirstKickoff + 3600) : null;
+        $isCutoffPassed = ($weeklyCutoff !== null && $now >= $weeklyCutoff);
+
+        $cutoffFormatted = $weeklyCutoff
+            ? (new \DateTimeImmutable("@{$weeklyCutoff}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('l g:i A T')
+            : 'Cutoff of Week ' . $week;
+
+        // Server-side auto-lock: once the cutoff deadline passes, automatically mark records locked
+        if ($isCutoffPassed) {
+            $this->db->execute(
+                'UPDATE pickem_entries SET is_locked = 1, locked_at = CURRENT_TIMESTAMP 
+                 WHERE season_year = :season AND week_number = :week AND is_locked = 0',
+                ['season' => $season, 'week' => $week]
+            );
+        }
+
         foreach ($games as $idx => $g) {
             $kt = strtotime($g['kickoff_time']);
-            $isGameLocked = ($kt <= $now);
+            // Game is locked if its individual 1-hour cutoff passed OR the weekly cutoff passed
+            $gameCutoff = $kt + 3600;
+            $isGameLocked = ($now >= $gameCutoff) || $isCutoffPassed;
             $games[$idx]['is_locked'] = $isGameLocked;
             if ($isGameLocked) {
                 $lockedGamesCount++;
@@ -151,8 +178,7 @@ class PickemController
             $games[$idx]['pick_result'] = $pickResult;
         }
 
-        $isWeekLocked = ($openGamesCount === 0);
-        $cutoffFormatted = $isWeekLocked ? 'All games locked' : "{$openGamesCount} game(s) open";
+        $isWeekLocked = $isCutoffPassed || ($openGamesCount === 0);
 
         // Find designated tiebreaker game
         $tiebreakerGame = null;
@@ -248,7 +274,37 @@ class PickemController
             ? (int) $input['mnf_total_points']
             : null;
 
-        // Per-game kickoff lock check: verify specific game has not kicked off yet
+        $now = time();
+
+        // Calculate weekly cutoff
+        $weekGames = $this->db->query(
+            'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week',
+            ['season' => $season, 'week' => $week]
+        );
+        $firstKickoff = null;
+        $sundayKickoff = null;
+        foreach ($weekGames as $wg) {
+            $kt = strtotime($wg['kickoff_time']);
+            if ($firstKickoff === null || $kt < $firstKickoff) {
+                $firstKickoff = $kt;
+            }
+            $dayOfWeek = (int) (new \DateTimeImmutable("@{$kt}"))->setTimezone(new \DateTimeZone('America/New_York'))->format('w');
+            if ($dayOfWeek === 0) {
+                if ($sundayKickoff === null || $kt < $sundayKickoff) {
+                    $sundayKickoff = $kt;
+                }
+            }
+        }
+        $mainSlateFirstKickoff = $sundayKickoff ?? $firstKickoff;
+        $weeklyCutoff = $mainSlateFirstKickoff ? ($mainSlateFirstKickoff + 3600) : null;
+
+        if ($weeklyCutoff !== null && $now >= $weeklyCutoff) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "The cutoff deadline for Week {$week} has passed. Picks are locked."]);
+            exit;
+        }
+
+        // Per-game lock check: 1-hour cutoff into game kickoff
         if ($gameId !== null) {
             $targetGame = $this->db->queryOne(
                 'SELECT home_team, away_team, kickoff_time FROM games WHERE id = :gid AND season_year = :season AND week_number = :week',
@@ -259,22 +315,23 @@ class PickemController
                 echo json_encode(['success' => false, 'error' => 'Game not found for this matchup.']);
                 exit;
             }
-            if (strtotime($targetGame['kickoff_time']) <= time()) {
+            $gameCutoff = strtotime($targetGame['kickoff_time']) + 3600;
+            if ($now >= $gameCutoff) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'This game has already kicked off and is locked.']);
+                echo json_encode(['success' => false, 'error' => 'This game is locked (cutoff was 1 hour into kickoff).']);
                 exit;
             }
         }
 
-        // Check if tiebreaker game has kicked off if mnf points passed
+        // Check if tiebreaker game has passed its 1-hour cutoff if mnf points passed
         if (array_key_exists('mnf_total_points', $input)) {
             $tbGame = $this->db->queryOne(
                 'SELECT kickoff_time FROM games WHERE season_year = :season AND week_number = :week AND is_mnf = 1',
                 ['season' => $season, 'week' => $week]
             );
-            if ($tbGame && strtotime($tbGame['kickoff_time']) <= time()) {
+            if ($tbGame && (strtotime($tbGame['kickoff_time']) + 3600) <= $now) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'The tiebreaker game has already kicked off and is locked.']);
+                echo json_encode(['success' => false, 'error' => 'The tiebreaker game is locked (cutoff was 1 hour into kickoff).']);
                 exit;
             }
         }
@@ -559,7 +616,7 @@ class PickemController
                 'SELECT id, is_locked FROM pickem_entries WHERE user_id = :uid AND season_year = :s AND week_number = :w',
                 ['uid' => $viewerId, 's' => $season, 'w' => $week]
             );
-            $viewerHasSubmitted = !empty($viewerEntry['is_locked']);
+            $viewerHasSubmitted = !empty($viewerEntry);
         }
         $isCommissioner = in_array($user['role'] ?? '', ['admin', 'commissioner'], true);
 

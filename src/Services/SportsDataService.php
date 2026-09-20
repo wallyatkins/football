@@ -297,7 +297,7 @@ class SportsDataService
                 $events = $json['events'] ?? ($json['content']['sbData']['events'] ?? ($json['sports'][0]['leagues'][0]['events'] ?? []));
                 if (!empty($events) && is_array($events)) {
                     if (isset($json['sports'][0]['leagues'][0]['events']) && $week !== null) {
-                        $events = array_values(array_filter($events, fn($e) => ($e['seasonType'] ?? 2) == 2 && ($e['week'] ?? 1) == $week));
+                        $events = array_values(array_filter($events, fn ($e) => ($e['seasonType'] ?? 2) == 2 && ($e['week'] ?? 1) == $week));
                     }
                     if (!empty($events)) {
                         $json['events'] = $events;

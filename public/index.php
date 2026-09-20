@@ -182,7 +182,7 @@ try {
             (new PickemController())->standings($season, $week);
             exit;
 
-        // --- Survivor Pool ---
+            // --- Survivor Pool ---
         case '/survivor':
             if ($method === 'POST') {
                 (new SurvivorController())->save();
@@ -354,7 +354,7 @@ function renderLandingPage(): void
                 if (!empty($potInfo['winners'])) {
                     $landingWinner = [
                         'week' => $lastCompletedWeek,
-                        'names' => implode(' & ', array_map(fn($w) => htmlspecialchars($w['username']), $potInfo['winners'])),
+                        'names' => implode(' & ', array_map(fn ($w) => htmlspecialchars($w['username']), $potInfo['winners'])),
                         'score' => $potInfo['winners'][0]['correct_picks'] ?? 0,
                         'payout' => $potInfo['payout_per_winner'] ?? 0,
                     ];

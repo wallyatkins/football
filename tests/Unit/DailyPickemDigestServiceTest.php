@@ -84,7 +84,7 @@ class DailyPickemDigestServiceTest extends TestCase
     public function testTrackingFileAndHasNewResults(): void
     {
         $service = new DailyPickemDigestService($this->db, null, $this->createMockSportsService());
-        
+
         $this->assertEmpty($service->getReportedGameIds($this->testSeason, $this->testWeek));
         $this->assertTrue($service->hasNewResults($this->testSeason, $this->testWeek));
 
@@ -397,4 +397,3 @@ class DailyPickemDigestServiceTest extends TestCase
         $this->assertFalse($service->hasNewResults($this->testSeason, 2));
     }
 }
-

@@ -244,7 +244,7 @@ class ScoringEngineTest extends TestCase
         // Bob (user 2) views standings for week 2
         // Alice's week 2 pick should be HIDDEN from Bob
         $standingsForBob = $this->engine->getSurvivorStandings(2026, 2, 2);
-        $aliceRowForBob = array_values(array_filter($standingsForBob, fn($s) => $s['user_id'] === 1))[0];
+        $aliceRowForBob = array_values(array_filter($standingsForBob, fn ($s) => $s['user_id'] === 1))[0];
         $this->assertSame('LOCKED', $aliceRowForBob['history'][0]['display_team']);
         $this->assertTrue($aliceRowForBob['history'][0]['is_hidden']);
         $this->assertNotContains('BUF', $aliceRowForBob['teams_used'], 'Unstarted pick should not appear in opponent teams_used');
@@ -252,7 +252,7 @@ class ScoringEngineTest extends TestCase
         // Alice (user 1) views her own standings for week 2
         // Alice should see her own pick 'BUF'
         $standingsForAlice = $this->engine->getSurvivorStandings(2026, 1, 2);
-        $aliceRowForAlice = array_values(array_filter($standingsForAlice, fn($s) => $s['user_id'] === 1))[0];
+        $aliceRowForAlice = array_values(array_filter($standingsForAlice, fn ($s) => $s['user_id'] === 1))[0];
         $this->assertSame('BUF', $aliceRowForAlice['history'][0]['display_team']);
         $this->assertFalse($aliceRowForAlice['history'][0]['is_hidden']);
         $this->assertContains('BUF', $aliceRowForAlice['teams_used']);
@@ -260,7 +260,7 @@ class ScoringEngineTest extends TestCase
         // Now simulate game kickoff: status = 'in_progress'
         $this->db->execute("UPDATE games SET status = 'in_progress' WHERE id = 201");
         $standingsAfterKickoff = $this->engine->getSurvivorStandings(2026, 2, 2);
-        $aliceRowAfterKickoff = array_values(array_filter($standingsAfterKickoff, fn($s) => $s['user_id'] === 1))[0];
+        $aliceRowAfterKickoff = array_values(array_filter($standingsAfterKickoff, fn ($s) => $s['user_id'] === 1))[0];
         $this->assertSame('BUF', $aliceRowAfterKickoff['history'][0]['display_team'], 'Kickoff unlocks pick visibility');
         $this->assertFalse($aliceRowAfterKickoff['history'][0]['is_hidden']);
     }

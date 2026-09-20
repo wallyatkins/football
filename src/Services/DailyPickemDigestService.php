@@ -7,7 +7,6 @@ namespace WallyFootball\Services;
 use DateTimeImmutable;
 use DateTimeZone;
 use WallyFootball\Database\Connection;
-use WallyFootball\Support\TeamData;
 
 class DailyPickemDigestService
 {
@@ -202,7 +201,7 @@ class DailyPickemDigestService
                 }
             }
         }
-        $firstKickoffFormatted = $firstKickoff 
+        $firstKickoffFormatted = $firstKickoff
             ? (new DateTimeImmutable("@{$firstKickoff}"))->setTimezone(new DateTimeZone('America/New_York'))->format('D, M j @ g:i A T')
             : 'Thursday Kickoff';
 
@@ -524,7 +523,7 @@ HTML;
         if (!empty($digestData['completed_week']) && !empty($digestData['completed_week_winners'])) {
             $cWeek = (int) $digestData['completed_week'];
             $cWinners = $digestData['completed_week_winners'];
-            $cNames = array_map(fn($w) => htmlspecialchars($w['username'] ?? 'Champion'), $cWinners);
+            $cNames = array_map(fn ($w) => htmlspecialchars($w['username'] ?? 'Champion'), $cWinners);
             $cNamesStr = implode(' &amp; ', $cNames);
             $cScore = $cWinners[0]['correct_picks'] ?? 0;
             $cPot = $digestData['completed_week_pot'] ?? null;

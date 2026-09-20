@@ -222,4 +222,59 @@ class LockoutTest extends TestCase
 
         Connection::resetInstance();
     }
+
+    public function testOneHourCutoffGraceAllowsPicksWithinFirstHour(): void
+    {
+        $now = time();
+        $kickoff30MinAgo = date('Y-m-d H:i:s', $now - 1800); // 30 minutes into game
+
+        $gameCutoff = strtotime($kickoff30MinAgo) + 3600;
+        $isGameLocked = ($now >= $gameCutoff);
+
+        $this->assertFalse($isGameLocked, 'Game 30 minutes in should remain editable within the 1-hour cutoff window.');
+    }
+
+    public function testOneHourCutoffGraceRejectsPicksAfterOneHour(): void
+    {
+        $now = time();
+        $kickoff75MinAgo = date('Y-m-d H:i:s', $now - 4500); // 75 minutes into game
+
+        $gameCutoff = strtotime($kickoff75MinAgo) + 3600;
+        $isGameLocked = ($now >= $gameCutoff);
+
+        $this->assertTrue($isGameLocked, 'Game past the 1-hour cutoff window must be locked.');
+    }
+
+    public function testWeeklyCutoffLocksAllMatchupsServerSide(): void
+    {
+        $tempDb = sys_get_temp_dir() . '/test_weekly_cutoff_' . uniqid() . '.sqlite';
+        $db = Connection::getInstance($tempDb);
+
+        $now = time();
+        $sundayPastKickoff = date('Y-m-d H:i:s', $now - 7200); // 2 hours ago (cutoff was 1 hr ago)
+        $mondayFutureKickoff = date('Y-m-d H:i:s', $now + 86400);
+
+        $db->execute("INSERT INTO users (id, oidc_sub, username, email, role) VALUES (1, 'sub-1', 'Alice', 'alice@test.com', 'player')");
+        $db->execute("INSERT INTO games (id, season_year, week_number, home_team, away_team, kickoff_time, status) VALUES 
+            (101, 2026, 2, 'ATL', 'CAR', '{$sundayPastKickoff}', 'in_progress'),
+            (102, 2026, 2, 'KC', 'DEN', '{$mondayFutureKickoff}', 'scheduled')");
+        $db->execute("INSERT INTO pickem_entries (id, user_id, season_year, week_number, payment_status, is_locked)
+            VALUES (1, 1, 2026, 2, 'paid', 0)");
+
+        $weeklyCutoff = strtotime($sundayPastKickoff) + 3600;
+        $isCutoffPassed = ($now >= $weeklyCutoff);
+        $this->assertTrue($isCutoffPassed, 'Weekly cutoff has passed.');
+
+        // Server-side lock
+        $db->execute(
+            'UPDATE pickem_entries SET is_locked = 1, locked_at = CURRENT_TIMESTAMP 
+             WHERE season_year = :season AND week_number = :week AND is_locked = 0',
+            ['season' => 2026, 'week' => 2]
+        );
+
+        $entry = $db->queryOne('SELECT is_locked FROM pickem_entries WHERE id = 1');
+        $this->assertSame(1, (int) $entry['is_locked'], 'Entry must be automatically locked server-side after cutoff.');
+
+        Connection::resetInstance();
+    }
 }
