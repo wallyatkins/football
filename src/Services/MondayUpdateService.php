@@ -395,19 +395,20 @@ HTML;
                 'email' => trim($previewTo),
             ];
         } else {
-            // Gather all participants
+            // Gather all registered football app members
             $users = $this->db->query(
-                'SELECT DISTINCT u.username, u.email
-                 FROM pickem_entries pe
-                 JOIN users u ON pe.user_id = u.id
-                 WHERE pe.season_year = :s AND pe.week_number = :w AND u.email IS NOT NULL AND u.email != ""',
-                ['s' => $season, 'w' => $week]
+                'SELECT DISTINCT username, email
+                 FROM users
+                 WHERE email IS NOT NULL AND email != ""
+                 ORDER BY username ASC'
             );
+            $seen = [];
             foreach ($users as $u) {
-                $email = strtolower(trim($u['email']));
-                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $email = strtolower(trim((string) $u['email']));
+                if (filter_var($email, FILTER_VALIDATE_EMAIL) && !isset($seen[$email])) {
+                    $seen[$email] = true;
                     $recipients[] = [
-                        'name' => $u['username'],
+                        'name' => (string) $u['username'],
                         'email' => $email,
                     ];
                 }
