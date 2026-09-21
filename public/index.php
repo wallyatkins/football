@@ -163,6 +163,7 @@ try {
 
             // --- Pick'em Pool ---
         case '/pickem':
+        case '/pickem/wizard':
             if ($method === 'POST') {
                 (new PickemController())->save();
             } else {

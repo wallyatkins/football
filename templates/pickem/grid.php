@@ -43,13 +43,21 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 Week <?= $week ?>
             </span>
             <button type="button" 
+                    id="btnLaunchWizard"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-md shadow-amber-500/20 transition transform hover:-translate-y-0.5 active:translate-y-0">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Launch Pick-by-Pick Flow</span>
+            </button>
+            <button type="button" 
                     id="btnOpenHowItWorks"
                     class="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#162235] hover:bg-[#0B1626] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#243247] transition">
                 Rules &amp; Scoring
             </button>
             <?php if (!empty($isCommissioner)): ?>
                 <a href="/admin/payments?week=<?= $week ?>&season=<?= $season ?>" 
-                   class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/80 hover:text-white transition shadow-sm">
+                    class="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-950/60 border border-purple-500/40 text-purple-300 hover:bg-purple-900/80 hover:text-white transition shadow-sm">
                     Commissioner
                 </a>
             <?php endif; ?>
@@ -58,6 +66,29 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
 
     <!-- Center Column Layout (One Game Per Row) -->
     <div class="max-w-3xl mx-auto space-y-6">
+
+        <!-- Interactive Pick Wizard Opt-in Card -->
+        <div class="p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-[#162235] to-[#162235] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl shrink-0 shadow-inner">
+                    ⚡
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white flex items-center gap-2">
+                        <span>Weekly Pick Wizard</span>
+                        <span class="text-[10px] uppercase font-mono font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Interactive Mode</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-0.5">
+                        Experience every matchup one-by-one with full-screen landscape focus, high-res team logos, and instant autosave.
+                    </div>
+                </div>
+            </div>
+            <button type="button" 
+                    id="btnLaunchWizardHero"
+                    class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-black rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md shadow-amber-400/20 transition transform hover:-translate-y-0.5">
+                <span>Enter Interactive Mode &rarr;</span>
+            </button>
+        </div>
 
     <!-- Week Champion Summary (Collapsible, Auto-collapsed Once Games Kick Off) -->
     <?php 
@@ -772,5 +803,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <?php
+require __DIR__ . '/wizard.php';
 $content = ob_get_clean();
 require dirname(__DIR__) . '/layout.php';
