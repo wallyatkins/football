@@ -241,6 +241,11 @@ class PickemController
             }
         }
 
+        // Gather standings for active completed week or prior completed week to show podium
+        $activeStandings = !empty($isWeekComplete)
+            ? $this->scoring->getWeeklyStandings($season, $week)
+            : (!empty($lastCompletedWeek) ? $this->scoring->getWeeklyStandings($season, $lastCompletedWeek) : []);
+
         // Commissioner payment links (exact verified links)
         $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
         $payPalUrl = 'https://paypal.me/WallyAtkins';

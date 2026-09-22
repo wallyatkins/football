@@ -14,20 +14,16 @@ $options = getopt('', [
     'preview-to:',
     'send-all',
     'dry-run',
-    'recap',
-    'pre-mnf',
     'help',
 ]);
 
 if (isset($options['help'])) {
-    echo "Usage: php bin/send-monday-update.php [options]\n";
+    echo "Usage: php bin/send-weekly-recap.php [options]\n";
     echo "Options:\n";
     echo "  --preview-to=<email>  Send preview to a specific email (default: wallyatkins@gmail.com)\n";
-    echo "  --send-all            Broadcast update to all week participants (SAFETY: overrides preview)\n";
+    echo "  --send-all            Broadcast recap to all week participants (SAFETY: overrides preview)\n";
     echo "  --week=<N>            Week number (default: 2)\n";
     echo "  --season=<YYYY>       Season year (default: 2026)\n";
-    echo "  --recap               Force Tuesday post-MNF celebration & recap mode\n";
-    echo "  --pre-mnf             Force pre-MNF anticipation mode\n";
     echo "  --dry-run             Generate report and log recipient list without sending\n";
     echo "  --help                Show this help text\n";
     exit(0);
@@ -47,31 +43,16 @@ if ($sendAll) {
         : 'wallyatkins@gmail.com';
 }
 
-$forceRecap = null;
-if (isset($options['recap'])) {
-    $forceRecap = true;
-} elseif (isset($options['pre-mnf'])) {
-    $forceRecap = false;
-}
-
 $db = Connection::getInstance();
 $service = new MondayUpdateService($db);
 
 $data = $service->getMondayData($season, $week);
-$isRecap = ($forceRecap !== null) ? $forceRecap : !empty($data['is_recap_mode']);
-$data['is_recap_mode'] = $isRecap;
-
-$mnfGame = $data['mnf_game'];
-$mnfMatchup = $mnfGame ? "{$mnfGame['away_team']} @ {$mnfGame['home_team']}" : "NYG @ LAR";
+$data['is_recap_mode'] = true;
 
 echo "============================================================\n";
-if ($isRecap) {
-    echo "🏆 Atkins Football Post-MNF Weekly Celebration & Recap\n";
-} else {
-    echo "🏈 Atkins Football Monday Huddle Dispatch\n";
-}
+echo "🏆 Atkins Football Post-MNF Weekly Celebration & Recap\n";
 echo "Season: {$season} | Week: {$week}\n";
-echo "Type:   " . ($isRecap ? "OFFICIAL FINAL RECAP (Post-MNF)" : "PRE-MNF HUDDLE (Anticipation)") . "\n";
+echo "Type:   OFFICIAL FINAL RECAP (Podium & Payout Celebration)\n";
 echo "Mode:   " . ($dryRun ? "DRY RUN (Simulated)" : ($sendAll ? "LIVE BROADCAST (All Participants)" : "REVIEW PREVIEW ONLY")) . "\n";
 if ($previewTo !== null) {
     echo "Target: {$previewTo}\n";
@@ -79,14 +60,10 @@ if ($previewTo !== null) {
 echo "============================================================\n\n";
 
 echo "Games Final:  " . count($data['final_games']) . " / {$data['games_count']}\n";
-if ($isRecap) {
-    echo "MNF Result:   " . ($data['actual_mnf_score'] ?? "Rams 28, Giants 6") . " (Total: " . ($data['actual_mnf_total'] ?? 34) . " pts)\n";
-} else {
-    echo "MNF Game:     {$mnfMatchup}\n";
-}
+echo "MNF Result:   " . ($data['actual_mnf_score'] ?? "Rams 28, Giants 6") . " (Total: " . ($data['actual_mnf_total'] ?? 34) . " pts)\n";
 echo "Participants: " . count($data['standings']) . "\n\n";
 
-echo "Leaderboard Preview (Top 3 Podium):\n";
+echo "The Official Podium:\n";
 foreach (array_slice($data['standings'], 0, 3) as $st) {
     $score = "{$st['correct_picks']}-" . ($st['total_graded'] - $st['correct_picks']);
     $tbInfo = "TB: {$st['predicted_mnf']} pts";
@@ -106,7 +83,7 @@ if (!empty($data['winners_paid'])) {
 }
 echo "\n";
 
-$result = $service->dispatchUpdate($season, $week, $previewTo, $dryRun, $forceRecap);
+$result = $service->dispatchUpdate($season, $week, $previewTo, $dryRun, true);
 
 echo "Dispatch Result:\n";
 echo "  Mode:       {$result['mode']}\n";
@@ -117,7 +94,7 @@ echo "  Recipients: " . implode(', ', $result['recipients']) . "\n\n";
 if ($result['mode'] === 'preview') {
     echo "✅ Preview email successfully sent to {$previewTo} for review!\n";
 } elseif ($result['mode'] === 'broadcast') {
-    echo "✅ Weekly update successfully broadcast to all {$result['sent']} participants!\n";
+    echo "✅ Weekly recap successfully broadcast to all {$result['sent']} participants!\n";
 } else {
     echo "ℹ️ Dry-run completed. No emails dispatched.\n";
 }

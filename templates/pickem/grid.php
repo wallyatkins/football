@@ -114,25 +114,72 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                 </div>
             </summary>
 
-            <div class="p-4 pt-1 border-t border-[#243247] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <!-- 1. Overall -->
-                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-[#EAB308] block mb-1">Overall Winner</span>
-                    <?php if (!empty($activeWinnersOverall)): ?>
+            <?php
+            $actGold = $activeStandings[0] ?? null;
+            $actSilver = $activeStandings[1] ?? null;
+            $actBronze = $activeStandings[2] ?? null;
+            ?>
+            <div class="p-4 pt-1 border-t border-[#243247] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                <!-- 1. Gold -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-amber-500/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-mono font-bold text-[10px] uppercase text-[#EAB308]">🥇 1st (Gold)</span>
+                        <span class="text-xs">🥇</span>
+                    </div>
+                    <?php if ($actGold): ?>
                         <div class="font-bold text-[#F8FAFC] truncate">
-                            <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersOverall)) ?>
+                            <?= htmlspecialchars($actGold['username']) ?>
                         </div>
-                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
-                            <?= $activeWinnersOverall[0]['correct_picks'] ?> correct picks
+                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
+                            <?= $actGold['correct_picks'] ?> correct picks &bull; Sole 1st
                         </span>
                     <?php else: ?>
                         <span class="text-[#94A3B8] italic">Pending</span>
                     <?php endif; ?>
                 </div>
 
-                <!-- 2. Cash -->
-                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-emerald-400 block mb-1">Cash Pool Winner</span>
+                <!-- 2. Silver -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-slate-500/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-mono font-bold text-[10px] uppercase text-slate-300">🥈 2nd (Silver)</span>
+                        <span class="text-xs">🥈</span>
+                    </div>
+                    <?php if ($actSilver): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate">
+                            <?= htmlspecialchars($actSilver['username']) ?>
+                        </div>
+                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
+                            <?= $actSilver['correct_picks'] ?> correct <?= ($actSilver['tiebreaker_delta'] ?? null) === 0 ? '&bull; 🎯 Bullseye' : '' ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- 3. Bronze -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-amber-700/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-mono font-bold text-[10px] uppercase text-amber-500">🥉 3rd (Bronze)</span>
+                        <span class="text-xs">🥉</span>
+                    </div>
+                    <?php if ($actBronze): ?>
+                        <div class="font-bold text-[#F8FAFC] truncate">
+                            <?= htmlspecialchars($actBronze['username']) ?>
+                        </div>
+                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
+                            <?= $actBronze['correct_picks'] ?> correct (&Delta;<?= $actBronze['tiebreaker_delta'] ?? '—' ?>)
+                        </span>
+                    <?php else: ?>
+                        <span class="text-[#94A3B8] italic">Pending</span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- 4. Cash Winner -->
+                <div class="p-3 rounded-lg bg-[#0B1626] border border-emerald-500/50">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-mono font-bold text-[10px] uppercase text-emerald-400">💰 Cash Winner</span>
+                        <span class="text-xs">💵</span>
+                    </div>
                     <?php if (!empty($activeWinnersPaid)): ?>
                         <div class="font-bold text-[#F8FAFC] truncate">
                             <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersPaid)) ?>
@@ -142,21 +189,6 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
                         </span>
                     <?php else: ?>
                         <span class="text-[#94A3B8] italic">No cash verified</span>
-                    <?php endif; ?>
-                </div>
-
-                <!-- 3. Free -->
-                <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-purple-300 block mb-1">Free / Fun Winner</span>
-                    <?php if (!empty($activeWinnersFree)): ?>
-                        <div class="font-bold text-[#F8FAFC] truncate">
-                            <?= implode(', ', array_map(fn($w) => htmlspecialchars($w['username']), $activeWinnersFree)) ?>
-                        </div>
-                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
-                            <?= $activeWinnersFree[0]['correct_picks'] ?> correct
-                        </span>
-                    <?php else: ?>
-                        <span class="text-[#94A3B8] italic">Pending</span>
                     <?php endif; ?>
                 </div>
             </div>

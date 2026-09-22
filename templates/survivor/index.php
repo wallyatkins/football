@@ -622,6 +622,17 @@ if (!empty($usedPicks)) {
                 </div>
             </div>
 
+            <!-- Rule 5: Late-Join Fairness & Cash Option -->
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="w-6 h-6 rounded bg-[#162235] text-emerald-400 border border-[#243247] font-mono font-bold text-xs flex items-center justify-center shrink-0">5</span>
+                <div>
+                    <strong class="text-[#F8FAFC] text-xs block mb-0.5">Late-Join Fairness &amp; Cash Option</strong>
+                    <p class="text-[#94A3B8] leading-relaxed">
+                        Joining mid-season? To preserve fairness for Week 1 starters, late entrants either forfeit 1 consensus top team per missed week, or enter our upcoming Flight B second-chance bracket. An optional $20 season cash pool is also active!
+                    </p>
+                </div>
+            </div>
+
         </div>
 
         <!-- Footer -->

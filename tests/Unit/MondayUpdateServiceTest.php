@@ -184,4 +184,56 @@ class MondayUpdateServiceTest extends TestCase
         $this->assertEquals(1, $result['sent']);
         $this->assertCount(0, $sentMails); // No actual emails sent
     }
+
+    public function testPostMnfRecapDetectionAndRendering(): void
+    {
+        // Mark MNF game as final (Game 102: LAR 28, NYG 6)
+        $this->db->execute("UPDATE games SET status = 'final', home_score = 28, away_score = 6 WHERE id = 102");
+
+        $service = new MondayUpdateService($this->db);
+        $data = $service->getMondayData(2026, 2);
+
+        $this->assertTrue($data['is_mnf_final']);
+        $this->assertTrue($data['is_week_complete']);
+        $this->assertTrue($data['is_recap_mode']);
+        $this->assertEquals(34, $data['actual_mnf_total']);
+
+        // Check rankings after MNF
+        // Michelle picked LAR (won Game 102) -> 1 win (TB: 67, delta: 33)
+        // Bart picked CLE (won Game 101) + NYG (lost Game 102) -> 1 win (TB: 50, delta: 16)
+        // Tied at 1 win: Bart wins tiebreaker with delta 16 vs 33
+        $html = $service->renderHtml($data);
+        $this->assertStringContainsString('Week 2 Final Recap', $html);
+        $this->assertStringContainsString('The Week 2 Podium Showcase', $html);
+        $this->assertStringContainsString('Auto-Save on Tap', $html);
+        $this->assertStringContainsString('Late-Join Survivor Fairness Proposals', $html);
+        $this->assertStringContainsString('How the Weekly Cash Pool Works', $html);
+
+        $text = $service->renderText($data);
+        $this->assertStringContainsString('WEEK 2 FINAL RECAP & CHAMPIONS', $text);
+        $this->assertStringContainsString('THE WEEK 2 PODIUM', $text);
+        $this->assertStringContainsString('Auto-Save on Tap', $text);
+    }
+
+    public function testDispatchUpdateRecapPreviewMode(): void
+    {
+        $this->db->execute("UPDATE games SET status = 'final', home_score = 28, away_score = 6 WHERE id = 102");
+
+        $sentMails = [];
+        $mockMailer = function (string $to, string $subject, string $body, string $headers) use (&$sentMails): bool {
+            $sentMails[] = ['to' => $to, 'subject' => $subject, 'body' => $body];
+            return true;
+        };
+
+        $service = new MondayUpdateService($this->db, null, 'football@wallyatkins.com', "Wally's Football League", $mockMailer);
+        $result = $service->dispatchUpdate(2026, 2, 'wallyatkins@gmail.com', false);
+
+        $this->assertEquals('preview', $result['mode']);
+        $this->assertEquals(1, $result['sent']);
+        $this->assertCount(1, $sentMails);
+        $this->assertEquals('wallyatkins@gmail.com', $sentMails[0]['to']);
+        $this->assertStringContainsString('[PREVIEW]', $sentMails[0]['subject']);
+        $this->assertStringContainsString('Week 2 Recap: Champion Crowned', $sentMails[0]['subject']);
+    }
 }
+

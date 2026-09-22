@@ -62,66 +62,160 @@ $cutoffPassed = !empty($cutoffPassed);
         </div>
     <?php endif; ?>
 
-    <!-- Completed Week Champions (Collapsible) -->
+    <!-- Completed Week Champions & Podium Showcase -->
     <?php if (!empty($isWeekComplete)): ?>
-        <details class="rounded-xl border border-[#243247] bg-[#162235] p-4 text-xs shadow-sm group">
-            <summary class="cursor-pointer flex items-center justify-between font-bold text-[#F8FAFC] select-none">
-                <div class="flex items-center gap-2">
-                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-[#EAB308] text-[#0B1626] uppercase">
-                        Official Results
-                    </span>
-                    <span class="text-sm">Week <?= $week ?> Champions &amp; Payouts</span>
-                </div>
-                <span class="text-[#94A3B8] font-mono text-xs group-open:rotate-180 transition-transform">&darr;</span>
-            </summary>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-3 border-t border-[#243247]">
-                <!-- Overall Champion -->
-                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-[#EAB308] block mb-1">Overall Champion</span>
-                    <?php if (!empty($winnersOverall)): ?>
-                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
-                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersOverall)) ?>
+        <?php 
+        $podiumGold = $standings[0] ?? null;
+        $podiumSilver = $standings[1] ?? null;
+        $podiumBronze = $standings[2] ?? null;
+        $cashChampion = $winnersPaid[0] ?? null;
+        $nextWeekNum = $week + 1;
+        ?>
+        <div class="space-y-4">
+            <!-- Overall Champion Hero Banner -->
+            <div class="rounded-2xl border-2 border-[#EAB308] bg-gradient-to-r from-amber-500/15 via-[#162235] to-[#0B1626] p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div class="flex items-start gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-[#EAB308] text-[#0B1626] flex items-center justify-center text-3xl font-black shrink-0 shadow-md shadow-amber-500/20">
+                        🏆
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="px-2.5 py-0.5 rounded-full font-mono text-[10px] font-black bg-[#EAB308] text-[#0B1626] uppercase tracking-wider">
+                                Official Week <?= $week ?> Champion
+                            </span>
+                            <span class="text-xs font-mono text-emerald-400 font-bold">
+                                <?= $podiumGold['correct_picks'] ?? 0 ?>-<?= ($podiumGold['total_graded'] ?? 0) - ($podiumGold['correct_picks'] ?? 0) ?> (<?= !empty($podiumGold['total_graded']) ? round(($podiumGold['correct_picks'] / $podiumGold['total_graded']) * 100) : 0 ?>% Accuracy)
+                            </span>
                         </div>
-                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
-                            <?= $winnersOverall[0]['correct_picks'] ?> correct picks <?= count($winnersOverall) > 1 ? '(Tied)' : '' ?>
-                        </span>
-                    <?php else: ?>
-                        <span class="text-[#94A3B8] italic">Pending</span>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Cash Winner -->
-                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-emerald-400 block mb-1">Cash Pool Winner</span>
-                    <?php if (!empty($winnersPaid)): ?>
-                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
-                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersPaid)) ?>
-                        </div>
-                        <span class="text-[11px] text-emerald-400 font-mono block mt-0.5 tabular-nums">
-                            <?= $winnersPaid[0]['correct_picks'] ?> correct &bull; $<?= number_format($pot['payout_per_winner'] / max(1, count($winnersPaid)), 2) ?>
-                        </span>
-                    <?php else: ?>
-                        <span class="text-[#94A3B8] italic">No cash verified</span>
-                    <?php endif; ?>
+                        <h2 class="text-2xl font-black text-[#F8FAFC]">
+                            <?= htmlspecialchars($podiumGold['username'] ?? 'Champion') ?>
+                        </h2>
+                        <p class="text-xs text-[#94A3B8] mt-1 max-w-xl leading-relaxed">
+                            Broke a 10-win tie on Monday Night Football to capture 1st place outright! Congratulations on winning Week <?= $week ?>!
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Free / Fun Winner -->
-                <div class="p-3.5 rounded-lg bg-[#0B1626] border border-[#243247]">
-                    <span class="font-mono font-bold text-[10px] uppercase text-purple-300 block mb-1">Free / Fun Winner</span>
-                    <?php if (!empty($winnersFree)): ?>
-                        <div class="font-bold text-[#F8FAFC] truncate text-sm">
-                            <?= implode(' &amp; ', array_map(fn($w) => htmlspecialchars($w['username']), $winnersFree)) ?>
+                <div class="flex flex-col sm:flex-row items-center gap-2.5 shrink-0">
+                    <a href="/pickem/wizard?week=<?= $nextWeekNum ?>" 
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#EAB308] hover:bg-amber-400 text-[#0B1626] font-black text-xs uppercase tracking-wider transition shadow-md shadow-amber-500/20">
+                        <span>⚡ Make Week <?= $nextWeekNum ?> Picks &rarr;</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Podium & Cash Winner 4-Column Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <!-- 🥇 Gold -->
+                <div class="p-4 rounded-xl bg-[#162235] border-2 border-amber-500/60 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono font-black uppercase text-[#EAB308] tracking-wider">🥇 1st Place (Gold)</span>
+                        <span class="text-xl">🥇</span>
+                    </div>
+                    <div class="text-base font-black text-[#F8FAFC] truncate">
+                        <?= htmlspecialchars($podiumGold['username'] ?? '—') ?>
+                    </div>
+                    <div class="text-xs font-mono text-emerald-400 font-bold mt-1">
+                        <?= $podiumGold['correct_picks'] ?? 0 ?>-<?= ($podiumGold['total_graded'] ?? 0) - ($podiumGold['correct_picks'] ?? 0) ?>
+                        <span class="text-[#94A3B8] font-normal">(<?= !empty($podiumGold['total_graded']) ? round(($podiumGold['correct_picks'] / $podiumGold['total_graded']) * 100) : 0 ?>%)</span>
+                    </div>
+                    <div class="text-[11px] text-[#94A3B8] mt-2 pt-2 border-t border-[#243247] font-mono">
+                        Sole 1st Place Outright
+                    </div>
+                </div>
+
+                <!-- 🥈 Silver -->
+                <div class="p-4 rounded-xl bg-[#162235] border-2 border-slate-400/60 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono font-black uppercase text-slate-300 tracking-wider">🥈 2nd Place (Silver)</span>
+                        <span class="text-xl">🥈</span>
+                    </div>
+                    <div class="text-base font-black text-[#F8FAFC] truncate">
+                        <?= htmlspecialchars($podiumSilver['username'] ?? '—') ?>
+                    </div>
+                    <div class="text-xs font-mono text-emerald-400 font-bold mt-1">
+                        <?= $podiumSilver['correct_picks'] ?? 0 ?>-<?= ($podiumSilver['total_graded'] ?? 0) - ($podiumSilver['correct_picks'] ?? 0) ?>
+                        <span class="text-[#94A3B8] font-normal">(<?= !empty($podiumSilver['total_graded']) ? round(($podiumSilver['correct_picks'] / $podiumSilver['total_graded']) * 100) : 0 ?>%)</span>
+                    </div>
+                    <div class="text-[11px] text-emerald-400 font-bold mt-2 pt-2 border-t border-[#243247] font-mono flex items-center gap-1">
+                        <?php if (($podiumSilver['tiebreaker_delta'] ?? null) === 0): ?>
+                            <span>🎯 Exact 34 pts Bullseye!</span>
+                        <?php else: ?>
+                            <span>TB: <?= $podiumSilver['predicted_mnf'] ?? '—' ?> pts (&Delta;<?= $podiumSilver['tiebreaker_delta'] ?? '—' ?>)</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- 🥉 Bronze -->
+                <div class="p-4 rounded-xl bg-[#162235] border-2 border-amber-700/60 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono font-black uppercase text-amber-500 tracking-wider">🥉 3rd Place (Bronze)</span>
+                        <span class="text-xl">🥉</span>
+                    </div>
+                    <div class="text-base font-black text-[#F8FAFC] truncate">
+                        <?= htmlspecialchars($podiumBronze['username'] ?? '—') ?>
+                    </div>
+                    <div class="text-xs font-mono text-emerald-400 font-bold mt-1">
+                        <?= $podiumBronze['correct_picks'] ?? 0 ?>-<?= ($podiumBronze['total_graded'] ?? 0) - ($podiumBronze['correct_picks'] ?? 0) ?>
+                        <span class="text-[#94A3B8] font-normal">(<?= !empty($podiumBronze['total_graded']) ? round(($podiumBronze['correct_picks'] / $podiumBronze['total_graded']) * 100) : 0 ?>%)</span>
+                    </div>
+                    <div class="text-[11px] text-[#94A3B8] mt-2 pt-2 border-t border-[#243247] font-mono">
+                        TB: <?= $podiumBronze['predicted_mnf'] ?? '—' ?> pts (&Delta;<?= $podiumBronze['tiebreaker_delta'] ?? '—' ?>)
+                    </div>
+                </div>
+
+                <!-- 💰 Cash Pool Winner -->
+                <div class="p-4 rounded-xl bg-[#162235] border-2 border-emerald-500/60 shadow-sm relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-mono font-black uppercase text-emerald-400 tracking-wider">💰 Cash Pool Winner</span>
+                        <span class="text-xl">💵</span>
+                    </div>
+                    <?php if ($cashChampion): ?>
+                        <div class="text-base font-black text-[#F8FAFC] truncate">
+                            <?= htmlspecialchars($cashChampion['username']) ?>
                         </div>
-                        <span class="text-[11px] text-[#94A3B8] font-mono block mt-0.5 tabular-nums">
-                            <?= $winnersFree[0]['correct_picks'] ?> correct
-                        </span>
+                        <div class="text-xs font-mono text-emerald-400 font-bold mt-1">
+                            <?= $cashChampion['correct_picks'] ?>-<?= $cashChampion['total_graded'] - $cashChampion['correct_picks'] ?>
+                            &bull; $<?= number_format($pot['payout_per_winner'] / max(1, count($winnersPaid)), 2) ?>
+                        </div>
+                        <div class="text-[11px] text-emerald-400/90 mt-2 pt-2 border-t border-[#243247] font-mono">
+                            100% Cash Pot Payout
+                        </div>
                     <?php else: ?>
-                        <span class="text-[#94A3B8] italic">Pending</span>
+                        <div class="text-sm text-[#94A3B8] italic mt-1">No cash verified</div>
                     <?php endif; ?>
                 </div>
             </div>
-        </details>
+
+            <!-- Subtle Explainer & League Rules Box -->
+            <div class="rounded-xl border border-[#243247] bg-[#162235]/60 p-4 text-xs space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <!-- Column 1: Cash Pool Info -->
+                    <div>
+                        <span class="font-mono font-bold text-[#EAB308] uppercase text-[10px] block mb-1">💰 Optional $10 Weekly Cash Pool</span>
+                        <p class="text-[#94A3B8] leading-relaxed">
+                            Play for free or add a little skin in the game. $10 per week, 100% payout to the weekly cash champion. Opt-in via <strong>Venmo (@WallyAtkins)</strong> or <strong>Cash App ($WallyAtkins)</strong> prior to Thursday kickoff.
+                        </p>
+                    </div>
+
+                    <!-- Column 2: Cutoffs & Auto-Save -->
+                    <div>
+                        <span class="font-mono font-bold text-[#38BDF8] uppercase text-[10px] block mb-1">⚡ Instant Auto-Save &amp; Cutoffs</span>
+                        <p class="text-[#94A3B8] leading-relaxed">
+                            Every pick you make is saved immediately to our database. You can edit any pick right up until game kickoff. Thursday game locks at Thursday 8:15 PM ET; Sunday games lock at 1:00 PM ET.
+                        </p>
+                    </div>
+
+                    <!-- Column 3: Survivor Pool & Late-Join Rules -->
+                    <div>
+                        <span class="font-mono font-bold text-emerald-400 uppercase text-[10px] block mb-1">🛡️ Survivor Pool &amp; Late-Joins</span>
+                        <p class="text-[#94A3B8] leading-relaxed">
+                            Surviving is tough! Mid-season joiners can enter fairly with a "used teams" handicap (forfeiting 1 top team per missed week) or join our upcoming Flight B second-chance bracket.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     <?php endif; ?>
 
     <!-- Pot Overview Cards -->
@@ -250,8 +344,18 @@ $cutoffPassed = !empty($cutoffPassed);
                         <tr class="transition pickem-row <?= $isWinner ? 'bg-[#EAB308]/10' : 'hover:bg-[#1f2e44]/40' ?>"
                             data-tier="<?= $row['is_paid'] ? 'cash' : 'free' ?>">
                             <td class="py-3.5 px-4 text-center font-mono font-bold text-[#F8FAFC]">
-                                <?php if ($isWinner): ?>
-                                    <span class="px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] text-[10px] font-black">#1</span>
+                                <?php if ($row['rank'] === 1): ?>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] text-[10px] font-black">
+                                        <span>🥇</span> #1
+                                    </span>
+                                <?php elseif ($row['rank'] === 2): ?>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-300 text-slate-900 text-[10px] font-black">
+                                        <span>🥈</span> #2
+                                    </span>
+                                <?php elseif ($row['rank'] === 3): ?>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-700 text-amber-100 text-[10px] font-black">
+                                        <span>🥉</span> #3
+                                    </span>
                                 <?php else: ?>
                                     #<?= $row['rank'] ?>
                                 <?php endif; ?>
@@ -279,7 +383,9 @@ $cutoffPassed = !empty($cutoffPassed);
                             <td class="py-3.5 px-4 text-center font-mono tabular-nums text-xs">
                                 <?php if ($row['predicted_mnf'] !== null): ?>
                                     <span class="text-[#F8FAFC] font-bold"><?= $row['predicted_mnf'] ?> pts</span>
-                                    <?php if ($row['tiebreaker_delta'] !== null): ?>
+                                    <?php if ($row['tiebreaker_delta'] === 0): ?>
+                                        <span class="inline-block ml-1 px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">🎯 0 (Bullseye!)</span>
+                                    <?php elseif ($row['tiebreaker_delta'] !== null): ?>
                                         <span class="text-[#EAB308] ml-1">(&Delta; <?= $row['tiebreaker_delta'] ?>)</span>
                                     <?php endif; ?>
                                 <?php else: ?>
@@ -299,8 +405,8 @@ $cutoffPassed = !empty($cutoffPassed);
                             </td>
                             <td class="py-3.5 px-4 text-right">
                                 <?php if ($isWinner): ?>
-                                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] uppercase">
-                                        Cash Winner
+                                    <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-[#EAB308] text-[#0B1626] uppercase inline-flex items-center gap-1">
+                                        <span>💰</span> Cash Winner
                                     </span>
                                 <?php elseif ($row['is_paid']): ?>
                                     <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 uppercase">

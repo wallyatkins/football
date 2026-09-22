@@ -181,6 +181,41 @@ ob_start();
             </tbody>
         </table>
     </div>
+    
+    <!-- Mid-Season & Late-Join Rules Explainer -->
+    <div class="rounded-xl border border-[#243247] bg-[#162235] p-5 text-xs shadow-sm space-y-3">
+        <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <h3 class="text-sm font-bold text-[#F8FAFC]">⚖️ Mid-Season &amp; Late-Join Survivor Guidelines</h3>
+        </div>
+        <p class="text-[#94A3B8] leading-relaxed">
+            Want to jump into the Survivor pool mid-season? To keep things 100% fair to Week 1 starters who risked elimination and already burned powerhouse teams (like Cincinnati and the Chargers), here are the official league options for late entrants:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="font-mono font-bold text-amber-400 uppercase text-[10px] block mb-1">Option 1: The "Used Teams" Handicap</span>
+                <p class="text-[#94A3B8] leading-relaxed text-[11px]">
+                    Late entrants can join the main pool, but must retroactively forfeit one consensus top team per missed week (e.g. you cannot select Cincinnati or Buffalo), ensuring equal team scarcity.
+                </p>
+            </div>
+            <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="font-mono font-bold text-sky-400 uppercase text-[10px] block mb-1">Option 2: Flight B Second-Chance Pool</span>
+                <p class="text-[#94A3B8] leading-relaxed text-[11px]">
+                    A secondary Survivor pool will kick off in Week 4 with a fresh mini-pot for all newcomers and players who were knocked out in Weeks 1–3.
+                </p>
+            </div>
+            <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                <span class="font-mono font-bold text-emerald-400 uppercase text-[10px] block mb-1">Option 3: Sudden Death Buy-In</span>
+                <p class="text-[#94A3B8] leading-relaxed text-[11px]">
+                    Late entrants jump in with zero strikes or safety nets. Any loss eliminates you immediately from contention.
+                </p>
+            </div>
+        </div>
+        <div class="pt-2 border-t border-[#243247] text-[11px] text-[#94A3B8] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span>💵 <em>Subtle Note:</em> An optional <strong>$20 Survivor Season Cash Pool</strong> is also active. 100% of verified buy-ins go to the last survivor standing.</span>
+            <span class="text-emerald-400 font-mono font-bold">Venmo: @WallyAtkins &bull; Cash App: $WallyAtkins</span>
+        </div>
+    </div>
 
 </div>
 
