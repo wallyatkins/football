@@ -66,6 +66,7 @@ if (file_exists($envFile)) {
 
 use WallyFootball\Controllers\AdminController;
 use WallyFootball\Controllers\AuthController;
+use WallyFootball\Controllers\ChatController;
 use WallyFootball\Controllers\FantasyController;
 use WallyFootball\Controllers\PickemController;
 use WallyFootball\Controllers\SurvivorController;
@@ -259,6 +260,36 @@ try {
 
         case '/admin/picks/reset':
             (new AdminController())->resetPicks();
+            exit;
+
+        // --- Live Chat & Feedback Desk ---
+        case '/chat':
+        case '/admin/chat':
+            (new ChatController())->chatHost();
+            exit;
+
+        case '/api/chat/start':
+            (new ChatController())->start();
+            exit;
+
+        case '/api/chat/poll':
+            (new ChatController())->poll();
+            exit;
+
+        case '/api/chat/send':
+            (new ChatController())->send();
+            exit;
+
+        case '/api/chat/resend':
+            (new ChatController())->resend();
+            exit;
+
+        case '/api/chat/end':
+            (new ChatController())->end();
+            exit;
+
+        case '/api/feedback/submit':
+            (new ChatController())->submitFeedback();
             exit;
 
         case '/api/cron/daily-digest':

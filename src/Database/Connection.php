@@ -172,6 +172,22 @@ class Connection
             }
         }
 
+        // Ensure chat_sessions table exists
+        try {
+            $this->pdo->query('SELECT 1 FROM chat_sessions LIMIT 1');
+        } catch (\Throwable) {
+            $chatMigration = dirname(__DIR__, 2) . '/db/migrations/004_chat_and_feedback.sql';
+            if (file_exists($chatMigration)) {
+                $sql = file_get_contents($chatMigration);
+                if ($sql) {
+                    if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                        $sql = str_replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY', $sql);
+                    }
+                    $this->pdo->exec($sql);
+                }
+            }
+        }
+
         // Ensure fantasy_franchises has contact_emails column
         try {
             $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

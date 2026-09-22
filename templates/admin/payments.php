@@ -53,6 +53,12 @@ $survivorPot = $survivorPaidCount * 10.00;
         </div>
 
         <div class="flex items-center gap-2.5 flex-wrap">
+            <!-- Chat & Feedback Desk -->
+            <a href="/chat" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-900 border border-amber-500/40 text-amber-300 hover:bg-amber-950/40 transition flex items-center gap-2 shadow-sm">
+                <span>💬</span>
+                <span>Chat & Feedback Desk</span>
+            </a>
+
             <!-- Sync Scores -->
             <form action="/admin/sync" method="POST" class="inline">
                 <input type="hidden" name="season_year" value="<?= htmlspecialchars((string) $season) ?>">

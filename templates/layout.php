@@ -550,6 +550,10 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
         <p>&copy; <?= date('Y') ?> Wally's NFL Pool &bull; <a href="https://wallyatkins.com" class="hover:text-slate-400 transition underline">wallyatkins.com</a> &bull; <a href="https://wallyatkins.com/privacy" class="hover:text-slate-400 transition underline">Privacy Policy</a> &bull; <a href="https://wallyatkins.com/terms" class="hover:text-slate-400 transition underline">Terms of Use</a> &bull; <a href="https://wallyatkins.com/#contact" class="hover:text-slate-400 transition underline">Get in Touch</a> &bull; Identity by <a href="https://auth.wallyatkins.com" class="hover:text-slate-400 transition underline">WallyAuth</a></p>
     </footer>
 
+    <?php if (!empty($user)): ?>
+        <?php require __DIR__ . '/partials/chat_widget.php'; ?>
+    <?php endif; ?>
+
     <script>
         // Theme toggle helper
         function updateThemeUI(theme) {
