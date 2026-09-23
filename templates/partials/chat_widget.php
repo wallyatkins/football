@@ -3,16 +3,22 @@
  * templates/partials/chat_widget.php
  * Floating Action Button (FAB) & Live Chat / Feedback Widget for Wally's Football Pool.
  * Only loaded for authenticated users.
+ *
+ * Mobile UX: When the chat view is active on a mobile device the widget expands
+ * to a full-screen overlay (fixed inset-0) so chat gets 100% of screen real estate.
+ * On desktop it remains a compact floating panel.
  */
 $currentUser = $user ?? $_SESSION['user'] ?? null;
 if (empty($currentUser)) {
     return;
 }
 $cuUsername = htmlspecialchars($currentUser['username'] ?? 'Player');
-$cuEmail = htmlspecialchars($currentUser['email'] ?? '');
+$cuEmail    = htmlspecialchars($currentUser['email'] ?? '');
 ?>
 
-<!-- Floating Action Button (FAB) -->
+<!-- ================================================================
+     FLOATING ACTION BUTTON (FAB)
+     ================================================================ -->
 <div id="wallyChatFabContainer" class="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 select-none">
     <button
         id="wallyChatFabBtn"
@@ -31,32 +37,47 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
     </button>
 </div>
 
-<!-- Floating Chat & Feedback Widget Modal -->
+<!-- ================================================================
+     FLOATING WIDGET — desktop compact panel + mobile full-screen
+     Base classes establish desktop sizing. JS adds .wally-fullscreen
+     on mobile when the chat view is active.
+     ================================================================ -->
 <div
     id="wallyChatWidget"
-    class="hidden fixed bottom-24 right-4 md:bottom-24 md:right-6 z-50 w-[calc(100vw-2rem)] max-w-sm sm:max-w-md bg-[#0B1626]/98 backdrop-blur-xl border border-[#243247] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.85)] text-slate-100 flex flex-col overflow-hidden max-h-[85vh] h-[540px] transition-all duration-200"
+    class="hidden fixed z-[9999] bg-[#0B1626] text-slate-100 flex flex-col overflow-hidden
+           transition-all duration-300 ease-out
+           /* desktop: anchored bottom-right panel */
+           md:bottom-24 md:right-6 md:w-[400px] md:max-w-[calc(100vw-3rem)]
+           md:rounded-2xl md:border md:border-[#243247]
+           md:shadow-[0_20px_60px_rgba(0,0,0,0.85)]
+           md:max-h-[85vh] md:h-[560px]
+           /* mobile default (menu/feedback): anchored bottom-right smaller panel */
+           bottom-24 right-4 w-[calc(100vw-2rem)] max-w-sm
+           rounded-2xl border border-[#243247]
+           shadow-[0_20px_60px_rgba(0,0,0,0.85)]
+           max-h-[85vh] h-[540px]"
     role="dialog"
     aria-labelledby="wallyWidgetTitle"
 >
-    <!-- Modal Header -->
-    <div class="px-4 py-3 bg-[#162235] border-b border-[#243247] flex items-center justify-between">
+    <!-- ── HEADER ──────────────────────────────────────────────── -->
+    <div id="wallyWidgetHeader" class="flex-none px-4 py-3 bg-[#162235] border-b border-[#243247] flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-            <button id="wallyWidgetBackBtn" type="button" class="hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition" title="Back">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <button id="wallyWidgetBackBtn" type="button" class="hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition active:scale-90" title="Back">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <div class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" id="wallyHeaderDot"></div>
             <div>
                 <h2 id="wallyWidgetTitle" class="text-sm font-bold text-white leading-tight">Wally's Desk</h2>
-                <p id="wallyWidgetSubtitle" class="text-[10px] text-slate-400 font-mono">Commissioner Support & Chat</p>
+                <p id="wallyWidgetSubtitle" class="text-[10px] text-slate-400 font-mono">Commissioner Support &amp; Chat</p>
             </div>
         </div>
 
-        <button id="wallyWidgetCloseBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition" title="Close">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <button id="wallyWidgetCloseBtn" type="button" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition active:scale-90" title="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
     </div>
 
-    <!-- VIEW 1: Main Menu Options -->
+    <!-- ── VIEW 1: Main Menu ────────────────────────────────────── -->
     <div id="wallyViewMenu" class="flex-1 p-5 flex flex-col justify-between overflow-y-auto">
         <div class="space-y-4">
             <div class="bg-[#162235] border border-[#243247] p-4 rounded-xl">
@@ -73,7 +94,7 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
             <button
                 id="wallyBtnStartChat"
                 type="button"
-                class="w-full text-left p-4 rounded-xl bg-[#162235] hover:bg-slate-800/80 border border-[#243247] hover:border-amber-400/80 transition-all duration-150 group shadow-md"
+                class="w-full text-left p-4 rounded-xl bg-[#162235] hover:bg-slate-800/80 border border-[#243247] hover:border-amber-400/80 transition-all duration-150 group shadow-md active:scale-[0.98]"
             >
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -82,10 +103,10 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
                         </div>
                         <div>
                             <div class="text-sm font-bold text-white group-hover:text-amber-300 transition-colors">Launch Live Chat</div>
-                            <div class="text-[11px] text-slate-400">Ping Wally in real time & open instant chat</div>
+                            <div class="text-[11px] text-slate-400">Ping Wally in real time &amp; open instant chat</div>
                         </div>
                     </div>
-                    <svg class="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    <svg class="w-4 h-4 text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </div>
             </button>
 
@@ -93,7 +114,7 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
             <button
                 id="wallyBtnStartFeedback"
                 type="button"
-                class="w-full text-left p-4 rounded-xl bg-[#162235] hover:bg-slate-800/80 border border-[#243247] hover:border-sky-400/80 transition-all duration-150 group shadow-md"
+                class="w-full text-left p-4 rounded-xl bg-[#162235] hover:bg-slate-800/80 border border-[#243247] hover:border-sky-400/80 transition-all duration-150 group shadow-md active:scale-[0.98]"
             >
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -105,19 +126,19 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
                             <div class="text-[11px] text-slate-400">Report errors, propose features, or share thoughts</div>
                         </div>
                     </div>
-                    <svg class="w-4 h-4 text-slate-500 group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    <svg class="w-4 h-4 text-slate-500 group-hover:text-sky-400 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </div>
             </button>
         </div>
 
         <div class="pt-4 border-t border-[#243247]/70 text-center">
             <p class="text-[11px] text-slate-500">
-                Your input directly helps improve our league & portal experience.
+                Your input directly helps improve our league &amp; portal experience.
             </p>
         </div>
     </div>
 
-    <!-- VIEW 2: Feedback Form -->
+    <!-- ── VIEW 2: Feedback Form ──────────────────────────────── -->
     <div id="wallyViewFeedback" class="hidden flex-1 p-5 flex flex-col justify-between overflow-y-auto">
         <form id="wallyFeedbackForm" class="space-y-4">
             <div>
@@ -126,38 +147,32 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
                     <label class="cursor-pointer">
                         <input type="radio" name="feedback_cat" value="bug" class="sr-only peer" checked>
                         <div class="p-2.5 rounded-xl bg-[#162235] border border-[#243247] peer-checked:border-rose-500 peer-checked:bg-rose-500/10 peer-checked:text-rose-300 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
-                            <span>🐞</span>
-                            <span>Bug / Error</span>
+                            <span>🐞</span><span>Bug / Error</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="feedback_cat" value="idea" class="sr-only peer">
                         <div class="p-2.5 rounded-xl bg-[#162235] border border-[#243247] peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-300 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
-                            <span>💡</span>
-                            <span>Feature Idea</span>
+                            <span>💡</span><span>Feature Idea</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="feedback_cat" value="scoring" class="sr-only peer">
                         <div class="p-2.5 rounded-xl bg-[#162235] border border-[#243247] peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-300 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
-                            <span>🏈</span>
-                            <span>Scoring Issue</span>
+                            <span>🏈</span><span>Scoring Issue</span>
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="feedback_cat" value="general" class="sr-only peer">
                         <div class="p-2.5 rounded-xl bg-[#162235] border border-[#243247] peer-checked:border-sky-500 peer-checked:bg-sky-500/10 peer-checked:text-sky-300 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
-                            <span>💬</span>
-                            <span>General Talk</span>
+                            <span>💬</span><span>General Talk</span>
                         </div>
                     </label>
                 </div>
             </div>
 
             <div>
-                <label for="wallyFeedbackText" class="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                    Your Message
-                </label>
+                <label for="wallyFeedbackText" class="block text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5">Your Message</label>
                 <textarea
                     id="wallyFeedbackText"
                     rows="5"
@@ -175,7 +190,7 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
             <button
                 type="submit"
                 id="wallyFeedbackSubmitBtn"
-                class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg"
+                class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg"
             >
                 <span>Send to Wally &rarr;</span>
             </button>
@@ -183,140 +198,232 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
 
         <!-- Feedback Success Screen -->
         <div id="wallyFeedbackSuccess" class="hidden py-8 text-center space-y-4">
-            <div class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-2xl flex items-center justify-center mx-auto animate-bounce">
-                ✓
-            </div>
+            <div class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-2xl flex items-center justify-center mx-auto animate-bounce">✓</div>
             <div>
                 <h3 class="text-base font-bold text-white">Thank You, <?= $cuUsername ?>!</h3>
                 <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
                     Your feedback was delivered straight to Wally's inbox. We appreciate your support!
                 </p>
             </div>
-            <button
-                id="wallyFeedbackDoneBtn"
-                type="button"
-                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition"
-            >
+            <button id="wallyFeedbackDoneBtn" type="button" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition">
                 Back to Options
             </button>
         </div>
     </div>
 
-    <!-- VIEW 3: Live Chat Stream -->
+    <!-- ── VIEW 3: Live Chat ──────────────────────────────────── -->
     <div id="wallyViewChat" class="hidden flex-1 flex flex-col overflow-hidden bg-[#0B1626]">
+
         <!-- Waiting State Banner & Countdown -->
-        <div id="wallyChatWaitingBanner" class="p-4 bg-[#162235]/90 border-b border-[#243247] flex items-center justify-between">
+        <div id="wallyChatWaitingBanner" class="flex-none px-4 py-3 bg-[#162235]/90 border-b border-[#243247] flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="relative flex h-3 w-3">
+                <span class="relative flex h-3 w-3 flex-none">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
                 </span>
                 <div>
-                    <div class="text-xs font-bold text-white">Pinging Wally's Phone & Email...</div>
-                    <div class="text-[10px] text-slate-400">Waiting for Wally to connect</div>
+                    <div class="text-sm font-semibold text-white">Pinging Wally's Phone &amp; Email…</div>
+                    <div class="text-[11px] text-slate-400">Waiting for Wally to connect</div>
                 </div>
             </div>
-            <div class="text-right">
-                <span id="wallyChatCountdown" class="text-sm font-mono font-bold text-amber-400 tabular-nums">02:00</span>
-            </div>
+            <span id="wallyChatCountdown" class="text-lg font-mono font-bold text-amber-400 tabular-nums flex-none">02:00</span>
         </div>
 
         <!-- Unavailable Fallback Notice -->
-        <div id="wallyChatUnavailableNotice" class="hidden p-3 bg-rose-950/30 border-b border-rose-800/40 text-xs space-y-2">
-            <div class="flex items-start justify-between gap-2">
-                <div>
-                    <div class="font-bold text-rose-300">Wally is currently away from his desk</div>
-                    <div class="text-[11px] text-slate-300 mt-0.5">
-                        Leave your message below! It will be sent straight to his personal email with your chat transcript, and he'll reply to <strong><?= $cuEmail ?></strong>.
-                    </div>
+        <div id="wallyChatUnavailableNotice" class="hidden flex-none px-4 py-3 bg-rose-950/30 border-b border-rose-800/40 text-sm space-y-2">
+            <div>
+                <div class="font-bold text-rose-300">Wally is away from his desk</div>
+                <div class="text-[12px] text-slate-300 mt-0.5 leading-relaxed">
+                    Leave your message below — it goes straight to his email with your transcript, and he'll reply to <strong><?= $cuEmail ?></strong>.
                 </div>
             </div>
-            <div class="flex items-center gap-2 pt-1">
-                <button
-                    id="wallyChatTryAgainBtn"
-                    type="button"
-                    class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-bold transition flex items-center gap-1"
-                >
-                    <span>Try Again (Ping Wally Again)</span>
-                </button>
-            </div>
+            <button
+                id="wallyChatTryAgainBtn"
+                type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 active:bg-amber-500/40 text-amber-300 border border-amber-500/40 text-xs font-bold transition"
+            >
+                🔔 Ping Wally Again
+            </button>
         </div>
 
         <!-- Chat Message Transcript -->
-        <div id="wallyChatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs scroll-smooth">
-            <!-- Messages dynamically added here -->
+        <div id="wallyChatMessages" class="flex-1 px-4 py-3 overflow-y-auto space-y-3 scroll-smooth overscroll-contain">
+            <!-- Messages injected here -->
         </div>
 
-        <!-- Chat Input Form -->
-        <form id="wallyChatInputForm" class="p-3 bg-[#162235] border-t border-[#243247] flex items-center gap-2">
-            <input
-                type="text"
-                id="wallyChatInput"
-                placeholder="Type your message to Wally..."
-                autocomplete="off"
-                class="flex-1 bg-[#0B1626] border border-[#243247] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
-            >
-            <button
-                type="submit"
-                id="wallyChatSendBtn"
-                class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-1 shadow-md"
-            >
-                <span>Send</span>
-            </button>
-        </form>
+        <!-- Chat Input — sticks to bottom, keyboard-aware via padding -->
+        <div class="flex-none bg-[#162235] border-t border-[#243247]"
+             style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));">
+            <form id="wallyChatInputForm" class="flex items-center gap-2 px-3 pt-3 pb-2">
+                <input
+                    type="text"
+                    id="wallyChatInput"
+                    placeholder="Type a message to Wally…"
+                    autocomplete="off"
+                    inputmode="text"
+                    class="flex-1 bg-[#0B1626] border border-[#243247] rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition"
+                >
+                <button
+                    type="submit"
+                    id="wallyChatSendBtn"
+                    class="flex-none w-11 h-11 rounded-2xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-black text-lg transition flex items-center justify-center shadow-md"
+                    aria-label="Send"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                </button>
+            </form>
 
-        <!-- End Session Action Bar -->
-        <div class="px-3 py-1.5 bg-[#0B1626] border-t border-[#243247]/60 flex items-center justify-between text-[11px]">
-            <span id="wallyChatSessionStatus" class="text-slate-500 font-mono text-[10px]">Session Active</span>
-            <button id="wallyChatEndBtn" type="button" class="text-slate-400 hover:text-rose-400 transition font-mono text-[10px]">
-                End Chat
-            </button>
+            <!-- End session bar -->
+            <div class="flex items-center justify-between px-4 pb-2 text-[11px]">
+                <span id="wallyChatSessionStatus" class="text-slate-500 font-mono">Session Active</span>
+                <button id="wallyChatEndBtn" type="button" class="text-slate-500 hover:text-rose-400 active:text-rose-300 transition font-mono">
+                    End Chat
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- ================================================================
+     STYLES: Full-screen chat mode (mobile only)
+     .wally-fullscreen applied by JS when chat view is active on mobile
+     ================================================================ -->
+<style>
+/* Full-screen chat takeover on mobile */
+.wally-fullscreen {
+    /* Override all the anchored-panel sizing */
+    bottom: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border: none !important;
+    /* slide up animation */
+    animation: wallySlideUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes wallySlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* When full-screen, lock the page scroll and hide FAB */
+body.wally-chat-open {
+    overflow: hidden;
+    /* iOS momentum-scroll lock */
+    -webkit-overflow-scrolling: auto;
+    touch-action: none;
+}
+
+body.wally-chat-open #wallyChatFabContainer {
+    display: none;
+}
+
+/* Full-screen: enlarge header for thumb reach */
+.wally-fullscreen #wallyWidgetHeader {
+    padding-top: max(0.875rem, env(safe-area-inset-top));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Full-screen: bigger message bubbles */
+.wally-fullscreen #wallyChatMessages {
+    padding: 1rem max(1rem, env(safe-area-inset-right)) 1rem max(1rem, env(safe-area-inset-left));
+    font-size: 0.9375rem; /* 15px */
+}
+
+/* Full-screen: bigger input */
+.wally-fullscreen #wallyChatInput {
+    font-size: 1rem;
+    padding: 0.875rem 1rem;
+}
+
+/* On desktop, never use full-screen mode regardless of JS */
+@media (min-width: 768px) {
+    .wally-fullscreen {
+        inset: unset !important;
+        bottom: 6rem !important;
+        right: 1.5rem !important;
+        left: unset !important;
+        top: unset !important;
+        width: 400px !important;
+        max-width: calc(100vw - 3rem) !important;
+        max-height: 85vh !important;
+        height: 560px !important;
+        border-radius: 1rem !important;
+        border: 1px solid #243247 !important;
+        animation: none !important;
+    }
+    body.wally-chat-open { overflow: unset; touch-action: unset; }
+    body.wally-chat-open #wallyChatFabContainer { display: block; }
+}
+</style>
+
 <script>
 (function() {
-    const fabBtn = document.getElementById('wallyChatFabBtn');
-    const fabPulse = document.getElementById('wallyFabPulse');
-    const widget = document.getElementById('wallyChatWidget');
-    const closeBtn = document.getElementById('wallyWidgetCloseBtn');
-    const backBtn = document.getElementById('wallyWidgetBackBtn');
-    const headerDot = document.getElementById('wallyHeaderDot');
-    const titleEl = document.getElementById('wallyWidgetTitle');
+    const fabBtn     = document.getElementById('wallyChatFabBtn');
+    const fabPulse   = document.getElementById('wallyFabPulse');
+    const widget     = document.getElementById('wallyChatWidget');
+    const closeBtn   = document.getElementById('wallyWidgetCloseBtn');
+    const backBtn    = document.getElementById('wallyWidgetBackBtn');
+    const headerDot  = document.getElementById('wallyHeaderDot');
+    const titleEl    = document.getElementById('wallyWidgetTitle');
     const subtitleEl = document.getElementById('wallyWidgetSubtitle');
 
-    const viewMenu = document.getElementById('wallyViewMenu');
+    const viewMenu     = document.getElementById('wallyViewMenu');
     const viewFeedback = document.getElementById('wallyViewFeedback');
-    const viewChat = document.getElementById('wallyViewChat');
+    const viewChat     = document.getElementById('wallyViewChat');
 
-    const btnStartChat = document.getElementById('wallyBtnStartChat');
+    const btnStartChat     = document.getElementById('wallyBtnStartChat');
     const btnStartFeedback = document.getElementById('wallyBtnStartFeedback');
 
-    const feedbackForm = document.getElementById('wallyFeedbackForm');
-    const feedbackText = document.getElementById('wallyFeedbackText');
+    const feedbackForm    = document.getElementById('wallyFeedbackForm');
+    const feedbackText    = document.getElementById('wallyFeedbackText');
     const feedbackSuccess = document.getElementById('wallyFeedbackSuccess');
     const feedbackDoneBtn = document.getElementById('wallyFeedbackDoneBtn');
 
-    const chatWaitingBanner = document.getElementById('wallyChatWaitingBanner');
-    const chatCountdown = document.getElementById('wallyChatCountdown');
+    const chatWaitingBanner     = document.getElementById('wallyChatWaitingBanner');
+    const chatCountdown         = document.getElementById('wallyChatCountdown');
     const chatUnavailableNotice = document.getElementById('wallyChatUnavailableNotice');
-    const chatTryAgainBtn = document.getElementById('wallyChatTryAgainBtn');
-    const chatMessages = document.getElementById('wallyChatMessages');
-    const chatInputForm = document.getElementById('wallyChatInputForm');
-    const chatInput = document.getElementById('wallyChatInput');
-    const chatSessionStatus = document.getElementById('wallyChatSessionStatus');
-    const chatEndBtn = document.getElementById('wallyChatEndBtn');
+    const chatTryAgainBtn       = document.getElementById('wallyChatTryAgainBtn');
+    const chatMessages          = document.getElementById('wallyChatMessages');
+    const chatInputForm         = document.getElementById('wallyChatInputForm');
+    const chatInput             = document.getElementById('wallyChatInput');
+    const chatSessionStatus     = document.getElementById('wallyChatSessionStatus');
+    const chatEndBtn            = document.getElementById('wallyChatEndBtn');
 
-    let currentView = 'menu'; // 'menu' | 'feedback' | 'chat'
-    let activeSession = null;
-    let pollInterval = null;
+    let currentView      = 'menu';
+    let activeSession    = null;
+    let pollInterval     = null;
     let countdownInterval = null;
-    let countdownSeconds = 120; // 2 minutes countdown
-    let hasResent = false;
-    let renderedMsgIds = new Set();
+    let countdownSeconds = 120;
+    let hasResent        = false;
+    let renderedMsgIds   = new Set();
 
-    // Check for existing saved session in sessionStorage
+    // ── Mobile detection ──────────────────────────────────────────
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    // ── Full-screen lock helpers ───────────────────────────────────
+    function enterFullScreen() {
+        if (!isMobile()) return;
+        widget.classList.add('wally-fullscreen');
+        document.body.classList.add('wally-chat-open');
+        // Scroll transcript to bottom after CSS transition
+        setTimeout(scrollToBottom, 300);
+    }
+
+    function exitFullScreen() {
+        widget.classList.remove('wally-fullscreen');
+        document.body.classList.remove('wally-chat-open');
+    }
+
+    // ── Restore existing session from sessionStorage ──────────────
     try {
         const saved = sessionStorage.getItem('wally_football_chat_session');
         if (saved) {
@@ -327,60 +434,90 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
         }
     } catch(e) {}
 
+    // ── View switcher ─────────────────────────────────────────────
     function switchView(view) {
         currentView = view;
-        viewMenu.classList.add('hidden');
-        viewFeedback.classList.add('hidden');
-        viewChat.classList.add('hidden');
+        [viewMenu, viewFeedback, viewChat].forEach(v => v.classList.add('hidden'));
         backBtn.classList.add('hidden');
 
         if (view === 'menu') {
             viewMenu.classList.remove('hidden');
-            titleEl.textContent = "Wally's Desk";
-            subtitleEl.textContent = "Commissioner Support & Chat";
-            headerDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 inline-block";
+            titleEl.textContent    = "Wally's Desk";
+            subtitleEl.textContent = 'Commissioner Support & Chat';
+            headerDot.className    = 'w-2.5 h-2.5 rounded-full bg-amber-400 inline-block';
+            exitFullScreen();
         } else if (view === 'feedback') {
             viewFeedback.classList.remove('hidden');
             backBtn.classList.remove('hidden');
             feedbackForm.classList.remove('hidden');
             feedbackSuccess.classList.add('hidden');
-            titleEl.textContent = "Send Feedback";
-            subtitleEl.textContent = "Bugs, ideas & thoughts";
-            headerDot.className = "w-2.5 h-2.5 rounded-full bg-sky-400 inline-block";
-            feedbackText.focus();
+            titleEl.textContent    = 'Send Feedback';
+            subtitleEl.textContent = 'Bugs, ideas & thoughts';
+            headerDot.className    = 'w-2.5 h-2.5 rounded-full bg-sky-400 inline-block';
+            exitFullScreen(); // feedback stays panel-sized
+            setTimeout(() => feedbackText.focus(), 200);
         } else if (view === 'chat') {
             viewChat.classList.remove('hidden');
             backBtn.classList.remove('hidden');
-            titleEl.textContent = "Live Chat with Wally";
-            subtitleEl.textContent = "Direct 1-on-1";
-            headerDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block";
-            chatInput.focus();
+            titleEl.textContent    = 'Live Chat with Wally';
+            subtitleEl.textContent = 'Direct 1-on-1';
+            headerDot.className    = 'w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block';
+            // Go full-screen on mobile
+            enterFullScreen();
+            setTimeout(() => chatInput.focus(), 350);
         }
     }
 
-    function toggleWidget() {
-        const isHidden = widget.classList.contains('hidden');
-        if (isHidden) {
-            widget.classList.remove('hidden');
-            if (activeSession && activeSession.session_id) {
-                switchView('chat');
-                startChatPolling();
-            } else {
-                switchView('menu');
-            }
+    // ── Toggle widget open/close ──────────────────────────────────
+    function openWidget() {
+        widget.classList.remove('hidden');
+        if (activeSession && activeSession.session_id) {
+            switchView('chat');
+            startChatPolling();
         } else {
-            widget.classList.add('hidden');
+            switchView('menu');
         }
     }
 
-    fabBtn.addEventListener('click', toggleWidget);
-    closeBtn.addEventListener('click', () => widget.classList.add('hidden'));
-    backBtn.addEventListener('click', () => switchView('menu'));
+    function closeWidget() {
+        exitFullScreen();
+        widget.classList.add('hidden');
+    }
 
+    fabBtn.addEventListener('click', () => {
+        widget.classList.contains('hidden') ? openWidget() : closeWidget();
+    });
+
+    closeBtn.addEventListener('click', closeWidget);
+
+    backBtn.addEventListener('click', () => {
+        if (currentView === 'chat' && activeSession) {
+            // In an active chat — confirm before leaving full-screen
+            switchView('menu');
+        } else {
+            switchView('menu');
+        }
+    });
+
+    // Close full-screen on Android back gesture (popstate)
+    window.addEventListener('popstate', () => {
+        if (currentView === 'chat') {
+            switchView('menu');
+            closeWidget();
+        }
+    });
+
+    // Push history entry when opening full-screen chat so back button works
+    function pushChatHistory() {
+        if (isMobile() && !window.location.hash.includes('chat')) {
+            history.pushState({ wallyChat: true }, '', '#chat');
+        }
+    }
+
+    // ── Feedback ──────────────────────────────────────────────────
     btnStartFeedback.addEventListener('click', () => switchView('feedback'));
     feedbackDoneBtn.addEventListener('click', () => switchView('menu'));
 
-    // Submit Feedback
     feedbackForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const cat = feedbackForm.querySelector('input[name="feedback_cat"]:checked')?.value || 'general';
@@ -389,14 +526,13 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
 
         const submitBtn = document.getElementById('wallyFeedbackSubmitBtn');
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Sending...';
+        submitBtn.innerHTML = '<span>Sending…</span>';
 
         try {
-            const formData = new FormData();
-            formData.append('category', cat);
-            formData.append('message', msg);
-
-            const res = await fetch('/api/feedback/submit', { method: 'POST', body: formData });
+            const fd = new FormData();
+            fd.append('category', cat);
+            fd.append('message', msg);
+            const res  = await fetch('/api/feedback/submit', { method: 'POST', body: fd });
             const data = await res.json();
             if (data.status === 'success') {
                 feedbackForm.classList.add('hidden');
@@ -414,9 +550,10 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
         }
     });
 
-    // Start or Resume Live Chat
+    // ── Chat ──────────────────────────────────────────────────────
     btnStartChat.addEventListener('click', async function() {
         switchView('chat');
+        pushChatHistory();
         if (!activeSession || !activeSession.session_id) {
             await initNewChatSession();
         } else {
@@ -434,13 +571,10 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
         startCountdown();
 
         try {
-            const res = await fetch('/api/chat/start', { method: 'POST' });
+            const res  = await fetch('/api/chat/start', { method: 'POST' });
             const data = await res.json();
             if (data.status === 'success') {
-                activeSession = {
-                    session_id: data.session_id,
-                    token: data.user_token
-                };
+                activeSession = { session_id: data.session_id, token: data.user_token };
                 sessionStorage.setItem('wally_football_chat_session', JSON.stringify(activeSession));
                 fabPulse.classList.remove('hidden');
                 startChatPolling();
@@ -450,7 +584,7 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
             }
         } catch (err) {
             console.error('Chat start error', err);
-            alert('Unable to initialize chat.');
+            alert('Unable to initialize chat. Please try again.');
             switchView('menu');
         }
     }
@@ -458,7 +592,7 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
     function updateCountdownDisplay() {
         const mins = Math.floor(countdownSeconds / 60);
         const secs = countdownSeconds % 60;
-        chatCountdown.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        chatCountdown.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
     }
 
     function startCountdown() {
@@ -469,52 +603,16 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
                 updateCountdownDisplay();
             } else {
                 clearInterval(countdownInterval);
-                // Countdown reached 0 without admin online -> Switch to unavailable message mode
                 chatWaitingBanner.classList.add('hidden');
                 chatUnavailableNotice.classList.remove('hidden');
-                headerDot.className = "w-2.5 h-2.5 rounded-full bg-slate-500 inline-block";
-                chatSessionStatus.textContent = "Wally Away &bull; Leave a Message";
+                headerDot.className    = 'w-2.5 h-2.5 rounded-full bg-slate-500 inline-block';
+                chatSessionStatus.textContent = 'Wally Away • Leave a Message';
             }
         }, 1000);
     }
 
     function scrollToBottom() {
         chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function renderChatMessage(msg) {
-        if (renderedMsgIds.has(msg.id)) return;
-        renderedMsgIds.add(msg.id);
-
-        const isUser = msg.sender === 'user';
-        const isSystem = msg.sender === 'system';
-
-        const row = document.createElement('div');
-        row.className = isSystem ? 'text-center my-1.5' : (isUser ? 'flex justify-end' : 'flex justify-start');
-
-        if (isSystem) {
-            row.innerHTML = `
-                <span class="inline-block text-[10px] font-mono text-slate-400 bg-[#162235] px-2.5 py-0.5 rounded-full border border-[#243247]">
-                    ${escapeHtml(msg.message)}
-                </span>
-            `;
-        } else {
-            const bubbleBg = isUser ? 'bg-emerald-600 text-white' : 'bg-[#162235] text-slate-100 border border-[#243247]';
-            const label = isUser ? 'You' : 'Wally Atkins';
-            row.innerHTML = `
-                <div class="max-w-[80%] space-y-0.5">
-                    <div class="text-[9px] font-mono text-slate-400 px-1 ${isUser ? 'text-right' : 'text-left'}">
-                        ${escapeHtml(label)} &bull; ${escapeHtml(msg.time_formatted || '')}
-                    </div>
-                    <div class="p-2.5 rounded-xl ${bubbleBg} text-xs leading-relaxed break-words shadow-sm">
-                        ${escapeHtml(msg.message)}
-                    </div>
-                </div>
-            `;
-        }
-
-        chatMessages.appendChild(row);
-        scrollToBottom();
     }
 
     function escapeHtml(str) {
@@ -524,30 +622,62 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
         return d.innerHTML;
     }
 
+    function renderChatMessage(msg) {
+        if (renderedMsgIds.has(msg.id)) return;
+        renderedMsgIds.add(msg.id);
+
+        const isUser   = msg.sender === 'user';
+        const isSystem = msg.sender === 'system';
+        const row = document.createElement('div');
+        row.className = isSystem ? 'text-center my-2' : (isUser ? 'flex justify-end' : 'flex justify-start');
+
+        if (isSystem) {
+            row.innerHTML = `
+                <span class="inline-block text-[11px] font-mono text-slate-400 bg-[#162235] px-3 py-1 rounded-full border border-[#243247]">
+                    ${escapeHtml(msg.message)}
+                </span>`;
+        } else {
+            const bubbleBg = isUser
+                ? 'bg-emerald-600 text-white'
+                : 'bg-[#1e2d42] text-slate-100 border border-[#2d405a]';
+            const label = isUser ? 'You' : 'Wally Atkins';
+            row.innerHTML = `
+                <div class="max-w-[82%] space-y-0.5">
+                    <div class="text-[10px] font-mono text-slate-400 px-1 ${isUser ? 'text-right' : 'text-left'}">
+                        ${escapeHtml(label)} &bull; ${escapeHtml(msg.time_formatted || '')}
+                    </div>
+                    <div class="px-4 py-3 rounded-2xl ${bubbleBg} leading-relaxed break-words shadow-sm">
+                        ${escapeHtml(msg.message)}
+                    </div>
+                </div>`;
+        }
+
+        chatMessages.appendChild(row);
+        scrollToBottom();
+    }
+
     async function pollChat() {
         if (!activeSession || !activeSession.session_id) return;
-
         try {
-            const res = await fetch(`/api/chat/poll?session_id=${encodeURIComponent(activeSession.session_id)}&token=${encodeURIComponent(activeSession.token)}`);
+            // POST body keeps params off the URL (avoids Mod_Security session_id WAF rule)
+            const fd = new FormData();
+            fd.append('session_id', activeSession.session_id);
+            fd.append('token', activeSession.token);
+            const res = await fetch('/api/chat/poll', { method: 'POST', body: fd });
             if (!res.ok) {
-                if (res.status === 404) {
-                    endChatLocal();
-                    return;
-                }
+                if (res.status === 404) { endChatLocal(); }
                 return;
             }
             const data = await res.json();
             if (data.status === 'success') {
                 if (data.other_online || data.session_status === 'active') {
-                    // Wally is connected!
                     chatWaitingBanner.classList.add('hidden');
                     chatUnavailableNotice.classList.add('hidden');
-                    headerDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse";
-                    subtitleEl.textContent = "🟢 Connected with Wally";
-                    chatSessionStatus.textContent = "Wally Online";
+                    headerDot.className    = 'w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block animate-pulse';
+                    subtitleEl.textContent = '🟢 Connected with Wally';
+                    chatSessionStatus.textContent = 'Wally Online';
                     if (countdownInterval) clearInterval(countdownInterval);
                 }
-
                 if (Array.isArray(data.messages)) {
                     data.messages.forEach(renderChatMessage);
                 }
@@ -563,40 +693,34 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
         pollInterval = setInterval(pollChat, 2000);
     }
 
-    // Send Message Form
+    // Send message
     chatInputForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const text = chatInput.value.trim();
         if (!text || !activeSession) return;
-
         chatInput.value = '';
         try {
-            const formData = new FormData();
-            formData.append('session_id', activeSession.session_id);
-            formData.append('token', activeSession.token);
-            formData.append('message', text);
-
-            const res = await fetch('/api/chat/send', { method: 'POST', body: formData });
-            if (res.ok) {
-                pollChat();
-            }
+            const fd = new FormData();
+            fd.append('session_id', activeSession.session_id);
+            fd.append('token', activeSession.token);
+            fd.append('message', text);
+            const res = await fetch('/api/chat/send', { method: 'POST', body: fd });
+            if (res.ok) pollChat();
         } catch (err) {
             console.error('Send message error', err);
         }
     });
 
-    // Try Again (Resend Ping)
+    // Try again (re-ping Wally)
     chatTryAgainBtn.addEventListener('click', async function() {
         if (!activeSession) return;
         chatTryAgainBtn.disabled = true;
-        chatTryAgainBtn.textContent = 'Pinging Wally again...';
-
+        chatTryAgainBtn.textContent = 'Pinging Wally…';
         try {
-            const formData = new FormData();
-            formData.append('session_id', activeSession.session_id);
-            formData.append('token', activeSession.token);
-
-            await fetch('/api/chat/resend', { method: 'POST', body: formData });
+            const fd = new FormData();
+            fd.append('session_id', activeSession.session_id);
+            fd.append('token', activeSession.token);
+            await fetch('/api/chat/resend', { method: 'POST', body: fd });
             chatUnavailableNotice.classList.add('hidden');
             chatWaitingBanner.classList.remove('hidden');
             countdownSeconds = 120;
@@ -607,32 +731,49 @@ $cuEmail = htmlspecialchars($currentUser['email'] ?? '');
             console.error('Resend error', err);
         } finally {
             chatTryAgainBtn.disabled = false;
-            chatTryAgainBtn.textContent = 'Try Again (Ping Wally Again)';
+            chatTryAgainBtn.innerHTML = '🔔 Ping Wally Again';
         }
     });
 
-    // End Chat
+    // End chat
     chatEndBtn.addEventListener('click', async function() {
         if (confirm('End this chat session?')) {
             if (activeSession) {
                 try {
-                    const formData = new FormData();
-                    formData.append('session_id', activeSession.session_id);
-                    formData.append('token', activeSession.token);
-                    await fetch('/api/chat/end', { method: 'POST', body: formData });
+                    const fd = new FormData();
+                    fd.append('session_id', activeSession.session_id);
+                    fd.append('token', activeSession.token);
+                    await fetch('/api/chat/end', { method: 'POST', body: fd });
                 } catch(e) {}
             }
             endChatLocal();
             switchView('menu');
+            closeWidget();
         }
     });
 
     function endChatLocal() {
-        if (pollInterval) clearInterval(pollInterval);
+        if (pollInterval)     clearInterval(pollInterval);
         if (countdownInterval) clearInterval(countdownInterval);
         activeSession = null;
         sessionStorage.removeItem('wally_football_chat_session');
         fabPulse.classList.add('hidden');
+        // Clean up history entry we pushed
+        if (window.location.hash === '#chat') {
+            history.replaceState({}, '', window.location.pathname);
+        }
     }
+
+    // ── Handle viewport resize (rotation, etc.) ───────────────────
+    window.addEventListener('resize', () => {
+        if (currentView === 'chat' && !widget.classList.contains('hidden')) {
+            if (isMobile()) {
+                widget.classList.add('wally-fullscreen');
+                document.body.classList.add('wally-chat-open');
+            } else {
+                exitFullScreen();
+            }
+        }
+    });
 })();
 </script>
