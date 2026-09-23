@@ -452,7 +452,7 @@ HTML;
         ?string $initialMessage = null,
         bool $isReminder = false
     ): bool {
-        $adminUrl = "{$this->appUrl}/chat?session_id={$sessionId}&token={$adminToken}";
+        $adminUrl = "{$this->appUrl}/host?cs={$sessionId}&ct={$adminToken}";
         $prefix = $isReminder ? "[REMINDER] " : "";
         $subject = "{$prefix}[NFL Pool Live Chat] {$userName} wants to chat!";
 
@@ -518,7 +518,7 @@ HTML;
         string $userEmail,
         string $message
     ): bool {
-        $adminUrl = "{$this->appUrl}/chat?session_id={$sessionId}&token={$adminToken}";
+        $adminUrl = "{$this->appUrl}/host?cs={$sessionId}&ct={$adminToken}";
         $subject = "[NFL Pool Message] {$userName} left you a chat message";
 
         $htmlBody = <<<HTML

@@ -263,6 +263,9 @@ try {
             exit;
 
         // --- Live Chat & Feedback Desk ---
+        // /host is the WAF-safe route used in email join links (?cs=...&ct=...)
+        // /chat and /admin/chat are kept as backward-compatible aliases
+        case '/host':
         case '/chat':
         case '/admin/chat':
             (new ChatController())->chatHost();

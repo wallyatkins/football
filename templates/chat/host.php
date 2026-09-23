@@ -224,7 +224,11 @@ $userEmail = htmlspecialchars($session['user_email']);
 
     async function poll() {
         try {
-            const res = await fetch(`/api/chat/poll?session_id=${encodeURIComponent(sessionId)}&token=${encodeURIComponent(token)}`);
+            // Use POST to keep session params out of the URL (avoids Mod_Security session_id rules)
+            const fd = new FormData();
+            fd.append('session_id', sessionId);
+            fd.append('token', token);
+            const res = await fetch('/api/chat/poll', { method: 'POST', body: fd });
             if (!res.ok) {
                 if (res.status === 404) {
                     otherDot.className = 'w-2 h-2 rounded-full bg-rose-500 inline-block';

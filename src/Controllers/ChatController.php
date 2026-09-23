@@ -231,8 +231,8 @@ class ChatController
      */
     public function chatHost(): void
     {
-        $sessionId = $_GET['session_id'] ?? '';
-        $token = $_GET['token'] ?? '';
+        $sessionId = $_GET['cs'] ?? $_GET['session_id'] ?? '';
+        $token = $_GET['ct'] ?? $_GET['token'] ?? '';
         $isCommish = $this->isCommissioner();
 
         // If no session_id provided, show commissioner overview (requires commissioner)
