@@ -273,119 +273,134 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
     </header>
 
     <!-- MAIN VIEWPORT: 5 CLEAN WORKFLOW STATES -->
-    <main class="relative z-10 flex-1 flex items-center justify-center p-3 sm:p-6 lg:p-8 overflow-y-auto">
-        <div class="w-full max-w-6xl mx-auto flex flex-col items-center justify-center">
+    <main class="relative z-10 flex-1 flex items-center justify-center p-2 sm:p-5 lg:p-8 overflow-y-auto">
+        <div class="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
 
             <!-- ================================================================= -->
-            <!-- STATE 1: PICK'EM MATCHUP CAROUSEL                                 -->
+            <!-- STATE 1: PICK'EM MATCHUP CAROUSEL (Ultra-Compact on Mobile)        -->
             <!-- ================================================================= -->
             <section id="state-1-view" class="w-full flex flex-col items-center">
                 
-                <!-- 1-Sentence Onboarding Dismissible Alert -->
-                <div id="pickemIntroBanner" class="w-full max-w-4xl mb-4 p-3 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between">
+                <!-- 1-Sentence Onboarding Dismissible Alert (Hidden on small mobile to maximize screen) -->
+                <div id="pickemIntroBanner" class="hidden sm:flex w-full mb-3 p-2.5 px-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 items-center justify-between">
                     <span>🏈 <strong>Pick'em Mode:</strong> Pick every outright winner. Instant autosave in real time! Games lock individually at kickoff.</span>
                     <button onclick="this.parentElement.remove()" class="text-amber-400 hover:text-white text-base leading-none ml-2">&times;</button>
                 </div>
 
                 <!-- Matchup Card Container with smooth slide transitions -->
-                <div id="wizardCardContainer" class="w-full max-w-4xl transition-all duration-300 transform opacity-100 scale-100">
+                <div id="wizardCardContainer" class="w-full transition-all duration-300 transform opacity-100 scale-100 flex flex-col items-center">
                     
-                    <!-- Landscape 3-Column Split -->
-                    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] items-stretch gap-4 sm:gap-6 lg:gap-8 w-full">
+                    <!-- Compact Kickoff & Status Subheader Bar -->
+                    <div class="w-full flex items-center justify-between text-[11px] font-mono px-2 py-1 mb-2 text-slate-400 border-b border-[#243247]/60">
+                        <span id="wizardKickoffText" class="font-bold text-slate-300"></span>
+                        <span id="wizardStatusBadge" class="px-2 py-0.5 rounded text-[9px] sm:text-[10px] uppercase font-bold tracking-wider bg-black/40 border border-slate-700 text-amber-400"></span>
+                    </div>
 
-                        <!-- AWAY TEAM CARD (Left) -->
+                    <div id="wizardLockNotice" class="hidden w-full mb-2 p-1.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-mono text-center">
+                        🔒 Game Locked
+                    </div>
+
+                    <!-- JOINED DUEL MODULE: Away & Home physically touch, VS badge joins them at the seam -->
+                    <div class="relative w-full rounded-2xl border-2 border-[#243247] bg-[#0d1624] shadow-2xl flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] overflow-hidden">
+
+                        <!-- AWAY TEAM CARD (Top on mobile, Left on desktop) -->
                         <div id="wizardAwayCard" 
-                             class="wizard-team-card relative group flex flex-col items-center justify-between p-6 sm:p-8 rounded-2xl border-2 border-[#243247] bg-gradient-to-b from-[#162235] to-[#0d1624] cursor-pointer select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:border-slate-500 overflow-hidden shadow-xl"
+                             class="wizard-team-card relative group flex flex-row md:flex-col items-center justify-between p-3.5 sm:p-5 md:p-8 cursor-pointer select-none transition-all duration-150 overflow-hidden"
                              data-team-type="away">
                             
-                            <div id="wizardAwayStripe" class="absolute top-0 left-0 right-0 h-2 bg-slate-600 transition-colors"></div>
+                            <!-- Top Accent Stripe -->
+                            <div id="wizardAwayStripe" class="absolute top-0 left-0 right-0 h-1.5 md:h-2 bg-slate-600 transition-colors"></div>
 
+                            <!-- Pick Check Badge -->
                             <div id="wizardAwayCheck" 
-                                 class="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0">
-                                <svg class="w-5 h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 class="absolute top-2.5 right-2.5 md:top-4 md:right-4 w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0 z-10">
+                                <svg class="w-3.5 h-3.5 md:w-5 md:h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
                             </div>
 
-                            <div class="w-full flex items-center justify-between mb-3 text-xs font-mono text-slate-400">
-                                <span id="wizardAwayConf" class="px-2 py-0.5 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[10px]">AWAY</span>
-                                <span id="wizardAwayDivision" class="text-[11px] font-medium text-slate-400"></span>
+                            <!-- Mobile: Row (Logo + Info) / Desktop: Column Stack -->
+                            <div class="flex items-center gap-3 md:flex-col md:gap-0 flex-1 min-w-0">
+                                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-28 md:h-28 md:my-3 flex items-center justify-center shrink-0 transform transition-transform duration-300 group-hover:scale-105">
+                                    <img id="wizardAwayLogo" 
+                                         src="" 
+                                         alt="Away Team Logo" 
+                                         class="max-h-full max-w-full object-contain filter drop-shadow-xl">
+                                </div>
+
+                                <div class="text-left md:text-center flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 md:justify-center mb-0.5">
+                                        <span id="wizardAwayConf" class="px-1.5 py-0.2 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[9px] text-slate-400">AWAY</span>
+                                        <span id="wizardAwayDivision" class="text-[10px] font-medium text-slate-500 truncate"></span>
+                                    </div>
+                                    <div class="flex items-baseline gap-1.5 md:flex-col md:gap-0">
+                                        <span id="wizardAwayAbbr" class="text-base sm:text-xl md:text-3xl font-black font-mono tracking-tight text-white"></span>
+                                        <span id="wizardAwayName" class="text-xs sm:text-sm md:text-base font-bold text-slate-300 truncate"></span>
+                                    </div>
+                                    <span id="wizardAwayScore" class="hidden text-sm sm:text-base md:text-xl font-black font-mono text-emerald-400 mt-0.5"></span>
+                                </div>
                             </div>
 
-                            <div class="my-4 sm:my-6 h-28 sm:h-36 flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
-                                <img id="wizardAwayLogo" 
-                                     src="" 
-                                     alt="Away Team Logo" 
-                                     class="max-h-full max-w-[130px] sm:max-w-[170px] object-contain filter drop-shadow-2xl">
-                            </div>
-
-                            <div class="text-center w-full mt-2">
-                                <span id="wizardAwayAbbr" class="block text-2xl sm:text-3xl font-black font-mono tracking-tight text-white mb-0.5"></span>
-                                <span id="wizardAwayName" class="block text-sm sm:text-base font-bold text-slate-300"></span>
-                                <span id="wizardAwayScore" class="hidden text-xl font-black font-mono text-emerald-400 mt-1"></span>
-                            </div>
-
-                            <div class="w-full mt-6">
+                            <!-- Action Button -->
+                            <div class="shrink-0 ml-2 md:ml-0 md:w-full md:mt-5">
                                 <button type="button" 
                                         id="btnPickAway"
-                                        class="w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
+                                        class="py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
                                     <span>Select Away</span>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- VS CENTER COLUMN -->
-                        <div class="flex flex-col items-center justify-center text-center px-2 py-4">
-                            <div class="w-14 h-14 rounded-full bg-[#162235] border-2 border-[#243247] flex items-center justify-center shadow-lg mb-3">
-                                <span class="text-lg font-black font-mono text-[#EAB308]">VS</span>
-                            </div>
-
-                            <div class="text-center space-y-1 mb-2">
-                                <span id="wizardKickoffText" class="block text-xs font-mono font-bold text-slate-300"></span>
-                                <span id="wizardStatusBadge" class="inline-block px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-black/40 border border-slate-700 text-slate-400"></span>
-                            </div>
-
-                            <div id="wizardLockNotice" class="hidden mt-2 p-2 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-mono">
-                                🔒 Game Locked
+                        <!-- VS DIVIDER SEAM & BADGE (Physically joining Away and Home at the boundary!) -->
+                        <div class="relative flex items-center justify-center -my-3.5 md:my-0 md:h-full z-20 pointer-events-none">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14 rounded-full bg-[#162235] border-2 border-amber-400 text-amber-400 font-black font-mono text-[11px] sm:text-xs md:text-base flex items-center justify-center shadow-2xl">
+                                VS
                             </div>
                         </div>
 
-                        <!-- HOME TEAM CARD (Right) -->
+                        <!-- HOME TEAM CARD (Bottom on mobile, Right on desktop) -->
                         <div id="wizardHomeCard" 
-                             class="wizard-team-card relative group flex flex-col items-center justify-between p-6 sm:p-8 rounded-2xl border-2 border-[#243247] bg-gradient-to-b from-[#162235] to-[#0d1624] cursor-pointer select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:border-slate-500 overflow-hidden shadow-xl"
+                             class="wizard-team-card relative group flex flex-row md:flex-col items-center justify-between p-3.5 sm:p-5 md:p-8 cursor-pointer select-none transition-all duration-150 overflow-hidden border-t border-[#243247] md:border-t-0 md:border-l"
                              data-team-type="home">
                             
-                            <div id="wizardHomeStripe" class="absolute top-0 left-0 right-0 h-2 bg-slate-600 transition-colors"></div>
+                            <!-- Top Accent Stripe -->
+                            <div id="wizardHomeStripe" class="absolute top-0 left-0 right-0 h-1.5 md:h-2 bg-slate-600 transition-colors"></div>
 
+                            <!-- Pick Check Badge -->
                             <div id="wizardHomeCheck" 
-                                 class="absolute top-4 right-4 w-9 h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0">
-                                <svg class="w-5 h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 class="absolute top-2.5 right-2.5 md:top-4 md:right-4 w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0 z-10">
+                                <svg class="w-3.5 h-3.5 md:w-5 md:h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
                             </div>
 
-                            <div class="w-full flex items-center justify-between mb-3 text-xs font-mono text-slate-400">
-                                <span id="wizardHomeConf" class="px-2 py-0.5 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[10px]">HOME</span>
-                                <span id="wizardHomeDivision" class="text-[11px] font-medium text-slate-400"></span>
+                            <!-- Mobile: Row (Logo + Info) / Desktop: Column Stack -->
+                            <div class="flex items-center gap-3 md:flex-col md:gap-0 flex-1 min-w-0">
+                                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-28 md:h-28 md:my-3 flex items-center justify-center shrink-0 transform transition-transform duration-300 group-hover:scale-105">
+                                    <img id="wizardHomeLogo" 
+                                         src="" 
+                                         alt="Home Team Logo" 
+                                         class="max-h-full max-w-full object-contain filter drop-shadow-xl">
+                                </div>
+
+                                <div class="text-left md:text-center flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 md:justify-center mb-0.5">
+                                        <span id="wizardHomeConf" class="px-1.5 py-0.2 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[9px] text-slate-400">HOME</span>
+                                        <span id="wizardHomeDivision" class="text-[10px] font-medium text-slate-500 truncate"></span>
+                                    </div>
+                                    <div class="flex items-baseline gap-1.5 md:flex-col md:gap-0">
+                                        <span id="wizardHomeAbbr" class="text-base sm:text-xl md:text-3xl font-black font-mono tracking-tight text-white"></span>
+                                        <span id="wizardHomeName" class="text-xs sm:text-sm md:text-base font-bold text-slate-300 truncate"></span>
+                                    </div>
+                                    <span id="wizardHomeScore" class="hidden text-sm sm:text-base md:text-xl font-black font-mono text-emerald-400 mt-0.5"></span>
+                                </div>
                             </div>
 
-                            <div class="my-4 sm:my-6 h-28 sm:h-36 flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110">
-                                <img id="wizardHomeLogo" 
-                                     src="" 
-                                     alt="Home Team Logo" 
-                                     class="max-h-full max-w-[130px] sm:max-w-[170px] object-contain filter drop-shadow-2xl">
-                            </div>
-
-                            <div class="text-center w-full mt-2">
-                                <span id="wizardHomeAbbr" class="block text-2xl sm:text-3xl font-black font-mono tracking-tight text-white mb-0.5"></span>
-                                <span id="wizardHomeName" class="block text-sm sm:text-base font-bold text-slate-300"></span>
-                                <span id="wizardHomeScore" class="hidden text-xl font-black font-mono text-emerald-400 mt-1"></span>
-                            </div>
-
-                            <div class="w-full mt-6">
+                            <!-- Action Button -->
+                            <div class="shrink-0 ml-2 md:ml-0 md:w-full md:mt-5">
                                 <button type="button" 
                                         id="btnPickHome"
-                                        class="w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
+                                        class="py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
                                     <span>Select Home</span>
                                 </button>
                             </div>
@@ -394,26 +409,26 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                     </div>
 
                     <!-- Carousel Controls & Autosave Notification -->
-                    <div class="flex items-center justify-between pt-6 mt-6 border-t border-[#243247]/80">
+                    <div class="flex items-center justify-between pt-3 mt-3 sm:pt-4 sm:mt-4 border-t border-[#243247]/80 w-full">
                         <button type="button" 
                                 id="btnWizardPrev"
-                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-mono font-bold transition disabled:opacity-30 disabled:pointer-events-none">
-                            &larr; Previous Game
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-mono font-bold transition disabled:opacity-30 disabled:pointer-events-none">
+                            &larr; <span class="hidden sm:inline">Previous Game</span><span class="sm:hidden">Prev</span>
                         </button>
 
-                        <span class="text-xs font-mono text-emerald-400 font-bold" id="carouselAutoSaveMsg">
-                            ⚡ Picks Auto-Save in Real Time
+                        <span class="text-[11px] sm:text-xs font-mono text-emerald-400 font-bold truncate px-2 text-center" id="carouselAutoSaveMsg">
+                            ⚡ Auto-Saves in Real Time
                         </span>
 
                         <button type="button" 
                                 id="btnWizardNext"
-                                class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-black transition shadow">
-                            <span id="wizardNextBtnText">Next Game</span> &rarr;
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-black transition shadow">
+                            <span id="wizardNextBtnText">Next</span> &rarr;
                         </button>
                     </div>
 
                     <!-- Mini Game Timeline Dots / Navigation Pills -->
-                    <div id="wizardTimeline" class="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto py-3 max-w-full px-2 mt-2">
+                    <div id="wizardTimeline" class="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto py-2 max-w-full px-1 mt-1">
                         <!-- Dynamically populated pills -->
                     </div>
 
@@ -1028,27 +1043,32 @@ window.addEventListener('DOMContentLoaded', () => {
         
         // Reset styles
         [wizardAwayCard, wizardHomeCard].forEach(card => {
-            card.classList.remove('border-amber-400', 'bg-amber-950/30', 'scale-[1.02]', 'opacity-40');
+            card.classList.remove('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]', 'opacity-40');
         });
         wizardAwayCheck.classList.add('scale-0', 'opacity-0');
         wizardHomeCheck.classList.add('scale-0', 'opacity-0');
-        btnPickAway.className = 'w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white';
-        btnPickHome.className = 'w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white';
+
+        const baseBtn = 'py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5';
+        const unselectedClass = `${baseBtn} bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white`;
+        const selectedClass = `${baseBtn} bg-amber-500 text-slate-950 border border-amber-400 shadow-md shadow-amber-500/20`;
+
+        btnPickAway.className = unselectedClass;
+        btnPickHome.className = unselectedClass;
         btnPickAway.textContent = `Select ${game.away_nick}`;
         btnPickHome.textContent = `Select ${game.home_nick}`;
 
         if (userPick === game.away_team) {
-            wizardAwayCard.classList.add('border-amber-400', 'bg-amber-950/30', 'scale-[1.02]');
+            wizardAwayCard.classList.add('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]');
             wizardHomeCard.classList.add('opacity-40');
             wizardAwayCheck.classList.remove('scale-0', 'opacity-0');
-            btnPickAway.className = 'w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-amber-500 text-slate-950';
-            btnPickAway.textContent = `✓ ${game.away_nick} Picked`;
+            btnPickAway.className = selectedClass;
+            btnPickAway.textContent = `✓ ${game.away_nick}`;
         } else if (userPick === game.home_team) {
-            wizardHomeCard.classList.add('border-amber-400', 'bg-amber-950/30', 'scale-[1.02]');
+            wizardHomeCard.classList.add('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]');
             wizardAwayCard.classList.add('opacity-40');
             wizardHomeCheck.classList.remove('scale-0', 'opacity-0');
-            btnPickHome.className = 'w-full py-3 px-4 rounded-xl font-black text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-2 bg-amber-500 text-slate-950';
-            btnPickHome.textContent = `✓ ${game.home_nick} Picked`;
+            btnPickHome.className = selectedClass;
+            btnPickHome.textContent = `✓ ${game.home_nick}`;
         }
     }
 
