@@ -16,7 +16,7 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($title ?? "Wally's NFL Pool") ?></title>
-    <!-- Matomo Analytics (Site ID 3: Atkins NFL Pool) -->
+    <!-- Matomo Analytics (Site ID 3: Wally's NFL Pool) -->
     <script>
       var _paq = window._paq = window._paq || [];
       _paq.push(['setDocumentTitle', document.domain + '/' + (document.title || 'Football')]);
@@ -333,7 +333,7 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
                         NFL
                     </div>
                     <div class="flex flex-col">
-                        <span class="font-black tracking-tight text-[#F8FAFC] text-sm sm:text-base uppercase leading-none">Atkins NFL Pool</span>
+                        <span class="font-black tracking-tight text-[#F8FAFC] text-sm sm:text-base uppercase leading-none">Wally's NFL Pool</span>
                         <span class="text-[10px] font-mono text-[#94A3B8] uppercase tracking-wider font-semibold">2026 Season</span>
                     </div>
                 </a>

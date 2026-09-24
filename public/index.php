@@ -205,6 +205,28 @@ try {
             (new SurvivorController())->burnHandicap();
             exit;
 
+        case '/api/user/dismiss-intro':
+        case '/user/dismiss-intro':
+            header('Content-Type: application/json');
+            if (empty($_SESSION['user']['id'])) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                exit;
+            }
+            $rawInput = file_get_contents('php://input');
+            $inputData = json_decode($rawInput, true) ?: $_POST;
+            $introType = $inputData['intro_type'] ?? '';
+            $dbInst = WallyFootball\Database\Connection::getInstance();
+            if ($introType === 'pickem') {
+                $dbInst->execute('UPDATE users SET has_seen_pickem_intro = 1 WHERE id = :id', ['id' => $_SESSION['user']['id']]);
+                $_SESSION['user']['has_seen_pickem_intro'] = 1;
+            } elseif ($introType === 'survivor') {
+                $dbInst->execute('UPDATE users SET has_seen_survivor_intro = 1 WHERE id = :id', ['id' => $_SESSION['user']['id']]);
+                $_SESSION['user']['has_seen_survivor_intro'] = 1;
+            }
+            echo json_encode(['success' => true]);
+            exit;
+
         case '/survivor/standings':
             (new SurvivorController())->standings($season);
             exit;
@@ -410,7 +432,7 @@ function renderLandingPage(): void
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Wally's NFL Pool — football.wallyatkins.com</title>
-        <!-- Matomo Analytics (Site ID 3: Atkins NFL Pool) -->
+        <!-- Matomo Analytics (Site ID 3: Wally's NFL Pool) -->
         <script>
           var _paq = window._paq = window._paq || [];
           _paq.push(['setDocumentTitle', document.domain + '/' + (document.title || 'Landing')]);

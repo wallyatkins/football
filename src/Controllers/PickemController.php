@@ -279,6 +279,13 @@ class PickemController
         }
         $needsSurvivorCatchup = !empty($missedSurvivorWeeks);
 
+        $userRow = $this->db->queryOne(
+            'SELECT has_seen_pickem_intro, has_seen_survivor_intro FROM users WHERE id = :uid',
+            ['uid' => $user['id']]
+        );
+        $hasSeenPickemIntro = !empty($userRow['has_seen_pickem_intro']);
+        $hasSeenSurvivorIntro = !empty($userRow['has_seen_survivor_intro']);
+
         $title = "Week {$week} Pick'em — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/grid.php';
     }

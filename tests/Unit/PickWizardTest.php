@@ -106,6 +106,26 @@ class PickWizardTest extends TestCase
         $this->assertStringContainsString('/survivor/burn-handicap', $output);
         $this->assertStringContainsString('id="survivorGridList"', $output);
         $this->assertStringContainsString('id="survivorConfirmModal"', $output);
+
+        // 8. Strict Navigation Labels (PREV & NEXT) & Score Generator
+        $this->assertStringContainsString('>PREV<', $output);
+        $this->assertStringContainsString('>NEXT<', $output);
+        $this->assertStringContainsString('id="btnSpinTb"', $output);
+        $this->assertStringContainsString('handleTiebreakerSpin', $output);
+
+        // 9. Informational Onboarding Overlays & Help
+        $this->assertStringContainsString('id="pickemIntroOverlay"', $output);
+        $this->assertStringContainsString('id="survivorIntroOverlay"', $output);
+        $this->assertStringContainsString('id="wizardHelpModal"', $output);
+        $this->assertStringContainsString('id="btnWizardHelp"', $output);
+        $this->assertStringContainsString('dismissPickemIntro', $output);
+        $this->assertStringContainsString('dismissSurvivorIntro', $output);
+
+        // 10. De-cluttered Card Bodies (No generic buttons, no division labels, no system text)
+        $this->assertStringNotContainsString('Select Chargers', $output);
+        $this->assertStringNotContainsString('Select Bills', $output);
+        $this->assertStringNotContainsString('AFC West', $output);
+        $this->assertStringNotContainsString('Auto-saves in real-time', $output);
     }
 
     public function testIndexPhpRegistersWizardAndSurvivorRoutes(): void
@@ -115,5 +135,6 @@ class PickWizardTest extends TestCase
 
         $this->assertStringContainsString("case '/pickem/wizard':", $content);
         $this->assertStringContainsString("case '/survivor/burn-handicap':", $content);
+        $this->assertStringContainsString("case '/api/user/dismiss-intro':", $content);
     }
 }

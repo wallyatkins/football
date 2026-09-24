@@ -67,27 +67,52 @@ $tbMatchupLabel = ($tbAwayData && $tbHomeData) ? "{$tbAwayData['name']} @ {$tbHo
     <!-- Center Column Layout (One Game Per Row) -->
     <div class="max-w-3xl mx-auto space-y-6">
 
-        <!-- Interactive Pick Wizard Opt-in Card -->
-        <div class="p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-[#162235] to-[#162235] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl shrink-0 shadow-inner">
-                    ⚡
+        <!-- Prominent Hero Call-to-Action: Get Your Picks In Now -->
+        <div class="relative overflow-hidden rounded-2xl border-2 border-amber-500/40 bg-gradient-to-br from-[#121c2e] via-[#0d1624] to-[#070d17] p-5 sm:p-7 shadow-2xl shadow-amber-500/10">
+            <!-- NFL Shield Ambient Backdrop / Watermark -->
+            <div class="pointer-events-none absolute -right-6 -bottom-8 opacity-15 sm:opacity-20 w-44 h-44 sm:w-56 sm:h-56">
+                <svg viewBox="0 0 100 125" class="w-full h-full fill-amber-400">
+                    <path d="M50 5 L88 18 C88 58 68 88 50 95 C32 88 12 58 12 18 Z" fill="none" stroke="currentColor" stroke-width="4"/>
+                    <text x="50" y="55" font-family="monospace" font-weight="900" font-size="20" text-anchor="middle" fill="currentColor">NFL</text>
+                </svg>
+            </div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                <div class="flex items-center gap-4">
+                    <!-- NFL Football / Shield Icon Badge -->
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-500 p-0.5 shadow-lg shadow-amber-500/30 shrink-0 flex items-center justify-center">
+                        <div class="w-full h-full rounded-[14px] bg-[#070d17] flex items-center justify-center">
+                            <span class="text-2xl sm:text-3xl filter drop-shadow">🏈</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-black font-mono tracking-wider uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                Week <?= $week ?> Pick Wizard
+                            </span>
+                            <span class="text-xs font-mono text-emerald-400 font-bold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live Interactive Flow
+                            </span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+                            Get Your Picks In Now
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-0.5 max-w-lg leading-relaxed">
+                            Full-screen game-by-game picks with primary team colors, MNF tiebreaker score generator, and survivor pool catch-up.
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <div class="text-sm font-bold text-white flex items-center gap-2">
-                        <span>Weekly Pick Wizard</span>
-                        <span class="text-[10px] uppercase font-mono font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Interactive Mode</span>
-                    </div>
-                    <div class="text-xs text-slate-400 mt-0.5">
-                        Experience every matchup one-by-one with full-screen landscape focus, high-res team logos, and instant autosave.
-                    </div>
+
+                <div class="shrink-0">
+                    <button type="button" 
+                            id="btnLaunchWizardHero"
+                            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-black text-xs sm:text-sm font-mono uppercase tracking-wide bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 shadow-xl shadow-amber-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
+                        <span>Get Your Picks In Now</span>
+                        <span class="text-base">&rarr;</span>
+                    </button>
                 </div>
             </div>
-            <button type="button" 
-                    id="btnLaunchWizardHero"
-                    class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-black rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md shadow-amber-400/20 transition transform hover:-translate-y-0.5">
-                <span>Enter Interactive Mode &rarr;</span>
-            </button>
         </div>
 
     <!-- Week Champion Summary (Collapsible, Auto-collapsed Once Games Kick Off) -->

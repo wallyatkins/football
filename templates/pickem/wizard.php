@@ -6,7 +6,7 @@ use WallyFootball\Support\TeamData;
 
 /**
  * Weekly Pick Wizard Component
- * Full-screen, landscape-focused 5-state wizard flow.
+ * Full-screen, responsive, clutter-free 5-state wizard flow.
  *
  * Variables expected:
  *   $games (array)
@@ -21,6 +21,8 @@ use WallyFootball\Support\TeamData;
  *   $needsSurvivorCatchup (bool) [optional]
  *   $currentSurvivorPick (string|null) [optional]
  *   $isSurvivorEliminated (bool) [optional]
+ *   $hasSeenPickemIntro (bool) [optional]
+ *   $hasSeenSurvivorIntro (bool) [optional]
  */
 
 $usedSurvivorTeams = $usedSurvivorTeams ?? [];
@@ -28,6 +30,8 @@ $missedSurvivorWeeks = $missedSurvivorWeeks ?? [];
 $needsSurvivorCatchup = $needsSurvivorCatchup ?? (!empty($missedSurvivorWeeks));
 $currentSurvivorPick = $currentSurvivorPick ?? null;
 $isSurvivorEliminated = $isSurvivorEliminated ?? false;
+$hasSeenPickemIntro = $hasSeenPickemIntro ?? false;
+$hasSeenSurvivorIntro = $hasSeenSurvivorIntro ?? false;
 
 $allNflTeams = TeamData::load();
 $pylTeamsList = [];
@@ -56,8 +60,6 @@ foreach ($games as $g) {
         'home_team' => $g['home_team'],
         'home_name' => $hTeam['name'],
         'home_nick' => $hTeam['nick'],
-        'home_conf' => $hTeam['conf'] ?? '',
-        'home_division' => $hTeam['division'] ?? '',
         'home_color' => $hTeam['color'],
         'home_color2' => $hTeam['color2'] ?? '#ffffff',
         'home_logo' => $hTeam['logo'],
@@ -66,8 +68,6 @@ foreach ($games as $g) {
         'away_team' => $g['away_team'],
         'away_name' => $aTeam['name'],
         'away_nick' => $aTeam['nick'],
-        'away_conf' => $aTeam['conf'] ?? '',
-        'away_division' => $aTeam['division'] ?? '',
         'away_color' => $aTeam['color'],
         'away_color2' => $aTeam['color2'] ?? '#ffffff',
         'away_logo' => $aTeam['logo'],
@@ -89,12 +89,12 @@ foreach ($games as $g) {
 $tbGameId = !empty($tiebreakerGame) ? (int) $tiebreakerGame['id'] : null;
 $tbCurrentPoints = $entry['mnf_total_points_prediction'] ?? null;
 $tbIsLocked = !empty($tiebreakerGame) && (strtotime($tiebreakerGame['kickoff_time']) + 3600 <= time());
+$tbAwayData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['away_team']) : null;
+$tbHomeData = !empty($tiebreakerGame) ? TeamData::get($tiebreakerGame['home_team']) : null;
 
-// Auto-launch if explicitly requested via ?mode=wizard OR if user has incomplete picks and week is unlocked
-$hasIncompletePicks = count($userPicks) < count($games);
+// Explicit launch: only when ?mode=wizard is in URL or route /pickem/wizard
 $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
-    || str_contains($_SERVER['REQUEST_URI'] ?? '', '/pickem/wizard')
-    || ($hasIncompletePicks && empty($isWeekLocked));
+    || str_contains($_SERVER['REQUEST_URI'] ?? '', '/pickem/wizard');
 ?>
 
 <!-- Retro Arcade 8-Bit Font for Authentic Press Your Luck -->
@@ -104,6 +104,17 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
 
 <style>
   .font-pyl { font-family: 'Press Start 2P', monospace; }
+
+  /* Full Viewport Split Screen Support */
+  .wizard-viewport {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  /* Team Panel Ambient Radial Gradient Vignette */
+  .team-panel-vignette {
+    background-image: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.45) 100%);
+  }
 
   /* Press Your Luck Chassis */
   .pyl-chassis {
@@ -163,333 +174,307 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
   /* Big Red Arcade Buzzer */
   .arcade-buzzer-btn {
     background: radial-gradient(circle at 35% 35%, #ff4d4d, #cc0000 60%, #800000 100%);
-    box-shadow: 0 8px 0 #590000, 0 16px 20px rgba(255, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
-    transition: all 0.08s ease;
+    box-shadow: 0 10px 0 #550000, 0 15px 25px rgba(255, 0, 0, 0.5);
+    border: 3px solid #ff9999;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
   .arcade-buzzer-btn:active {
-    transform: translateY(5px);
-    box-shadow: 0 3px 0 #590000, 0 6px 12px rgba(255, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    transform: translateY(6px);
+    box-shadow: 0 4px 0 #550000, 0 8px 15px rgba(255, 0, 0, 0.4);
   }
 
-  /* Audio Equalizer animation */
-  @keyframes eq-pulse {
-    0%, 100% { height: 4px; }
-    50% { height: 16px; }
-  }
-  .eq-b1 { animation: eq-pulse 0.5s infinite ease-in-out; }
-  .eq-b2 { animation: eq-pulse 0.7s infinite ease-in-out 0.15s; }
-  .eq-b3 { animation: eq-pulse 0.4s infinite ease-in-out 0.3s; }
+  /* Audio Equalizer Bars */
+  @keyframes eq-pulse-1 { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+  @keyframes eq-pulse-2 { 0%, 100% { height: 14px; } 50% { height: 6px; } }
+  @keyframes eq-pulse-3 { 0%, 100% { height: 8px; } 50% { height: 18px; } }
+  .eq-b1 { animation: eq-pulse-1 0.7s infinite ease-in-out; }
+  .eq-b2 { animation: eq-pulse-2 0.5s infinite ease-in-out; }
+  .eq-b3 { animation: eq-pulse-3 0.8s infinite ease-in-out; }
 </style>
 
-<!-- Audio Elements (pointing to web-served /media/) -->
-<audio id="audioNflTheme" src="/media/nfl-theme.mp3" loop preload="auto"></audio>
-<audio id="audioPylSoundboard" src="/media/press-your-luck-sound-board.mp3" loop preload="auto"></audio>
+<!-- Audio Assets -->
+<audio id="audioNflTheme" src="/media/nfl-theme.mp3" preload="auto" loop></audio>
+<audio id="audioPylSoundboard" src="/media/press-your-luck-sound-board.mp3" preload="auto"></audio>
 
-<!-- ================================================================= -->
-<!-- FULL-SCREEN WEEKLY PICK WIZARD MODAL                              -->
-<!-- ================================================================= -->
+<!-- Full-Screen Interactive Wizard Modal Container -->
 <div id="pickWizardModal" 
-     class="fixed inset-0 z-50 flex flex-col bg-[#060c18]/98 backdrop-blur-2xl text-slate-100 select-none overflow-hidden <?= $isAutoLaunch ? '' : 'hidden' ?>"
+     class="<?= $isAutoLaunch ? '' : 'hidden' ?> fixed inset-0 z-50 bg-[#070d17] text-white flex flex-col wizard-viewport w-full overflow-hidden select-none"
      role="dialog" 
      aria-modal="true" 
      aria-label="Weekly Pick Wizard">
 
-    <!-- Background Turf Glow Effect -->
-    <div class="pointer-events-none absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-600/30 via-slate-900/40 to-transparent"></div>
-
     <!-- TOP CONTROL BAR -->
-    <header class="relative z-10 border-b border-[#243247]/80 bg-[#0B1626]/95 px-4 py-3 sm:px-6">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+    <header class="relative z-20 border-b border-[#243247]/80 bg-[#0B1626]/95 px-3 py-2 sm:px-6 sm:py-2.5 shrink-0">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
             
-            <!-- Left: Exit Button & Week Badge -->
-            <div class="flex items-center gap-3">
+            <!-- Left: Exit Button & Pool Title -->
+            <div class="flex items-center gap-2 sm:gap-3">
                 <button type="button" 
                         id="btnWizardExit" 
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] hover:border-slate-500 text-slate-300 hover:text-white text-xs font-bold transition shadow-sm"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] hover:border-slate-500 text-slate-300 hover:text-white text-xs font-bold transition shadow-sm cursor-pointer"
                         title="Exit to Standard View (Esc)">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span>Exit to Standard View</span>
-                    <span class="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-slate-700">ESC</span>
+                    <span class="hidden sm:inline">Exit to Standard View</span>
+                    <span class="sm:hidden">Exit</span>
                 </button>
 
-                <div class="hidden sm:flex items-center gap-2">
+                <div class="hidden md:flex items-center gap-2">
                     <span class="px-2 py-0.5 rounded font-mono text-[10px] font-black bg-[#EAB308] text-[#0B1626] uppercase tracking-wider">
                         Week <?= $week ?>
                     </span>
-                    <span class="text-xs font-bold text-slate-300">Pick Wizard</span>
+                    <span class="text-xs font-bold text-slate-300">Wally's NFL Pool</span>
                 </div>
             </div>
 
-            <!-- Center: Step Progress Pills & Live Progress -->
-            <div class="flex flex-col items-center flex-1 max-w-xl mx-2">
-                <!-- 5-State Step Tracker Pills -->
-                <div class="grid grid-cols-5 gap-1 sm:gap-2 w-full text-center text-[9px] sm:text-[10px] font-mono font-bold mb-1.5">
+            <!-- Center: Step Progress Tracker Pills -->
+            <div class="flex flex-col items-center flex-1 max-w-md mx-2">
+                <div class="grid grid-cols-5 gap-1 sm:gap-1.5 w-full text-center text-[9px] sm:text-[10px] font-mono font-bold">
                     <div id="step-pill-1" onclick="goToState(1)" class="p-1 rounded cursor-pointer bg-amber-500 text-slate-950 font-black shadow truncate">1. Pick'em</div>
                     <div id="step-pill-2" onclick="goToState(2)" class="p-1 rounded cursor-pointer bg-slate-900 border border-slate-800 text-slate-400 truncate">2. Tiebreaker</div>
                     <div id="step-pill-3" onclick="goToState(3)" class="p-1 rounded cursor-pointer bg-slate-900 border border-slate-800 text-slate-400 truncate">3. Catch-Up</div>
                     <div id="step-pill-4" onclick="goToState(4)" class="p-1 rounded cursor-pointer bg-slate-900 border border-slate-800 text-slate-400 truncate">4. Survivor</div>
                     <div id="step-pill-5" onclick="goToState(5)" class="p-1 rounded cursor-pointer bg-slate-900 border border-slate-800 text-slate-400 truncate">5. Review</div>
                 </div>
-
-                <!-- Progress Track -->
-                <div class="w-full h-1.5 rounded-full bg-[#162235] border border-[#243247] overflow-hidden p-0.5">
+                
+                <!-- Overall Progress Bar -->
+                <div class="w-full h-1 rounded-full bg-[#162235] border border-[#243247] overflow-hidden mt-1">
                     <div id="wizardProgressBar" 
                          class="h-full rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-[#EAB308] transition-all duration-300 ease-out" 
                          style="width: 0%;"></div>
                 </div>
-                <div class="flex items-center justify-between w-full text-[10px] font-mono font-bold mt-1 text-slate-400">
-                    <span id="wizardGameStepLabel" class="text-amber-400">Game 1 of <?= count($wizardGames) ?></span>
-                    <span id="wizardPicksCountLabel">0 of <?= count($wizardGames) ?> Picked</span>
-                </div>
             </div>
 
-            <!-- Right: Audio SFX Toggle & Shortcuts -->
-            <div class="flex items-center gap-2">
+            <!-- Right: Utility Corner (Help & Persistent Audio Toggle) -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Help / Rules Onboarding Icon Button -->
+                <button type="button" 
+                        id="btnWizardHelp"
+                        onclick="openHelpModal()"
+                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-slate-300 hover:text-amber-400 transition cursor-pointer"
+                        title="Rules & How to Play (?)">
+                    <span class="font-bold text-xs">?</span>
+                </button>
+
+                <!-- Persistent Speaker / Mute Toggle -->
                 <button type="button" 
                         id="btnWizardAudioToggle"
                         onclick="toggleAudioPlayback()"
-                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-xs font-bold text-slate-300 hover:text-white transition"
-                        title="Toggle Background NFL Theme">
-                    <span id="wizardAudioIcon">🎵</span>
-                    <span id="wizardAudioLabel" class="hidden sm:inline text-[11px]">NFL Theme</span>
-                    <div class="flex items-center gap-0.5 h-3 ml-0.5">
-                        <div id="eq1" class="w-1 bg-amber-400 rounded-full" style="height: 4px;"></div>
-                        <div id="eq2" class="w-1 bg-amber-400 rounded-full" style="height: 6px;"></div>
-                        <div id="eq3" class="w-1 bg-amber-400 rounded-full" style="height: 4px;"></div>
+                        class="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+                        title="Toggle Background Audio">
+                    <span id="wizardAudioIcon">🔊</span>
+                    <div id="wizardAudioEqualizer" class="flex items-end gap-0.5 h-3.5 px-0.5">
+                        <div id="eq1" class="w-0.5 bg-amber-400 rounded-full" style="height: 4px;"></div>
+                        <div id="eq2" class="w-0.5 bg-amber-400 rounded-full" style="height: 4px;"></div>
+                        <div id="eq3" class="w-0.5 bg-amber-400 rounded-full" style="height: 4px;"></div>
                     </div>
                 </button>
 
+                <!-- Shortcuts button on larger screens -->
                 <button type="button" 
                         id="btnWizardShortcuts"
-                        class="hidden md:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-xs font-bold text-slate-400 hover:text-slate-200 transition"
+                        class="hidden lg:inline-flex items-center gap-1 px-2 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-xs font-bold text-slate-400 hover:text-slate-200 transition"
                         title="Keyboard Shortcuts">
                     <span>⌨️</span>
-                    <span class="text-[11px]">Shortcuts</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- MAIN VIEWPORT: 5 CLEAN WORKFLOW STATES -->
-    <main class="relative z-10 flex-1 flex items-center justify-center p-2 sm:p-5 lg:p-8 overflow-y-auto">
-        <div class="w-full max-w-4xl mx-auto flex flex-col items-center justify-center">
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-between p-2 sm:p-4 overflow-hidden h-full min-h-0">
+        <div class="w-full max-w-4xl mx-auto flex-1 flex flex-col items-center justify-between min-h-0">
 
             <!-- ================================================================= -->
-            <!-- STATE 1: PICK'EM MATCHUP CAROUSEL (Ultra-Compact on Mobile)        -->
+            <!-- STATE 1: WEEKLY PICK'EM CAROUSEL (De-cluttered Fullscreen Matchup) -->
             <!-- ================================================================= -->
-            <section id="state-1-view" class="w-full flex flex-col items-center">
+            <section id="state-1-view" class="w-full flex-1 flex flex-col items-center justify-between min-h-0">
                 
-                <!-- 1-Sentence Onboarding Dismissible Alert (Hidden on small mobile to maximize screen) -->
-                <div id="pickemIntroBanner" class="hidden sm:flex w-full mb-3 p-2.5 px-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 items-center justify-between">
-                    <span>🏈 <strong>Pick'em Mode:</strong> Pick every outright winner. Instant autosave in real time! Games lock individually at kickoff.</span>
-                    <button onclick="this.parentElement.remove()" class="text-amber-400 hover:text-white text-base leading-none ml-2">&times;</button>
-                </div>
-
-                <!-- Matchup Card Container with smooth slide transitions -->
-                <div id="wizardCardContainer" class="w-full transition-all duration-300 transform opacity-100 scale-100 flex flex-col items-center">
+                <!-- Matchup Card Container: 100% Mobile Height & Desktop Grid (No Page Scroll) -->
+                <div id="wizardCardContainer" class="w-full flex-1 flex flex-col items-center justify-center min-h-0 relative py-1">
                     
-                    <!-- Compact Kickoff & Status Subheader Bar -->
-                    <div class="w-full flex items-center justify-between text-[11px] font-mono px-2 py-1 mb-2 text-slate-400 border-b border-[#243247]/60">
-                        <span id="wizardKickoffText" class="font-bold text-slate-300"></span>
-                        <span id="wizardStatusBadge" class="px-2 py-0.5 rounded text-[9px] sm:text-[10px] uppercase font-bold tracking-wider bg-black/40 border border-slate-700 text-amber-400"></span>
+                    <div id="wizardLockNotice" class="hidden w-full mb-1 p-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] font-mono text-center">
+                        🔒 Kickoff Passed &bull; Game Locked
                     </div>
 
-                    <div id="wizardLockNotice" class="hidden w-full mb-2 p-1.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-mono text-center">
-                        🔒 Game Locked
-                    </div>
+                    <!-- UNIFIED MATCHUP DUEL VIEWPORT (Mobile Vertical Split / Desktop Horizontal Split) -->
+                    <div class="relative w-full flex-1 flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] rounded-2xl border-2 border-[#243247] bg-[#070d17] shadow-2xl overflow-hidden min-h-0 select-none">
 
-                    <!-- JOINED DUEL MODULE: Away & Home physically touch, VS badge joins them at the seam -->
-                    <div class="relative w-full rounded-2xl border-2 border-[#243247] bg-[#0d1624] shadow-2xl flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] overflow-hidden">
-
-                        <!-- AWAY TEAM CARD (Top on mobile, Left on desktop) -->
+                        <!-- AWAY TEAM PANEL (Top half on mobile, Left half on desktop) -->
                         <div id="wizardAwayCard" 
-                             class="wizard-team-card relative group flex flex-row md:flex-col items-center justify-between p-3.5 sm:p-5 md:p-8 cursor-pointer select-none transition-all duration-150 overflow-hidden"
+                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group team-panel-vignette"
                              data-team-type="away">
                             
-                            <!-- Top Accent Stripe -->
-                            <div id="wizardAwayStripe" class="absolute top-0 left-0 right-0 h-1.5 md:h-2 bg-slate-600 transition-colors"></div>
+                            <!-- Large Prominent Bold Team Logo (Maximized in area) -->
+                            <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                <img id="wizardAwayLogo" 
+                                     src="" 
+                                     alt="Away Team Logo" 
+                                     class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                            </div>
 
-                            <!-- Pick Check Badge -->
+                            <!-- Pick Selection Confirmation Badge (Gold Checkmark) -->
                             <div id="wizardAwayCheck" 
-                                 class="absolute top-2.5 right-2.5 md:top-4 md:right-4 w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0 z-10">
-                                <svg class="w-3.5 h-3.5 md:w-5 md:h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
                             </div>
 
-                            <!-- Mobile: Row (Logo + Info) / Desktop: Column Stack -->
-                            <div class="flex items-center gap-3 md:flex-col md:gap-0 flex-1 min-w-0">
-                                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-28 md:h-28 md:my-3 flex items-center justify-center shrink-0 transform transition-transform duration-300 group-hover:scale-105">
-                                    <img id="wizardAwayLogo" 
-                                         src="" 
-                                         alt="Away Team Logo" 
-                                         class="max-h-full max-w-full object-contain filter drop-shadow-xl">
-                                </div>
-
-                                <div class="text-left md:text-center flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 md:justify-center mb-0.5">
-                                        <span id="wizardAwayConf" class="px-1.5 py-0.2 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[9px] text-slate-400">AWAY</span>
-                                        <span id="wizardAwayDivision" class="text-[10px] font-medium text-slate-500 truncate"></span>
-                                    </div>
-                                    <div class="flex items-baseline gap-1.5 md:flex-col md:gap-0">
-                                        <span id="wizardAwayAbbr" class="text-base sm:text-xl md:text-3xl font-black font-mono tracking-tight text-white"></span>
-                                        <span id="wizardAwayName" class="text-xs sm:text-sm md:text-base font-bold text-slate-300 truncate"></span>
-                                    </div>
-                                    <span id="wizardAwayScore" class="hidden text-sm sm:text-base md:text-xl font-black font-mono text-emerald-400 mt-0.5"></span>
-                                </div>
-                            </div>
-
-                            <!-- Action Button -->
-                            <div class="shrink-0 ml-2 md:ml-0 md:w-full md:mt-5">
-                                <button type="button" 
-                                        id="btnPickAway"
-                                        class="py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
-                                    <span>Select Away</span>
-                                </button>
-                            </div>
+                            <!-- Subtle Accent Selection Ring -->
+                            <div id="wizardAwaySelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                         </div>
 
-                        <!-- VS DIVIDER SEAM & BADGE (Physically joining Away and Home at the boundary!) -->
-                        <div class="relative flex items-center justify-center -my-3.5 md:my-0 md:h-full z-20 pointer-events-none">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14 rounded-full bg-[#162235] border-2 border-amber-400 text-amber-400 font-black font-mono text-[11px] sm:text-xs md:text-base flex items-center justify-center shadow-2xl">
+                        <!-- CENTER DIVIDER & VS BADGE -->
+                        <div class="relative flex items-center justify-center -my-3.5 md:my-0 md:h-full z-30 pointer-events-none">
+                            
+                            <!-- Date/Time Header on Desktop above VS -->
+                            <div class="hidden md:flex absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 border border-slate-700/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-slate-300 shadow-md" id="wizardKickoffText">
+                            </div>
+
+                            <!-- Centered Minimal Circular VS Badge -->
+                            <div class="w-9 h-9 sm:w-11 sm:h-11 md:w-14 md:h-14 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-2xl">
                                 VS
                             </div>
+
+                            <!-- Date/Time Header on Mobile overlaid neatly on seam -->
+                            <div class="md:hidden absolute top-1/2 left-3 -translate-y-1/2 bg-black/80 border border-slate-700/80 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-slate-300 shadow" id="wizardKickoffTextMobile">
+                            </div>
                         </div>
 
-                        <!-- HOME TEAM CARD (Bottom on mobile, Right on desktop) -->
+                        <!-- HOME TEAM PANEL (Bottom half on mobile, Right half on desktop) -->
                         <div id="wizardHomeCard" 
-                             class="wizard-team-card relative group flex flex-row md:flex-col items-center justify-between p-3.5 sm:p-5 md:p-8 cursor-pointer select-none transition-all duration-150 overflow-hidden border-t border-[#243247] md:border-t-0 md:border-l"
+                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l-2 border-slate-900/60 team-panel-vignette"
                              data-team-type="home">
                             
-                            <!-- Top Accent Stripe -->
-                            <div id="wizardHomeStripe" class="absolute top-0 left-0 right-0 h-1.5 md:h-2 bg-slate-600 transition-colors"></div>
+                            <!-- Large Prominent Bold Team Logo (Maximized in area) -->
+                            <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                <img id="wizardHomeLogo" 
+                                     src="" 
+                                     alt="Home Team Logo" 
+                                     class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                            </div>
 
-                            <!-- Pick Check Badge -->
+                            <!-- Pick Selection Confirmation Badge (Gold Checkmark) -->
                             <div id="wizardHomeCheck" 
-                                 class="absolute top-2.5 right-2.5 md:top-4 md:right-4 w-6 h-6 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-full bg-[#EAB308] text-[#0B1626] flex items-center justify-center shadow-lg transition-all duration-200 scale-0 opacity-0 z-10">
-                                <svg class="w-3.5 h-3.5 md:w-5 md:h-5 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
                             </div>
 
-                            <!-- Mobile: Row (Logo + Info) / Desktop: Column Stack -->
-                            <div class="flex items-center gap-3 md:flex-col md:gap-0 flex-1 min-w-0">
-                                <div class="w-14 h-14 sm:w-16 sm:h-16 md:w-28 md:h-28 md:my-3 flex items-center justify-center shrink-0 transform transition-transform duration-300 group-hover:scale-105">
-                                    <img id="wizardHomeLogo" 
-                                         src="" 
-                                         alt="Home Team Logo" 
-                                         class="max-h-full max-w-full object-contain filter drop-shadow-xl">
-                                </div>
-
-                                <div class="text-left md:text-center flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 md:justify-center mb-0.5">
-                                        <span id="wizardHomeConf" class="px-1.5 py-0.2 rounded bg-black/40 border border-slate-700/60 font-semibold uppercase tracking-wider text-[9px] text-slate-400">HOME</span>
-                                        <span id="wizardHomeDivision" class="text-[10px] font-medium text-slate-500 truncate"></span>
-                                    </div>
-                                    <div class="flex items-baseline gap-1.5 md:flex-col md:gap-0">
-                                        <span id="wizardHomeAbbr" class="text-base sm:text-xl md:text-3xl font-black font-mono tracking-tight text-white"></span>
-                                        <span id="wizardHomeName" class="text-xs sm:text-sm md:text-base font-bold text-slate-300 truncate"></span>
-                                    </div>
-                                    <span id="wizardHomeScore" class="hidden text-sm sm:text-base md:text-xl font-black font-mono text-emerald-400 mt-0.5"></span>
-                                </div>
-                            </div>
-
-                            <!-- Action Button -->
-                            <div class="shrink-0 ml-2 md:ml-0 md:w-full md:mt-5">
-                                <button type="button" 
-                                        id="btnPickHome"
-                                        class="py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5 bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white">
-                                    <span>Select Home</span>
-                                </button>
-                            </div>
+                            <!-- Subtle Accent Selection Ring -->
+                            <div id="wizardHomeSelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                         </div>
 
                     </div>
-
-                    <!-- Carousel Controls & Autosave Notification -->
-                    <div class="flex items-center justify-between pt-3 mt-3 sm:pt-4 sm:mt-4 border-t border-[#243247]/80 w-full">
-                        <button type="button" 
-                                id="btnWizardPrev"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs font-mono font-bold transition disabled:opacity-30 disabled:pointer-events-none">
-                            &larr; <span class="hidden sm:inline">Previous Game</span><span class="sm:hidden">Prev</span>
-                        </button>
-
-                        <span class="text-[11px] sm:text-xs font-mono text-emerald-400 font-bold truncate px-2 text-center" id="carouselAutoSaveMsg">
-                            ⚡ Auto-Saves in Real Time
-                        </span>
-
-                        <button type="button" 
-                                id="btnWizardNext"
-                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:px-5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-mono font-black transition shadow">
-                            <span id="wizardNextBtnText">Next</span> &rarr;
-                        </button>
-                    </div>
-
-                    <!-- Mini Game Timeline Dots / Navigation Pills -->
-                    <div id="wizardTimeline" class="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto py-2 max-w-full px-1 mt-1">
-                        <!-- Dynamically populated pills -->
-                    </div>
-
                 </div>
+
+                <!-- NAVIGATION FOOTER BAR (PREV, Bubbles 1..N, NEXT) -->
+                <div class="w-full pt-2 pb-1 flex items-center justify-between gap-2 shrink-0">
+                    <!-- Previous Button: strictly labeled PREV -->
+                    <button type="button" 
+                            id="btnWizardPrev"
+                            class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-mono font-bold text-xs uppercase tracking-wider transition disabled:opacity-25 disabled:pointer-events-none shadow cursor-pointer">PREV</button>
+
+                    <!-- Game Jump Indicators: Row of Compact Numbered Bubbles (1 through 16) -->
+                    <div id="wizardTimeline" class="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto py-1 max-w-full px-1">
+                        <!-- Dynamically populated via renderTimeline() -->
+                    </div>
+
+                    <!-- Next Button: strictly labeled NEXT -->
+                    <button type="button" 
+                            id="btnWizardNext"
+                            class="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono font-black text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer">NEXT</button>
+                </div>
+
             </section>
 
             <!-- ================================================================= -->
             <!-- STATE 2: TIEBREAKER INPUT (MONDAY NIGHT FOOTBALL)                 -->
             <!-- ================================================================= -->
-            <section id="state-2-view" class="hidden w-full max-w-2xl mx-auto text-center space-y-6">
-                <div class="p-6 sm:p-10 rounded-2xl bg-gradient-to-b from-[#162235] to-[#0d1624] border-2 border-amber-500/40 shadow-2xl">
+            <section id="state-2-view" class="hidden w-full max-w-2xl mx-auto my-auto text-center space-y-4 sm:space-y-6">
+                <div class="p-5 sm:p-8 rounded-2xl bg-gradient-to-b from-[#162235] to-[#0d1624] border-2 border-amber-500/40 shadow-2xl">
                     
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold mb-4">
-                        <span>🎯 Designated Tiebreaker Matchup</span>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-mono font-bold mb-2">
+                        <span>🏈 Designated Tiebreaker Game</span>
                     </div>
 
-                    <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                        Monday Night Football Total Points
+                    <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight">
+                        Monday Night Football: Enter Total Combined Score
                     </h2>
-                    <p class="text-xs font-mono text-slate-400 mt-1" id="wizardTbMatchupLabel">
-                        Predict Total Combined Final Score
-                    </p>
 
-                    <!-- Slot Machine / Stepper Widget -->
-                    <div id="wizardTiebreakerBox" class="my-8 p-6 rounded-2xl bg-slate-950 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(234,179,8,0.2)]">
+                    <!-- Matchup Context Details with Team Logos -->
+                    <?php if ($tbAwayData && $tbHomeData): ?>
+                        <div class="flex items-center justify-center gap-4 my-3 p-3 rounded-xl bg-black/40 border border-slate-800 max-w-md mx-auto">
+                            <div class="flex items-center gap-2">
+                                <img src="<?= htmlspecialchars($tbAwayData['logo']) ?>" class="w-8 h-8 object-contain">
+                                <span class="font-bold text-sm text-slate-200"><?= htmlspecialchars($tbAwayData['name']) ?></span>
+                            </div>
+                            <span class="text-xs font-mono font-black text-amber-400">@</span>
+                            <div class="flex items-center gap-2">
+                                <img src="<?= htmlspecialchars($tbHomeData['logo']) ?>" class="w-8 h-8 object-contain">
+                                <span class="font-bold text-sm text-slate-200"><?= htmlspecialchars($tbHomeData['name']) ?></span>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Dynamic Score Generator & Flanking Steppers -->
+                    <div id="wizardTiebreakerBox" class="my-6 p-5 sm:p-6 rounded-2xl bg-slate-950 border-2 border-amber-500/50 shadow-[0_0_30px_rgba(234,179,8,0.2)] max-w-md mx-auto">
                         <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400 block mb-2">Combined Score Prediction</span>
                         
                         <div class="flex items-center justify-center gap-4">
-                            <button type="button" onclick="adjustTiebreaker(-1)" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono font-bold text-2xl transition active:scale-90">-</button>
+                            <!-- Large Touch-Friendly Minus Stepper -->
+                            <button type="button" 
+                                    id="btnTbMinus"
+                                    onclick="adjustTiebreaker(-1)" 
+                                    class="w-14 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-mono font-black text-3xl transition active:scale-90 flex items-center justify-center shadow-lg border border-slate-700 cursor-pointer">
+                                −
+                            </button>
                             
-                            <div class="relative w-36">
+                            <!-- Direct Click-To-Edit Numeric Input -->
+                            <div class="relative w-36 sm:w-40">
                                 <input type="number" 
                                        id="wizardTiebreakerInput" 
                                        value="<?= $tbCurrentPoints ?? 47 ?>" 
                                        min="10" 
                                        max="120"
-                                       class="w-full text-center text-4xl sm:text-5xl font-black font-mono bg-transparent text-amber-400 outline-none border-b-2 border-amber-500/50 focus:border-amber-400 pb-1">
-                                <span class="block text-[10px] font-mono text-slate-400 mt-1 uppercase">TOTAL POINTS</span>
+                                       class="w-full text-center text-5xl sm:text-6xl font-black font-mono bg-transparent text-amber-400 outline-none border-b-2 border-amber-500/50 focus:border-amber-400 pb-1 tabular-nums">
+                                <span class="block text-[10px] font-mono text-slate-400 mt-1 uppercase font-bold">TOTAL POINTS</span>
                             </div>
 
-                            <button type="button" onclick="adjustTiebreaker(1)" class="w-12 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono font-bold text-2xl transition active:scale-90">+</button>
+                            <!-- Large Touch-Friendly Plus Stepper -->
+                            <button type="button" 
+                                    id="btnTbPlus"
+                                    onclick="adjustTiebreaker(1)" 
+                                    class="w-14 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-mono font-black text-3xl transition active:scale-90 flex items-center justify-center shadow-lg border border-slate-700 cursor-pointer">
+                                +
+                            </button>
                         </div>
 
-                        <!-- Slot Machine Randomizer & Quick Presets -->
-                        <div class="mt-6 flex items-center justify-center gap-2 flex-wrap">
-                            <button type="button" onclick="spinTiebreakerRandom()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition">
-                                🎰 Random Spin (34–54)
+                        <!-- Randomized Score Spinner & Settle Controls -->
+                        <div class="mt-6 flex items-center justify-center gap-2 flex-wrap pt-4 border-t border-slate-800/80">
+                            <button type="button" 
+                                    id="btnSpinTb"
+                                    onclick="handleTiebreakerSpin()" 
+                                    class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer">
+                                <span>🎰</span>
+                                <span id="tbSpinBtnLabel">Spin Random Total (34–54)</span>
                             </button>
                             <button type="button" onclick="setTiebreakerVal(41)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">41</button>
-                            <button type="button" onclick="setTiebreakerVal(45)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">45</button>
-                            <button type="button" onclick="setTiebreakerVal(48)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">48</button>
+                            <button type="button" onclick="setTiebreakerVal(47)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">47</button>
                             <button type="button" onclick="setTiebreakerVal(51)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">51</button>
                         </div>
                     </div>
 
+                    <!-- Navigation Handoff -->
                     <div class="flex items-center justify-between pt-4 border-t border-slate-800">
-                        <button type="button" onclick="goToState(1)" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono font-bold transition">
-                            &larr; Back to Pick'em
+                        <button type="button" onclick="goToState(1)" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono font-bold transition cursor-pointer">
+                            &larr; PREV
                         </button>
-                        <button type="button" onclick="handleTiebreakerNext()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow-lg">
-                            Lock Tiebreaker &amp; Continue &rarr;
+                        <button type="button" onclick="handleTiebreakerNext()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow-lg cursor-pointer">
+                            NEXT &rarr;
                         </button>
                     </div>
 
@@ -498,32 +483,31 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
 
             <!-- ================================================================= -->
             <!-- STATE 3: PRESS YOUR LUCK ELIMINATION (SURVIVOR CATCH-UP)          -->
-            <!-- 18 Perimeter Squares: Team Logos ONLY, Centered, Larson Patterns  -->
             <!-- ================================================================= -->
-            <section id="state-3-view" class="hidden w-full max-w-4xl mx-auto space-y-4">
+            <section id="state-3-view" class="hidden w-full max-w-4xl mx-auto my-auto space-y-3 sm:space-y-4">
                 
                 <!-- Catch-Up Context Banner -->
-                <div class="p-4 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-pyl text-[9px] uppercase">
-                            Late Arrival Detected
+                            Late Entrant Survivor Catch-Up
                         </span>
                         <h2 class="text-base sm:text-lg font-black text-white mt-1" id="pylCatchupTitle">
                             Catch-Up: Burn Handicap Teams
                         </h2>
                         <p class="text-xs text-slate-400 mt-0.5" id="pylCatchupSubtitle">
-                            Missed weeks detected! Spin the authentic 18-Square Board to eliminate your handicap teams.
+                            Missed weeks detected. Spin the 18-square board to eliminate your handicap teams!
                         </p>
                     </div>
                     <div class="text-right font-mono text-xs">
-                        <span class="text-slate-400 block text-[10px] uppercase">Burned Progress:</span>
-                        <span id="pylHandicapCounter" class="text-amber-400 font-black text-sm">0 of 0 Teams</span>
+                        <span class="text-slate-400 block text-[10px] uppercase">Catch-Up Progress:</span>
+                        <span id="pylHandicapCounter" class="text-amber-400 font-black text-sm">0 of 0 Burned</span>
                     </div>
                 </div>
 
                 <!-- The 18-Square Chassis -->
                 <div class="pyl-chassis p-3 sm:p-5">
-                    <div class="grid grid-cols-6 grid-rows-5 gap-2 sm:gap-3 aspect-[6/5] w-full">
+                    <div class="grid grid-cols-6 grid-rows-5 gap-1.5 sm:gap-2.5 aspect-[6/5] w-full">
                         
                         <!-- TOP ROW: Squares 1 to 6 (Team logos only, centered) -->
                         <div id="pyl-sq-1" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
@@ -537,16 +521,16 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                         <div id="pyl-sq-18" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
                         
                         <!-- CENTER STAGE: Buzzer, Whammy Overlay, Status -->
-                        <div class="col-span-4 row-span-3 rounded-2xl bg-gradient-to-b from-[#080f1d] via-[#050a14] to-black border-2 border-slate-800 p-4 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl">
+                        <div class="col-span-4 row-span-3 rounded-2xl bg-gradient-to-b from-[#080f1d] via-[#050a14] to-black border-2 border-slate-800 p-3 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl">
                             
                             <!-- Transparent Whammy Canvas Overlay -->
                             <canvas id="whammyCanvas" width="480" height="360" class="absolute inset-0 w-full h-full object-contain pointer-events-none z-40 hidden"></canvas>
                             <video id="whammyVideoPlayer" playsinline preload="auto" class="hidden"></video>
 
-                            <!-- Pattern HUD -->
+                            <!-- Sequence HUD -->
                             <div class="w-full flex items-center justify-between border-b border-slate-800/80 pb-2 z-10">
                                 <span class="font-pyl text-[8px] sm:text-[9px] text-amber-400">SEQUENCE: <span id="pylPatternTxt">LARSON #1</span></span>
-                                <span class="font-mono text-[10px] text-slate-400">Spaces Cycling &bull; 1984 Larson Patterns</span>
+                                <span class="font-mono text-[10px] text-slate-400">Retro Press Your Luck</span>
                             </div>
 
                             <!-- Central Message Box -->
@@ -564,7 +548,7 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                                 <button type="button" 
                                         id="btnPylBuzzer"
                                         onclick="handlePylBuzzer()"
-                                        class="arcade-buzzer-btn px-8 sm:px-12 py-3.5 sm:py-4 rounded-full font-pyl text-xs sm:text-sm tracking-wider uppercase text-white shadow-2xl active:scale-95 cursor-pointer">
+                                        class="arcade-buzzer-btn px-8 sm:px-12 py-3 sm:py-4 rounded-full font-pyl text-xs sm:text-sm tracking-wider uppercase text-white shadow-2xl active:scale-95 cursor-pointer">
                                     <span id="pylBuzzerLabel">SPIN BOARD!</span>
                                 </button>
                             </div>
@@ -593,13 +577,13 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                 </div>
 
                 <!-- Burned Teams Ledger -->
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-xs">
+                <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between font-mono text-xs">
                     <div>
                         <span class="text-slate-400 block text-[10px] uppercase font-bold">Burned Handicap Teams:</span>
                         <span id="pylBurnedLedger" class="text-white font-bold">None yet</span>
                     </div>
-                    <button type="button" onclick="goToState(4)" id="btnSkipCatchup" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
-                        Advance to Survivor Pick &rarr;
+                    <button type="button" onclick="goToState(4)" id="btnSkipCatchup" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                        NEXT &rarr;
                     </button>
                 </div>
 
@@ -608,19 +592,13 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
             <!-- ================================================================= -->
             <!-- STATE 4: SURVIVOR PICK SELECTION                                  -->
             <!-- ================================================================= -->
-            <section id="state-4-view" class="hidden w-full max-w-4xl mx-auto space-y-6">
+            <section id="state-4-view" class="hidden w-full max-w-4xl mx-auto my-auto space-y-4">
                 
-                <!-- 1-Sentence Onboarding Dismissible Alert -->
-                <div id="survivorIntroBanner" class="p-3.5 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between">
-                    <span>🛡️ <strong>Survivor Mode:</strong> Pick 1 team to win outright this week. You can never pick them again this season!</span>
-                    <button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-white text-base leading-none">&times;</button>
-                </div>
-
-                <div class="p-6 sm:p-8 rounded-2xl bg-gradient-to-b from-[#162235] to-[#0d1624] border border-[#243247] shadow-xl">
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+                <div class="p-5 sm:p-7 rounded-2xl bg-gradient-to-b from-[#162235] to-[#0d1624] border border-[#243247] shadow-xl">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
                         <div>
-                            <h2 class="text-lg sm:text-xl font-black text-white">Select Your Week <?= $week ?> Survivor Pick</h2>
-                            <p class="text-xs font-mono text-slate-400">Previously used &amp; Whammy-burned teams are locked with padlocks.</p>
+                            <h2 class="text-base sm:text-xl font-black text-white">Select Your Week <?= $week ?> Survivor Pick</h2>
+                            <p class="text-xs font-mono text-slate-400">Previously picked &amp; burned teams are grayed out.</p>
                         </div>
                         <span class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-xs font-bold">
                             1 Team Required
@@ -628,16 +606,16 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                     </div>
 
                     <!-- Survivor Matchup Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5" id="survivorGridList">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto p-1" id="survivorGridList">
                         <!-- Dynamically populated via JS -->
                     </div>
 
-                    <div class="flex items-center justify-between pt-6 mt-6 border-t border-slate-800">
-                        <button type="button" onclick="goToState(2)" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono font-bold transition">
-                            &larr; Back
+                    <div class="flex items-center justify-between pt-4 mt-4 border-t border-slate-800">
+                        <button type="button" onclick="goToState(needsSurvivorCatchup ? 3 : 2)" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-mono font-bold transition cursor-pointer">
+                            &larr; PREV
                         </button>
                         <span class="text-xs font-mono text-slate-400" id="survivorSelectionMsg">Select 1 team to lock in</span>
-                        <button type="button" onclick="goToState(5)" id="btnFinishSurvivor" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-black transition disabled:opacity-40 disabled:pointer-events-none" disabled>
+                        <button type="button" onclick="goToState(5)" id="btnFinishSurvivor" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-black transition disabled:opacity-30 disabled:pointer-events-none cursor-pointer" disabled>
                             Review &amp; Lock Picks &rarr;
                         </button>
                     </div>
@@ -648,25 +626,25 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
             <!-- ================================================================= -->
             <!-- STATE 5: COMPLETION / REVIEW & CELEBRATION                        -->
             <!-- ================================================================= -->
-            <div id="wizardCompletionView" class="hidden text-center max-w-xl mx-auto p-6 sm:p-10 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-b from-[#162235] to-[#0B1626] shadow-2xl animate-fade-in">
-                <div class="text-5xl sm:text-6xl mb-4">🏆</div>
+            <div id="wizardCompletionView" class="hidden text-center max-w-xl mx-auto my-auto p-6 sm:p-10 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-b from-[#162235] to-[#0B1626] shadow-2xl animate-fade-in">
+                <div class="text-5xl sm:text-6xl mb-3">🏆</div>
                 <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
                     Week <?= $week ?> Picks Complete!
                 </h2>
-                <p class="text-sm sm:text-base text-slate-300 mb-6">
-                    Every game has been picked and immediately auto-saved to your profile. You're locked and loaded for kickoff!
+                <p class="text-xs sm:text-sm text-slate-300 mb-6 max-w-md mx-auto">
+                    All game selections and your survivor pick are securely saved to your account. You are ready for kickoff!
                 </p>
 
                 <div class="grid grid-cols-3 gap-3 max-w-md mx-auto mb-8 text-left">
-                    <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <div class="p-3 rounded-xl bg-[#0B1626] border border-[#243247]">
                         <span class="text-[10px] font-mono text-slate-400 uppercase block mb-1">Pick'em Slate</span>
                         <span id="wizardCompleteTotal" class="text-base sm:text-lg font-black font-mono text-emerald-400"><?= count($wizardGames) ?> / <?= count($wizardGames) ?></span>
                     </div>
-                    <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
-                        <span class="text-[10px] font-mono text-slate-400 uppercase block mb-1">MNF Points</span>
+                    <div class="p-3 rounded-xl bg-[#0B1626] border border-[#243247]">
+                        <span class="text-[10px] font-mono text-slate-400 uppercase block mb-1">MNF Total</span>
                         <span id="wizardCompleteTb" class="text-base sm:text-lg font-black font-mono text-amber-400"><?= $tbCurrentPoints ?? '--' ?> PTS</span>
                     </div>
-                    <div class="p-3 rounded-lg bg-[#0B1626] border border-[#243247]">
+                    <div class="p-3 rounded-xl bg-[#0B1626] border border-[#243247]">
                         <span class="text-[10px] font-mono text-slate-400 uppercase block mb-1">Survivor</span>
                         <span id="wizardCompleteSurvivor" class="text-base sm:text-lg font-black font-mono text-emerald-400"><?= htmlspecialchars((string) ($currentSurvivorPick ?? '--')) ?></span>
                     </div>
@@ -676,13 +654,13 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                     <button type="button" 
                             id="btnWizardFinishReview"
                             onclick="exitWizardToStandardView()"
-                            class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-black text-xs font-mono uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition transform hover:-translate-y-0.5">
+                            class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-black text-xs font-mono uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition transform hover:-translate-y-0.5 cursor-pointer">
                         View Live Standings &amp; Picks Table &rarr;
                     </button>
                     <button type="button" 
                             id="btnWizardRestart"
                             onclick="goToState(1)"
-                            class="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-xs font-mono bg-[#162235] hover:bg-[#1e2e48] border border-[#243247] text-slate-300 hover:text-white transition">
+                            class="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-xs font-mono bg-[#162235] hover:bg-[#1e2e48] border border-[#243247] text-slate-300 hover:text-white transition cursor-pointer">
                         Modify Picks
                     </button>
                 </div>
@@ -691,21 +669,69 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
         </div>
     </main>
 
-    <!-- "YOU PICK" MODAL (Triggered when user lands on "YOU PICK" PYL space) -->
-    <div id="youPickModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-        <div class="w-full max-w-lg p-6 rounded-2xl bg-slate-900 border-2 border-emerald-500 shadow-2xl">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+    <!-- FIRST-TIME ONBOARDING MODALS -->
+    <!-- 1. Pick'em Intro Modal -->
+    <div id="pickemIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="w-full max-w-sm p-6 rounded-2xl bg-[#162235] border-2 border-amber-500/50 text-center shadow-2xl">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 mx-auto mb-3 flex items-center justify-center text-2xl">
+                🏈
+            </div>
+            <h3 class="text-lg font-black text-white">Pick'em Rules</h3>
+            <p class="text-xs text-slate-300 mt-2 mb-5 leading-relaxed">
+                Pick every game winner. Games lock individually at scheduled kickoff times.
+            </p>
+            <button type="button" 
+                    onclick="dismissPickemIntro()" 
+                    class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow cursor-pointer">
+                Got It! Let's Pick
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Survivor Intro Modal -->
+    <div id="survivorIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="w-full max-w-sm p-6 rounded-2xl bg-[#162235] border-2 border-emerald-500/50 text-center shadow-2xl">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 mx-auto mb-3 flex items-center justify-center text-2xl">
+                🛡️
+            </div>
+            <h3 class="text-lg font-black text-white">Survivor Pool Rules</h3>
+            <p class="text-xs text-slate-300 mt-2 mb-5 leading-relaxed">
+                Pick one team to win outright each week. Once you pick a team, they cannot be picked again for the rest of the season.
+            </p>
+            <button type="button" 
+                    onclick="dismissSurvivorIntro()" 
+                    class="w-full py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow cursor-pointer">
+                Got It!
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. General Help Modal (Invoked manually via '?' icon) -->
+    <div id="wizardHelpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="w-full max-w-md p-6 rounded-2xl bg-[#162235] border border-[#243247] text-left shadow-2xl space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-[#243247]">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <span>📖 Rules &amp; How to Play</span>
+                </h3>
+                <button type="button" onclick="closeHelpModal()" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
                 <div>
-                    <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-pyl text-[9px] uppercase">LUCKY HIT!</span>
-                    <h3 class="text-lg font-black text-white mt-1">YOU PICK: Choose a Team to Burn</h3>
+                    <h4 class="font-bold text-amber-400 mb-0.5">🏈 Weekly Pick'em</h4>
+                    <p>Pick every game winner. Games lock individually at scheduled kickoff times. Correct picks count toward your weekly and season totals.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-amber-400 mb-0.5">🎯 Tiebreaker</h4>
+                    <p>Enter your prediction for total combined points scored in the designated Monday Night Football game to break weekly ties.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-emerald-400 mb-0.5">🛡️ Survivor Pool</h4>
+                    <p>Pick one team to win outright each week. Once you pick a team, they cannot be picked again for the rest of the season. Late arrivals must burn handicap teams via the retro Press Your Luck board.</p>
                 </div>
             </div>
-            <p class="text-xs text-slate-300 mb-4">
-                You landed on <strong>YOU PICK</strong>! Choose one of the teams currently showing on the board to eliminate as your handicap:
-            </p>
-            <div id="youPickGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-60 overflow-y-auto p-1">
-                <!-- Injected via JavaScript -->
-            </div>
+            <button type="button" onclick="closeHelpModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold transition">
+                Close Help
+            </button>
         </div>
     </div>
 
@@ -796,6 +822,10 @@ window.addEventListener('DOMContentLoaded', () => {
     let pendingSurvivorSelection = null;
     const isSurvivorEliminated = <?= $isSurvivorEliminated ? 'true' : 'false' ?>;
 
+    // Onboarding intro states
+    let hasSeenPickemIntro = <?= $hasSeenPickemIntro ? 'true' : 'false' ?> || (localStorage.getItem('has_seen_pickem_intro') === 'true');
+    let hasSeenSurvivorIntro = <?= $hasSeenSurvivorIntro ? 'true' : 'false' ?> || (localStorage.getItem('has_seen_survivor_intro') === 'true');
+
     let currentState = 1;
     let currentIndex = 0;
     let isTransitioning = false;
@@ -806,48 +836,54 @@ window.addEventListener('DOMContentLoaded', () => {
     const audioNfl = document.getElementById('audioNflTheme');
     const audioPyl = document.getElementById('audioPylSoundboard');
     let isNflAudioPlaying = false;
+    let isUserMuted = (localStorage.getItem('wally_nfl_muted') === 'true');
 
-    // Set initial volume at ~30% as requested
     if (audioNfl) audioNfl.volume = 0.30;
     if (audioPyl) audioPyl.volume = 0.40;
 
+    // Apply persistent mute preference on launch
+    function updateAudioIconState() {
+        const icon = document.getElementById('wizardAudioIcon');
+        if (icon) {
+            icon.textContent = isUserMuted ? '🔇' : '🔊';
+        }
+        animateEqualizer(!isUserMuted && isNflAudioPlaying);
+    }
+    updateAudioIconState();
+
     function startNflThemeLoop() {
-        if (!audioNfl || isNflAudioPlaying) return;
+        if (!audioNfl || isUserMuted || isNflAudioPlaying) return;
         audioNfl.play().then(() => {
             isNflAudioPlaying = true;
-            document.getElementById('wizardAudioIcon').textContent = '⏸';
-            document.getElementById('wizardAudioLabel').textContent = 'Theme: ON';
-            animateEqualizer(true);
+            updateAudioIconState();
         }).catch(e => {
-            // Autoplay blocked by browser policy until interaction
+            // Autoplay waiting for user gesture
         });
     }
 
     window.toggleAudioPlayback = function() {
         if (!audioNfl) return;
-        if (audioNfl.paused) {
-            audioNfl.play().then(() => {
-                isNflAudioPlaying = true;
-                document.getElementById('wizardAudioIcon').textContent = '⏸';
-                document.getElementById('wizardAudioLabel').textContent = 'Theme: ON';
-                animateEqualizer(true);
-            }).catch(e => console.warn(e));
-        } else {
+        isUserMuted = !isUserMuted;
+        localStorage.setItem('wally_nfl_muted', isUserMuted ? 'true' : 'false');
+        
+        if (isUserMuted) {
             audioNfl.pause();
             isNflAudioPlaying = false;
-            document.getElementById('wizardAudioIcon').textContent = '🎵';
-            document.getElementById('wizardAudioLabel').textContent = 'Theme: OFF';
-            animateEqualizer(false);
+        } else {
+            audioNfl.play().then(() => {
+                isNflAudioPlaying = true;
+            }).catch(e => console.warn(e));
         }
+        updateAudioIconState();
     };
 
     function animateEqualizer(active) {
         ['eq1', 'eq2', 'eq3'].forEach((id, idx) => {
             const el = document.getElementById(id);
             if (!el) return;
-            if (active) el.className = `w-1 bg-amber-400 rounded-full eq-b${idx + 1}`;
+            if (active) el.className = `w-0.5 bg-amber-400 rounded-full eq-b${idx + 1}`;
             else {
-                el.className = 'w-1 bg-amber-400 rounded-full';
+                el.className = 'w-0.5 bg-amber-400 rounded-full';
                 el.style.height = '4px';
             }
         });
@@ -943,14 +979,53 @@ window.addEventListener('DOMContentLoaded', () => {
         if (step === 1) {
             startNflThemeLoop();
             renderCurrentMatchup();
+            // Show first-time Pick'em onboarding overlay if not yet seen
+            if (!hasSeenPickemIntro) {
+                document.getElementById('pickemIntroOverlay').classList.remove('hidden');
+            }
         } else if (step === 3) {
             setupPylCatchupView();
         } else if (step === 4) {
             renderSurvivorGrid();
+            // Show first-time Survivor onboarding overlay if not yet seen
+            if (!hasSeenSurvivorIntro) {
+                document.getElementById('survivorIntroOverlay').classList.remove('hidden');
+            }
         } else if (step === 5) {
             playCelebrationSound();
             renderCompletionSummary();
         }
+    };
+
+    // Onboarding Dismissal Handlers
+    window.dismissPickemIntro = function() {
+        document.getElementById('pickemIntroOverlay').classList.add('hidden');
+        hasSeenPickemIntro = true;
+        localStorage.setItem('has_seen_pickem_intro', 'true');
+        fetch('/api/user/dismiss-intro', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intro_type: 'pickem' })
+        }).catch(e => console.warn(e));
+    };
+
+    window.dismissSurvivorIntro = function() {
+        document.getElementById('survivorIntroOverlay').classList.add('hidden');
+        hasSeenSurvivorIntro = true;
+        localStorage.setItem('has_seen_survivor_intro', 'true');
+        fetch('/api/user/dismiss-intro', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ intro_type: 'survivor' })
+        }).catch(e => console.warn(e));
+    };
+
+    window.openHelpModal = function() {
+        document.getElementById('wizardHelpModal').classList.remove('hidden');
+    };
+
+    window.closeHelpModal = function() {
+        document.getElementById('wizardHelpModal').classList.add('hidden');
     };
 
     // -----------------------------------------------------------------
@@ -962,67 +1037,44 @@ window.addEventListener('DOMContentLoaded', () => {
     const btnLaunchWizardHero = document.getElementById('btnLaunchWizardHero');
     const btnWizardPrev = document.getElementById('btnWizardPrev');
     const btnWizardNext = document.getElementById('btnWizardNext');
-    const wizardNextBtnText = document.getElementById('wizardNextBtnText');
     const wizardTimeline = document.getElementById('wizardTimeline');
     const wizardProgressBar = document.getElementById('wizardProgressBar');
-    const wizardGameStepLabel = document.getElementById('wizardGameStepLabel');
-    const wizardPicksCountLabel = document.getElementById('wizardPicksCountLabel');
 
     const wizardAwayCard = document.getElementById('wizardAwayCard');
     const wizardHomeCard = document.getElementById('wizardHomeCard');
     const wizardAwayLogo = document.getElementById('wizardAwayLogo');
     const wizardHomeLogo = document.getElementById('wizardHomeLogo');
-    const wizardAwayAbbr = document.getElementById('wizardAwayAbbr');
-    const wizardHomeAbbr = document.getElementById('wizardHomeAbbr');
-    const wizardAwayName = document.getElementById('wizardAwayName');
-    const wizardHomeName = document.getElementById('wizardHomeName');
-    const wizardAwayConf = document.getElementById('wizardAwayConf');
-    const wizardHomeConf = document.getElementById('wizardHomeConf');
-    const wizardAwayDivision = document.getElementById('wizardAwayDivision');
-    const wizardHomeDivision = document.getElementById('wizardHomeDivision');
     const wizardAwayCheck = document.getElementById('wizardAwayCheck');
     const wizardHomeCheck = document.getElementById('wizardHomeCheck');
-    const wizardAwayStripe = document.getElementById('wizardAwayStripe');
-    const wizardHomeStripe = document.getElementById('wizardHomeStripe');
-    const btnPickAway = document.getElementById('btnPickAway');
-    const btnPickHome = document.getElementById('btnPickHome');
+    const wizardAwaySelectionRing = document.getElementById('wizardAwaySelectionRing');
+    const wizardHomeSelectionRing = document.getElementById('wizardHomeSelectionRing');
     const wizardKickoffText = document.getElementById('wizardKickoffText');
-    const wizardStatusBadge = document.getElementById('wizardStatusBadge');
+    const wizardKickoffTextMobile = document.getElementById('wizardKickoffTextMobile');
     const wizardLockNotice = document.getElementById('wizardLockNotice');
-    const carouselAutoSaveMsg = document.getElementById('carouselAutoSaveMsg');
 
     function renderCurrentMatchup() {
         if (!wizardGames.length) return;
         const game = wizardGames[currentIndex];
 
-        // Away Card
+        // Away Panel: domintated by Away team primary color & large bold logo
+        wizardAwayCard.style.backgroundColor = game.away_color;
         wizardAwayLogo.src = game.away_logo;
-        wizardAwayAbbr.textContent = game.away_team;
-        wizardAwayName.textContent = game.away_name;
-        wizardAwayConf.textContent = game.away_conf || 'AWAY';
-        wizardAwayDivision.textContent = game.away_division;
-        wizardAwayStripe.style.backgroundColor = game.away_color;
+        wizardAwayLogo.alt = game.away_name;
 
-        // Home Card
+        // Home Panel: dominated by Home team primary color & large bold logo
+        wizardHomeCard.style.backgroundColor = game.home_color;
         wizardHomeLogo.src = game.home_logo;
-        wizardHomeAbbr.textContent = game.home_team;
-        wizardHomeName.textContent = game.home_name;
-        wizardHomeConf.textContent = game.home_conf || 'HOME';
-        wizardHomeDivision.textContent = game.home_division;
-        wizardHomeStripe.style.backgroundColor = game.home_color;
+        wizardHomeLogo.alt = game.home_name;
 
-        // Matchup Info
-        wizardKickoffText.textContent = game.kickoff_formatted;
-        wizardStatusBadge.textContent = game.is_mnf ? 'MONDAY NIGHT FOOTBALL' : (game.status === 'final' ? 'FINAL' : 'SCHEDULED');
-        
+        // Kickoff Date & Time header
+        if (wizardKickoffText) wizardKickoffText.textContent = game.kickoff_formatted;
+        if (wizardKickoffTextMobile) wizardKickoffTextMobile.textContent = game.kickoff_short;
+
+        // Lock Notice
         if (game.is_locked) {
             wizardLockNotice.classList.remove('hidden');
-            btnPickAway.disabled = true;
-            btnPickHome.disabled = true;
         } else {
             wizardLockNotice.classList.add('hidden');
-            btnPickAway.disabled = false;
-            btnPickHome.disabled = false;
         }
 
         // Selection styling
@@ -1030,51 +1082,37 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // Navigation state
         btnWizardPrev.disabled = (currentIndex === 0);
-        wizardNextBtnText.textContent = (currentIndex === wizardGames.length - 1) ? 'Tiebreaker' : 'Next Game';
 
         // Progress indicators
-        wizardGameStepLabel.textContent = `Game ${currentIndex + 1} of ${wizardGames.length}`;
         updatePickCounters();
         renderTimeline();
     }
 
     function updateCardSelectionState(userPick) {
         const game = wizardGames[currentIndex];
-        
-        // Reset styles
-        [wizardAwayCard, wizardHomeCard].forEach(card => {
-            card.classList.remove('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]', 'opacity-40');
-        });
+
+        // Reset checkmarks & selection rings
         wizardAwayCheck.classList.add('scale-0', 'opacity-0');
         wizardHomeCheck.classList.add('scale-0', 'opacity-0');
+        if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.add('opacity-0');
+        if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.add('opacity-0');
 
-        const baseBtn = 'py-2 px-3 sm:px-4 md:py-3 rounded-xl font-black text-xs sm:text-sm font-mono tracking-wide uppercase transition-all shadow-md flex items-center justify-center gap-1.5';
-        const unselectedClass = `${baseBtn} bg-[#0B1626] border border-[#243247] text-slate-200 group-hover:border-amber-400/80 group-hover:text-white`;
-        const selectedClass = `${baseBtn} bg-amber-500 text-slate-950 border border-amber-400 shadow-md shadow-amber-500/20`;
-
-        btnPickAway.className = unselectedClass;
-        btnPickHome.className = unselectedClass;
-        btnPickAway.textContent = `Select ${game.away_nick}`;
-        btnPickHome.textContent = `Select ${game.home_nick}`;
+        wizardAwayCard.classList.remove('opacity-40');
+        wizardHomeCard.classList.remove('opacity-40');
 
         if (userPick === game.away_team) {
-            wizardAwayCard.classList.add('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]');
-            wizardHomeCard.classList.add('opacity-40');
             wizardAwayCheck.classList.remove('scale-0', 'opacity-0');
-            btnPickAway.className = selectedClass;
-            btnPickAway.textContent = `✓ ${game.away_nick}`;
+            if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.remove('opacity-0');
+            wizardHomeCard.classList.add('opacity-40');
         } else if (userPick === game.home_team) {
-            wizardHomeCard.classList.add('border-amber-400', 'bg-amber-950/40', 'scale-[1.01]');
-            wizardAwayCard.classList.add('opacity-40');
             wizardHomeCheck.classList.remove('scale-0', 'opacity-0');
-            btnPickHome.className = selectedClass;
-            btnPickHome.textContent = `✓ ${game.home_nick}`;
+            if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.remove('opacity-0');
+            wizardAwayCard.classList.add('opacity-40');
         }
     }
 
     function updatePickCounters() {
         const pickedCount = wizardGames.filter(g => g.user_pick !== null).length;
-        wizardPicksCountLabel.textContent = `${pickedCount} of ${wizardGames.length} Picked`;
         const pct = (pickedCount / wizardGames.length) * 100;
         wizardProgressBar.style.width = `${pct}%`;
     }
@@ -1082,22 +1120,25 @@ window.addEventListener('DOMContentLoaded', () => {
     function renderTimeline() {
         wizardTimeline.innerHTML = '';
         wizardGames.forEach((g, idx) => {
-            const dot = document.createElement('button');
-            dot.type = 'button';
-            dot.title = `Game ${idx + 1}: ${g.away_team} @ ${g.home_team}`;
+            const bubble = document.createElement('button');
+            bubble.type = 'button';
+            bubble.title = `Game ${idx + 1}`;
             const isCurrent = (idx === currentIndex);
             const isPicked = (g.user_pick !== null);
 
-            dot.className = `w-4 h-4 rounded-full transition-all flex items-center justify-center text-[8px] font-mono font-bold ${
-                isCurrent ? 'ring-2 ring-amber-400 bg-amber-400 text-slate-950 scale-125 z-10' :
-                (isPicked ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400' : 'bg-slate-700 hover:bg-slate-500 text-slate-300')
+            bubble.className = `w-7 h-7 sm:w-8 sm:h-8 rounded-full font-mono text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                isCurrent 
+                    ? 'ring-2 ring-amber-400 bg-amber-400 text-slate-950 font-black scale-110 shadow-lg z-10' 
+                    : (isPicked 
+                        ? 'bg-emerald-500/90 hover:bg-emerald-400 text-slate-950 font-black border border-emerald-400' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700')
             }`;
-            dot.textContent = idx + 1;
-            dot.onclick = () => {
+            bubble.innerHTML = isPicked && !isCurrent ? `${idx + 1}✓` : `${idx + 1}`;
+            bubble.onclick = () => {
                 currentIndex = idx;
                 renderCurrentMatchup();
             };
-            wizardTimeline.appendChild(dot);
+            wizardTimeline.appendChild(bubble);
         });
     }
 
@@ -1112,8 +1153,7 @@ window.addEventListener('DOMContentLoaded', () => {
         updatePickCounters();
         renderTimeline();
 
-        // Autosave to server
-        carouselAutoSaveMsg.textContent = `✓ ${team} Saved`;
+        // Autosave quietly to server in background (implicit save)
         fetch('/pickem/autosave', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1127,23 +1167,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
         window.syncWithStandardGrid(game.id, team);
 
-        // Smooth Auto-Advance
+        // Smooth immediate transition to next game
         setTimeout(() => {
             if (currentIndex < wizardGames.length - 1) {
                 currentIndex++;
                 playAdvanceSound();
                 renderCurrentMatchup();
             } else {
-                // All games browsed -> proceed to Tiebreaker
+                // Last game picked -> advance to Tiebreaker
                 goToState(2);
             }
-        }, 320);
+        }, 220);
     }
 
+    // Tapping top half / left panel selects Away
     wizardAwayCard.onclick = () => {
         const game = wizardGames[currentIndex];
         makePick(game.away_team);
     };
+
+    // Tapping bottom half / right panel selects Home
     wizardHomeCard.onclick = () => {
         const game = wizardGames[currentIndex];
         makePick(game.home_team);
@@ -1156,6 +1199,7 @@ window.addEventListener('DOMContentLoaded', () => {
             renderCurrentMatchup();
         }
     };
+
     btnWizardNext.onclick = () => {
         if (currentIndex < wizardGames.length - 1) {
             currentIndex++;
@@ -1167,9 +1211,12 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     // -----------------------------------------------------------------
-    // 5. State 2: Tiebreaker Input Logic
+    // 5. State 2: Tiebreaker Input Logic & Dynamic Score Generator
     // -----------------------------------------------------------------
     const tbInput = document.getElementById('wizardTiebreakerInput');
+    let isTbSpinning = false;
+    let tbSpinInterval = null;
+
     window.adjustTiebreaker = function(delta) {
         let val = parseInt(tbInput.value, 10) || 47;
         val = Math.max(10, Math.min(120, val + delta));
@@ -1182,17 +1229,28 @@ window.addEventListener('DOMContentLoaded', () => {
         saveTiebreaker(v);
     };
 
-    window.spinTiebreakerRandom = function() {
-        const target = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
-        let count = 0;
-        const spinTimer = setInterval(() => {
-            tbInput.value = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
-            count++;
-            if (count >= 12) {
-                clearInterval(spinTimer);
-                setTiebreakerVal(target);
-            }
-        }, 45);
+    window.handleTiebreakerSpin = function() {
+        const btn = document.getElementById('btnSpinTb');
+        const label = document.getElementById('tbSpinBtnLabel');
+
+        if (!isTbSpinning) {
+            // Start spinning
+            isTbSpinning = true;
+            if (label) label.textContent = 'STOP / Settle Score';
+            if (btn) btn.className = 'px-4 py-2 rounded-xl bg-red-500/30 hover:bg-red-500/40 text-red-300 border border-red-500/50 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer animate-pulse';
+
+            tbSpinInterval = setInterval(() => {
+                tbInput.value = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
+            }, 60);
+        } else {
+            // Stop spinning and settle
+            clearInterval(tbSpinInterval);
+            isTbSpinning = false;
+            const finalScore = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
+            setTiebreakerVal(finalScore);
+            if (label) label.textContent = 'Spin Random Total (34–54)';
+            if (btn) btn.className = 'px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer';
+        }
     };
 
     function saveTiebreaker(points) {
@@ -1235,7 +1293,7 @@ window.addEventListener('DOMContentLoaded', () => {
         [3, 17, 11, 6, 14, 9, 1, 10, 16, 7, 13, 2, 18, 4, 12, 5, 8, 15]  // Pattern 5
     ];
 
-    // Build square slides: Team logos only (centered, no text). Sq 4 = Spin Again, Sq 8 = You Pick
+    // Build square slides: Team logos only (centered, no text)
     const squareSlides = {};
     for (let i = 1; i <= 18; i++) {
         squareSlides[i] = [
@@ -1270,7 +1328,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            // Team logo ONLY, centered, NO text labels!
+            // Team logo ONLY, centered, NO text labels
             content.innerHTML = `
                 <img src="${slide.team.logo}" alt="${slide.team.name}" class="w-8 h-8 sm:w-11 sm:h-11 object-contain drop-shadow">
             `;
@@ -1288,16 +1346,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     renderPylSquare(i, squareSlides[i][activeSlideIdx]);
                     content.classList.remove('slide-switching');
-                }, 150);
+                }, 100);
             }
         }
     }
-    setInterval(cyclePylSpaces, 2500);
 
-    // Initial render of 18 squares
+    // Initial render of PYL squares
     for (let i = 1; i <= 18; i++) {
         renderPylSquare(i, squareSlides[i][0]);
     }
+    setInterval(() => {
+        if (!isPylSpinning) cyclePylSpaces();
+    }, 3500);
 
     function setupPylCatchupView() {
         const titleEl = document.getElementById('pylCatchupTitle');
@@ -1305,7 +1365,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const ledgerEl = document.getElementById('pylBurnedLedger');
         
         const missedCount = missedSurvivorWeeks.length;
-        if (titleEl) titleEl.textContent = `Week ${weekNumber} Catch-Up: ${missedCount} Team${missedCount > 1 ? 's' : ''} to Burn`;
+        if (titleEl) titleEl.textContent = `Catch-Up: ${missedCount} Missed Week${missedCount > 1 ? 's' : ''} to Burn`;
         if (countEl) countEl.textContent = `0 of ${missedCount} Burned`;
         if (ledgerEl) ledgerEl.textContent = usedSurvivorTeams.length ? usedSurvivorTeams.join(', ') : 'None yet';
     }
@@ -1321,7 +1381,7 @@ window.addEventListener('DOMContentLoaded', () => {
             mainMsg.textContent = 'SPINNING...';
             subMsg.textContent = 'Hit the red buzzer to freeze the board!';
 
-            if (audioPyl) {
+            if (audioPyl && !isUserMuted) {
                 audioPyl.currentTime = 0;
                 audioPyl.play().catch(e => console.warn(e));
             }
@@ -1340,120 +1400,136 @@ window.addEventListener('DOMContentLoaded', () => {
             }, 110);
 
         } else {
+            // User hit STOP!
             clearInterval(pylSpinInterval);
             isPylSpinning = false;
-            buzzerLabel.textContent = 'SPIN AGAIN';
-
+            buzzerLabel.textContent = 'SPIN BOARD!';
             if (audioPyl) audioPyl.pause();
 
-            const hitSqNum = currentLarsonPattern[larsonStep];
-            const hitSlide = squareSlides[hitSqNum][activeSlideIdx];
-            const hitSqEl = document.getElementById('pyl-sq-' + hitSqNum);
+            const landedSqNum = currentLarsonPattern[larsonStep];
+            const landedSq = document.getElementById('pyl-sq-' + landedSqNum);
 
-            if (hitSqEl) {
-                hitSqEl.classList.add('flash-freeze');
-                setTimeout(() => hitSqEl.classList.remove('flash-freeze'), 800);
+            // 3-flash freeze animation
+            if (landedSq) {
+                landedSq.classList.add('flash-freeze');
+                setTimeout(() => landedSq.classList.remove('flash-freeze'), 800);
             }
 
-            if (hitSlide.type === 'spin_again') {
-                mainMsg.textContent = '🔄 SPIN AGAIN!';
-                subMsg.textContent = 'Lucky break! No team burned. Take another spin!';
-            } else if (hitSlide.type === 'you_pick') {
-                mainMsg.textContent = '🎯 YOU PICK!';
-                subMsg.textContent = 'Select which team on the board to eliminate!';
-                openYouPickModal();
-            } else {
-                // Team hit: The Whammy animation ALWAYS plays when a team is burned!
-                const burnedTeam = hitSlide.team;
-                mainMsg.textContent = `BURNED: ${burnedTeam.name}!`;
-                subMsg.textContent = `Whammy stole the ${burnedTeam.name}! Team is eliminated.`;
-                
-                triggerWhammyVideoOverlay();
-                burnSurvivorHandicap(burnedTeam.abbr || burnedTeam.name);
-            }
+            const landedSlide = squareSlides[landedSqNum][activeSlideIdx];
+            processPylLanding(landedSlide);
         }
     };
 
-    function triggerWhammyVideoOverlay() {
-        const canvas = document.getElementById('whammyCanvas');
-        const video = document.getElementById('whammyVideoPlayer');
-        if (!canvas || !video) return;
-        const ctx = canvas.getContext('2d');
-        canvas.classList.remove('hidden');
+    function processPylLanding(slide) {
+        const mainMsg = document.getElementById('pylMainMsg');
+        const subMsg = document.getElementById('pylSubMsg');
 
-        video.src = '/media/transparent/1-running-mallet.webm';
-        video.currentTime = 0;
-        video.play().then(() => {
-            function renderFrame() {
-                if (!video.paused && !video.ended) {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    requestAnimationFrame(renderFrame);
-                } else {
-                    canvas.classList.add('hidden');
-                }
-            }
-            renderFrame();
-        }).catch(e => {
-            console.warn('Whammy video overlay error:', e);
-            canvas.classList.add('hidden');
+        if (slide.type === 'spin_again') {
+            mainMsg.textContent = 'SPIN AGAIN!';
+            subMsg.textContent = 'Lucky break! Hit the buzzer to spin again.';
+            return;
+        }
+
+        if (slide.type === 'you_pick') {
+            mainMsg.textContent = 'YOU PICK!';
+            subMsg.textContent = 'Choose which team to eliminate!';
+            openYouPickModal();
+            return;
+        }
+
+        // Team Square Hit -> Whammy Elimination!
+        const team = slide.team;
+        mainMsg.textContent = `ELIMINATED: ${team.nick.toUpperCase()}!`;
+        subMsg.textContent = 'Whammy takes away this team from your survivor pool!';
+
+        // Play Chroma-Keyed Transparent Whammy Canvas Overlay
+        playWhammyChromaKeyOverlay(() => {
+            commitBurnedTeam(team.abbr);
         });
     }
 
-    function burnSurvivorHandicap(teamAbbr) {
+    function playWhammyChromaKeyOverlay(onComplete) {
+        const canvas = document.getElementById('whammyCanvas');
+        const video = document.getElementById('whammyVideoPlayer');
+        if (!canvas || !video) {
+            if (onComplete) onComplete();
+            return;
+        }
+
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        canvas.classList.remove('hidden');
+
+        const whammyVideos = [
+            '/media/transparent/1-running-mallet.webm',
+            '/media/transparent/49-football.webm'
+        ];
+        video.src = whammyVideos[Math.floor(Math.random() * whammyVideos.length)];
+
+        video.onloadeddata = () => {
+            video.play().catch(e => console.warn(e));
+            renderWhammyFrames();
+        };
+
+        function renderWhammyFrames() {
+            if (video.paused || video.ended) {
+                canvas.classList.add('hidden');
+                if (onComplete) onComplete();
+                return;
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(renderWhammyFrames);
+        }
+
+        video.onended = () => {
+            canvas.classList.add('hidden');
+            if (onComplete) onComplete();
+        };
+
+        setTimeout(() => {
+            if (!video.ended) {
+                canvas.classList.add('hidden');
+                if (onComplete) onComplete();
+            }
+        }, 5000);
+    }
+
+    function commitBurnedTeam(teamAbbr) {
+        if (!usedSurvivorTeams.includes(teamAbbr)) {
+            usedSurvivorTeams.push(teamAbbr);
+        }
+
+        const targetWeek = missedSurvivorWeeks.shift() || 1;
+
+        // Persist handicap burn to server
         fetch('/survivor/burn-handicap', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 season_year: seasonYear,
-                current_week: weekNumber,
-                burned_team: teamAbbr,
+                week_number: targetWeek,
+                eliminated_team: teamAbbr,
             })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                if (!usedSurvivorTeams.includes(teamAbbr)) {
-                    usedSurvivorTeams.push(teamAbbr);
-                }
-                missedSurvivorWeeks = data.remaining_missed_weeks || [];
-                document.getElementById('pylBurnedLedger').textContent = usedSurvivorTeams.join(', ');
-                
-                const remaining = missedSurvivorWeeks.length;
-                if (remaining === 0) {
-                    needsSurvivorCatchup = false;
-                    document.getElementById('pylBuzzerLabel').textContent = 'DONE!';
-                    setTimeout(() => {
-                        goToState(4);
-                    }, 1200);
-                }
+        }).then(r => r.json()).then(data => {
+            if (data.remaining_missed_weeks) {
+                missedSurvivorWeeks = data.remaining_missed_weeks;
             }
-        })
-        .catch(e => console.warn('Error burning handicap:', e));
-    }
+            const remaining = missedSurvivorWeeks.length;
+            document.getElementById('pylBurnedLedger').textContent = usedSurvivorTeams.join(', ');
+            document.getElementById('pylHandicapCounter').textContent = `${usedSurvivorTeams.length} Burned`;
 
-    function openYouPickModal() {
-        const modal = document.getElementById('youPickModal');
-        const grid = document.getElementById('youPickGrid');
-        grid.innerHTML = '';
-
-        const seen = new Set();
-        for (let i = 1; i <= 18; i++) {
-            const item = squareSlides[i][activeSlideIdx];
-            if (item.type === 'team' && !seen.has(item.team.name)) {
-                seen.add(item.team.name);
-                const btn = document.createElement('button');
-                btn.className = 'p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center flex flex-col items-center justify-center transition active:scale-95';
-                btn.innerHTML = `<img src="${item.team.logo}" class="w-8 h-8 object-contain mb-1"><span class="text-xs font-mono font-bold text-white">${item.team.name}</span>`;
-                btn.onclick = () => {
-                    modal.classList.add('hidden');
-                    triggerWhammyVideoOverlay();
-                    burnSurvivorHandicap(item.team.abbr || item.team.name);
-                };
-                grid.appendChild(btn);
+            if (remaining > 0) {
+                document.getElementById('pylMainMsg').textContent = `SPIN AGAIN (${remaining} REMAINING)`;
+                document.getElementById('pylSubMsg').textContent = 'Hit the buzzer to resolve your next missed week.';
+            } else {
+                needsSurvivorCatchup = false;
+                document.getElementById('pylMainMsg').textContent = 'ALL CATCH-UPS COMPLETE!';
+                document.getElementById('pylSubMsg').textContent = 'Advancing to Week ' + weekNumber + ' Survivor selection...';
+                setTimeout(() => goToState(4), 1600);
             }
-        }
-        modal.classList.remove('hidden');
+        }).catch(e => {
+            console.warn(e);
+            setTimeout(() => goToState(4), 1200);
+        });
     }
 
     // -----------------------------------------------------------------
@@ -1473,9 +1549,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 const isPicked = (activeSurvivorPick === team.abbr || activeSurvivorPick === team.name);
 
                 const card = document.createElement('div');
-                card.className = `p-3.5 rounded-xl border transition-all relative overflow-hidden select-none flex items-center justify-between ${
-                    isBurned ? 'opacity-35 grayscale bg-slate-950 border-slate-800 cursor-not-allowed' :
-                    (isPicked ? 'border-emerald-400 bg-emerald-950/40 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer' : 'border-slate-800 bg-slate-900/90 hover:border-emerald-500/50 cursor-pointer')
+                card.className = `p-3 rounded-xl border transition-all relative overflow-hidden select-none flex items-center justify-between ${
+                    isBurned 
+                        ? 'opacity-25 grayscale bg-slate-950 border-slate-800 pointer-events-none' 
+                        : (isPicked 
+                            ? 'border-emerald-400 bg-emerald-950/40 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer' 
+                            : 'border-slate-800 bg-slate-900/90 hover:border-emerald-500/50 cursor-pointer')
                 }`;
 
                 card.innerHTML = `
@@ -1536,6 +1615,9 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btnFinishSurvivor').disabled = false;
         document.getElementById('survivorSelectionMsg').textContent = `✓ ${activeSurvivorPick} Locked In!`;
         document.getElementById('survivorSelectionMsg').className = 'text-xs font-mono text-emerald-400 font-bold';
+
+        // Auto advance to state 5 (Review)
+        setTimeout(() => goToState(5), 300);
     };
 
     // -----------------------------------------------------------------
@@ -1556,20 +1638,15 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     btnWizardExit.onclick = exitWizardToStandardView;
-    if (btnLaunchWizard) {
-        btnLaunchWizard.onclick = () => {
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-            goToState(1);
-        };
+    
+    function launchWizardModal() {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+        goToState(1);
     }
-    if (btnLaunchWizardHero) {
-        btnLaunchWizardHero.onclick = () => {
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-            goToState(1);
-        };
-    }
+
+    if (btnLaunchWizard) btnLaunchWizard.onclick = launchWizardModal;
+    if (btnLaunchWizardHero) btnLaunchWizardHero.onclick = launchWizardModal;
 
     // Standard Grid Sync Hook
     window.syncWithStandardGrid = function(gameId, team) {
@@ -1584,34 +1661,45 @@ window.addEventListener('DOMContentLoaded', () => {
     const shortcutsModal = document.getElementById('wizardShortcutsModal');
     const btnShortcuts = document.getElementById('btnWizardShortcuts');
     const btnCloseShortcuts = document.getElementById('btnCloseShortcutsModal');
+
     if (btnShortcuts) btnShortcuts.onclick = () => shortcutsModal.classList.remove('hidden');
     if (btnCloseShortcuts) btnCloseShortcuts.onclick = () => shortcutsModal.classList.add('hidden');
 
-    document.addEventListener('keydown', (e) => {
+    window.addEventListener('keydown', (e) => {
         if (modal.classList.contains('hidden')) return;
-        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
         if (e.key === 'Escape') {
             if (!shortcutsModal.classList.contains('hidden')) {
                 shortcutsModal.classList.add('hidden');
+            } else if (!document.getElementById('wizardHelpModal').classList.contains('hidden')) {
+                closeHelpModal();
             } else {
                 exitWizardToStandardView();
             }
-        } else if (currentState === 1) {
+            return;
+        }
+
+        if (currentState === 1) {
             const game = wizardGames[currentIndex];
-            if (['1', 'a', 'A', 'ArrowUp'].includes(e.key)) {
+            if (e.key === '1' || e.key === 'a' || e.key === 'A' || e.key === 'ArrowUp') {
+                e.preventDefault();
                 makePick(game.away_team);
-            } else if (['2', 'h', 'H', 'ArrowDown'].includes(e.key)) {
+            } else if (e.key === '2' || e.key === 'h' || e.key === 'H' || e.key === 'ArrowDown') {
+                e.preventDefault();
                 makePick(game.home_team);
-            } else if (['ArrowRight', ' ', 'd', 'D'].includes(e.key)) {
+            } else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'd' || e.key === 'D') {
+                e.preventDefault();
                 btnWizardNext.click();
-            } else if (['ArrowLeft', 'w', 'W'].includes(e.key)) {
+            } else if (e.key === 'ArrowLeft' || e.key === 'w' || e.key === 'W') {
+                e.preventDefault();
                 btnWizardPrev.click();
             }
         }
     });
 
-    // Boot into initial state
-    renderCurrentMatchup();
+    // Auto-launch if explicitly requested via ?mode=wizard
+    <?php if ($isAutoLaunch): ?>
+        launchWizardModal();
+    <?php endif; ?>
 });
 </script>

@@ -211,8 +211,16 @@ class Connection
                 if (!in_array('avatar_url', $cols, true)) {
                     $this->pdo->exec("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) DEFAULT NULL;");
                 }
+                if (!in_array('has_seen_pickem_intro', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE users ADD COLUMN has_seen_pickem_intro BOOLEAN DEFAULT 0;");
+                }
+                if (!in_array('has_seen_survivor_intro', $cols, true)) {
+                    $this->pdo->exec("ALTER TABLE users ADD COLUMN has_seen_survivor_intro BOOLEAN DEFAULT 0;");
+                }
             } else {
                 $this->pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT NULL;");
+                $this->pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_pickem_intro BOOLEAN DEFAULT FALSE;");
+                $this->pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_seen_survivor_intro BOOLEAN DEFAULT FALSE;");
             }
         } catch (\Throwable) {
             // Non-blocking
