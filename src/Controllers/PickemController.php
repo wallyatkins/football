@@ -247,9 +247,37 @@ class PickemController
             : (!empty($lastCompletedWeek) ? $this->scoring->getWeeklyStandings($season, $lastCompletedWeek) : []);
 
         // Commissioner payment links (exact verified links)
-        $venmoUrl = 'https://account.venmo.com/u/WallyAtkins';
-        $payPalUrl = 'https://paypal.me/WallyAtkins';
-        $cashAppUrl = 'https://cash.app/$WallyAtkins';
+        // Survivor State for Integrated Pick Wizard & Catch-Up Flow
+        $survivorEntry = $this->db->queryOne(
+            'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        $isSurvivorEliminated = !empty($survivorEntry['is_eliminated']);
+
+        $usedSurvivorPicks = $this->db->query(
+            'SELECT week_number, selected_team FROM survivor_picks WHERE user_id = :uid AND season_year = :season ORDER BY week_number ASC',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        $usedSurvivorTeams = array_column($usedSurvivorPicks, 'selected_team');
+        $survivorWeeksDone = array_map('intval', array_column($usedSurvivorPicks, 'week_number'));
+
+        $currentSurvivorPick = null;
+        foreach ($usedSurvivorPicks as $sp) {
+            if ((int) $sp['week_number'] === $week) {
+                $currentSurvivorPick = $sp['selected_team'];
+                break;
+            }
+        }
+
+        $missedSurvivorWeeks = [];
+        if ($week > 1) {
+            for ($w = 1; $w < $week; $w++) {
+                if (!in_array($w, $survivorWeeksDone, true)) {
+                    $missedSurvivorWeeks[] = $w;
+                }
+            }
+        }
+        $needsSurvivorCatchup = !empty($missedSurvivorWeeks);
 
         $title = "Week {$week} Pick'em — Wally's NFL Pool";
         require dirname(__DIR__, 2) . '/templates/pickem/grid.php';

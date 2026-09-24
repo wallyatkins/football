@@ -236,4 +236,3 @@ class MondayUpdateServiceTest extends TestCase
         $this->assertStringContainsString('Week 2 Recap: Champion Crowned', $sentMails[0]['subject']);
     }
 }
-

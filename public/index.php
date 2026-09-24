@@ -136,7 +136,7 @@ try {
                 'status' => 'healthy',
                 'app' => 'football.wallyatkins.com',
                 'timestamp' => time(),
-                'version' => '1.0.3',
+                'version' => '1.1.0',
                 'database' => $dbReport,
             ], JSON_PRETTY_PRINT);
             exit;
@@ -201,6 +201,10 @@ try {
             (new SurvivorController())->autoSave();
             exit;
 
+        case '/survivor/burn-handicap':
+            (new SurvivorController())->burnHandicap();
+            exit;
+
         case '/survivor/standings':
             (new SurvivorController())->standings($season);
             exit;
@@ -262,9 +266,9 @@ try {
             (new AdminController())->resetPicks();
             exit;
 
-        // --- Live Chat & Feedback Desk ---
-        // /host is the WAF-safe route used in email join links (?cs=...&ct=...)
-        // /chat and /admin/chat are kept as backward-compatible aliases
+            // --- Live Chat & Feedback Desk ---
+            // /host is the WAF-safe route used in email join links (?cs=...&ct=...)
+            // /chat and /admin/chat are kept as backward-compatible aliases
         case '/host':
         case '/chat':
         case '/admin/chat':

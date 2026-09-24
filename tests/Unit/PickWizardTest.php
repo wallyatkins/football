@@ -90,13 +90,30 @@ class PickWizardTest extends TestCase
         $this->assertStringContainsString('/pickem/autosave', $output);
         $this->assertStringContainsString('syncWithStandardGrid', $output);
         $this->assertStringContainsString('id="wizardCompletionView"', $output);
+
+        // 6. Authentic Press Your Luck 18-Square Board & Larson Patterns
+        $this->assertStringContainsString('class="pyl-chassis', $output);
+        for ($sq = 1; $sq <= 18; $sq++) {
+            $this->assertStringContainsString('id="pyl-sq-' . $sq . '"', $output);
+        }
+        $this->assertStringContainsString('LARSON_PATTERNS', $output);
+        $this->assertStringContainsString('id="btnPylBuzzer"', $output);
+        $this->assertStringContainsString('id="whammyCanvas"', $output);
+        $this->assertStringContainsString('/media/press-your-luck-sound-board.mp3', $output);
+        $this->assertStringContainsString('/media/nfl-theme.mp3', $output);
+
+        // 7. Survivor Catch-Up & Handicap Endpoint
+        $this->assertStringContainsString('/survivor/burn-handicap', $output);
+        $this->assertStringContainsString('id="survivorGridList"', $output);
+        $this->assertStringContainsString('id="survivorConfirmModal"', $output);
     }
 
-    public function testIndexPhpRegistersWizardRoute(): void
+    public function testIndexPhpRegistersWizardAndSurvivorRoutes(): void
     {
         $indexPath = dirname(__DIR__, 2) . '/public/index.php';
         $content = file_get_contents($indexPath);
 
         $this->assertStringContainsString("case '/pickem/wizard':", $content);
+        $this->assertStringContainsString("case '/survivor/burn-handicap':", $content);
     }
 }

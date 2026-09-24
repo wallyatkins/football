@@ -272,6 +272,128 @@ class SurvivorController
         exit;
     }
 
+    public function burnHandicap(): void
+    {
+        header('Content-Type: application/json');
+
+        if (empty($_SESSION['user']['id'])) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Please log in to register handicap picks.']);
+            return;
+        }
+        $user = $_SESSION['user'];
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = $_POST;
+        }
+
+        $season = (int) ($input['season_year'] ?? date('Y'));
+        $currentWeek = (int) ($input['current_week'] ?? ($input['week_number'] ?? 1));
+        $burnedTeam = strtoupper(trim((string) ($input['burned_team'] ?? ($input['selected_team'] ?? ''))));
+
+        if (!$burnedTeam) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No team specified for elimination.']);
+            return;
+        }
+
+        // Initialize survivor entry if needed
+        $survivorEntry = $this->db->queryOne(
+            'SELECT * FROM survivor_entries WHERE user_id = :uid AND season_year = :season',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        if (!$survivorEntry) {
+            $this->db->execute(
+                "INSERT INTO survivor_entries (user_id, season_year, payment_status, is_eliminated)
+                 VALUES (:uid, :season, 'unpaid', 0)",
+                ['uid' => $user['id'], 'season' => $season]
+            );
+            $isPaid = false;
+        } else {
+            $isPaid = in_array($survivorEntry['payment_status'], ['paid', 'exempt'], true);
+            if (!empty($survivorEntry['is_eliminated'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => "You have been eliminated from this season's Survivor pool."]);
+                return;
+            }
+        }
+        $paymentStatus = $isPaid ? 'paid' : 'unpaid';
+
+        // Check if team already used by user this season
+        $previouslyUsed = $this->db->queryOne(
+            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND selected_team = :team',
+            ['uid' => $user['id'], 'season' => $season, 'team' => $burnedTeam]
+        );
+        if ($previouslyUsed) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "You already used {$burnedTeam} in Week {$previouslyUsed['week_number']}!"]);
+            return;
+        }
+
+        // Find existing survivor picks for previous weeks
+        $existingPicks = $this->db->query(
+            'SELECT week_number FROM survivor_picks WHERE user_id = :uid AND season_year = :season ORDER BY week_number ASC',
+            ['uid' => $user['id'], 'season' => $season]
+        );
+        $usedWeeks = array_map('intval', array_column($existingPicks, 'week_number'));
+
+        // Identify target missed week (< currentWeek)
+        $targetWeek = null;
+        if (!empty($input['target_week'])) {
+            $reqWeek = (int) $input['target_week'];
+            if ($reqWeek < $currentWeek && !in_array($reqWeek, $usedWeeks, true)) {
+                $targetWeek = $reqWeek;
+            }
+        }
+
+        if ($targetWeek === null) {
+            for ($w = 1; $w < $currentWeek; $w++) {
+                if (!in_array($w, $usedWeeks, true)) {
+                    $targetWeek = $w;
+                    break;
+                }
+            }
+        }
+
+        if ($targetWeek === null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No remaining missed weeks require a handicap elimination.']);
+            return;
+        }
+
+        // Insert handicap pick
+        $this->db->execute(
+            "INSERT INTO survivor_picks (user_id, season_year, week_number, selected_team, is_eliminated, payment_status)
+             VALUES (:uid, :season, :week, :team, 0, :ps)",
+            ['uid' => $user['id'], 'season' => $season, 'week' => $targetWeek, 'team' => $burnedTeam, 'ps' => $paymentStatus]
+        );
+
+        // Fetch updated list of burned teams and remaining missed weeks
+        $updatedPicks = $this->db->query(
+            'SELECT week_number, selected_team FROM survivor_picks WHERE user_id = :uid AND season_year = :season AND week_number < :curWeek ORDER BY week_number ASC',
+            ['uid' => $user['id'], 'season' => $season, 'curWeek' => $currentWeek]
+        );
+        $allBurned = array_column($updatedPicks, 'selected_team');
+        $burnedWeeks = array_map('intval', array_column($updatedPicks, 'week_number'));
+        $remainingWeeks = [];
+        for ($w = 1; $w < $currentWeek; $w++) {
+            if (!in_array($w, $burnedWeeks, true)) {
+                $remainingWeeks[] = $w;
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Eliminated {$burnedTeam} for Week {$targetWeek} handicap.",
+            'burned_team' => $burnedTeam,
+            'week_number' => $targetWeek,
+            'burned_teams' => $allBurned,
+            'remaining_missed_weeks' => $remainingWeeks,
+        ]);
+        return;
+    }
+
     public function save(): void
     {
         $user = $this->requireAuth();

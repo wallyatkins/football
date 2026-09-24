@@ -16,4 +16,6 @@ data/*.log
 !.env.example
 error_log
 .DS_Store
+media/*.zip
+media/*.mp4
 
