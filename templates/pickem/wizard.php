@@ -256,13 +256,14 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
 
             <!-- Right: Utility Corner (Help & Persistent Audio Toggle) -->
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <!-- Help / Rules Onboarding Icon Button -->
+                <!-- Help / Rules Onboarding Button -->
                 <button type="button" 
                         id="btnWizardHelp"
-                        onclick="openHelpModal()"
-                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-slate-300 hover:text-amber-400 transition cursor-pointer"
-                        title="Rules & How to Play (?)">
-                    <span class="font-bold text-xs">?</span>
+                        onclick="openContextualRules()"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#243247] bg-[#162235] hover:bg-[#1e2e48] text-slate-300 hover:text-amber-400 transition cursor-pointer text-xs font-bold font-mono"
+                        title="Rules & How to Play">
+                    <span>📖</span>
+                    <span class="hidden sm:inline">Rules</span>
                 </button>
 
                 <!-- Persistent Speaker / Mute Toggle -->
@@ -493,22 +494,38 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
             <section id="state-3-view" class="hidden w-full max-w-4xl mx-auto my-auto space-y-3 sm:space-y-4">
                 
                 <!-- Catch-Up Context Banner -->
-                <div class="p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="p-3.5 sm:p-4 rounded-2xl border-2 border-fuchsia-500/40 bg-gradient-to-r from-[#170524] via-slate-900 to-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-pyl text-[9px] uppercase">
-                            Late Entrant Survivor Catch-Up
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-fuchsia-500 text-slate-950 font-pyl text-[9px] uppercase">
+                                Late Entrant Catch-Up
+                            </span>
+                            <span class="text-xs font-mono text-fuchsia-300">Fair-Play Handicap</span>
+                        </div>
                         <h2 class="text-base sm:text-lg font-black text-white mt-1" id="pylCatchupTitle">
-                            Catch-Up: Burn Handicap Teams
+                            Survivor Pool: Random Team Elimination
                         </h2>
                         <p class="text-xs text-slate-400 mt-0.5" id="pylCatchupSubtitle">
-                            Missed weeks detected. Spin the 18-square board to eliminate your handicap teams!
+                            Missed weeks detected. Randomly eliminate handicap teams to catch up with Week 1 players!
                         </p>
                     </div>
-                    <div class="text-right font-mono text-xs">
-                        <span class="text-slate-400 block text-[10px] uppercase">Catch-Up Progress:</span>
-                        <span id="pylHandicapCounter" class="text-amber-400 font-black text-sm">0 of 0 Burned</span>
+                    <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 font-mono text-xs">
+                        <button type="button" 
+                                onclick="openPylIntro()" 
+                                class="px-2.5 py-1 rounded-lg bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-500/50 text-fuchsia-300 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer">
+                            <span>🎲</span>
+                            <span>How Random Elimination Works</span>
+                        </button>
+                        <span id="pylHandicapCounter" class="text-amber-400 font-black text-xs sm:text-sm">0 of 0 Burned</span>
                     </div>
+                </div>
+
+                <!-- Explanatory Guide Box for Late Arrivals -->
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5 shadow-sm">
+                    <span class="text-base shrink-0 mt-0.5">ℹ️</span>
+                    <p class="leading-relaxed">
+                        <strong class="text-white">Why are teams eliminated?</strong> Players who joined in Week 1 have burned one team per week that they cannot use again. To ensure fair competition, you must randomly eliminate <span class="text-amber-400 font-bold"><?= count($missedSurvivorWeeks) ?></span> handicap team(s) using the retro board below before picking for Week <?= $week ?>. Press <span class="text-emerald-400 font-bold">Start!</span> to spin, then <span class="text-rose-400 font-bold">Stop!</span> to burn a team!
+                    </p>
                 </div>
 
                 <!-- The 18-Square Chassis -->
@@ -588,9 +605,17 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                             <h2 class="text-base sm:text-xl font-black text-white">Select Your Week <?= $week ?> Survivor Pick</h2>
                             <p class="text-xs font-mono text-slate-400">Previously picked &amp; burned teams are grayed out.</p>
                         </div>
-                        <span class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-xs font-bold">
-                            1 Team Required
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" 
+                                    onclick="openSurvivorRules()" 
+                                    class="px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-[11px] font-mono font-bold text-emerald-400 transition cursor-pointer flex items-center gap-1">
+                                <span>🛡️</span>
+                                <span>Survivor Rules</span>
+                            </button>
+                            <span class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-xs font-bold">
+                                1 Team Required
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Survivor Matchup Grid -->
@@ -657,69 +682,237 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
         </div>
     </main>
 
-    <!-- FIRST-TIME ONBOARDING MODALS -->
-    <!-- 1. Pick'em Intro Modal -->
-    <div id="pickemIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="w-full max-w-sm p-6 rounded-2xl bg-[#162235] border-2 border-amber-500/50 text-center shadow-2xl">
-            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 mx-auto mb-3 flex items-center justify-center text-2xl">
-                🏈
+    <!-- ONBOARDING & RULES MODALS -->
+    <!-- 1. Pick'em Rules Modal (Displayed before user starts making picks) -->
+    <div id="pickemIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+        <div class="w-full max-w-lg max-h-[92vh] flex flex-col p-5 sm:p-7 rounded-2xl bg-[#0F172A] border-2 border-amber-500/60 shadow-2xl text-left overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center gap-3 pb-4 border-b border-slate-800 shrink-0">
+                <div class="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-2xl shrink-0">
+                    🏈
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-amber-400 text-slate-950">
+                            Official Rules
+                        </span>
+                        <span class="text-xs font-mono text-slate-400">Week <?= htmlspecialchars((string)$week) ?></span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-black text-white tracking-tight">Weekly Pick'em Rules</h3>
+                </div>
             </div>
-            <h3 class="text-lg font-black text-white">Pick'em Rules</h3>
-            <p class="text-xs text-slate-300 mt-2 mb-5 leading-relaxed">
-                Pick every game winner. Games lock individually at scheduled kickoff times.
-            </p>
-            <button type="button" 
-                    onclick="dismissPickemIntro()" 
-                    class="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow cursor-pointer">
-                Got It! Let's Pick
-            </button>
+
+            <!-- Rules Content (Scrollable for small screens) -->
+            <div class="space-y-3 my-4 overflow-y-auto pr-1 text-xs text-slate-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">1</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Pick All Outright Winners</strong>
+                        <p class="text-slate-400 mt-0.5">Select the team you predict will win outright for every matchup on this week's slate. Straight up—no point spreads.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">2</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Individual Kickoff Deadlines</strong>
+                        <p class="text-slate-400 mt-0.5">Each game locks strictly when its scheduled kickoff arrives. You can change your picks on later games right up until their kickoff.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">3</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Monday Night Tiebreaker</strong>
+                        <p class="text-slate-400 mt-0.5">Predict the total combined points scored in the designated Monday Night Football game to break ties for weekly payouts.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">4</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Scoring &amp; Season Standings</strong>
+                        <p class="text-slate-400 mt-0.5">Earn 1 point per correct pick. Weekly champions win the weekly pot, and points tally across 18 weeks toward the Championship trophy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Button -->
+            <div class="pt-2 border-t border-slate-800 shrink-0">
+                <button type="button" 
+                        onclick="dismissPickemIntro()" 
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm font-mono uppercase tracking-wider transition shadow-lg shadow-amber-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2">
+                    <span>Start Making Picks</span>
+                    <span>&rarr;</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 2. Survivor Intro Modal -->
-    <div id="survivorIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="w-full max-w-sm p-6 rounded-2xl bg-[#162235] border-2 border-emerald-500/50 text-center shadow-2xl">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 mx-auto mb-3 flex items-center justify-center text-2xl">
-                🛡️
+    <!-- 2. Survivor Pool Rules Modal (Presented before user makes their survivor pick) -->
+    <div id="survivorIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+        <div class="w-full max-w-lg max-h-[92vh] flex flex-col p-5 sm:p-7 rounded-2xl bg-[#071714] border-2 border-emerald-500/60 shadow-2xl text-left overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center gap-3 pb-4 border-b border-emerald-900/50 shrink-0">
+                <div class="w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shrink-0">
+                    🛡️
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase bg-emerald-400 text-slate-950">
+                            Official Rules
+                        </span>
+                        <span class="text-xs font-mono text-emerald-400/80">Week <?= htmlspecialchars((string)$week) ?></span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-black text-white tracking-tight">Survivor Pool Rules</h3>
+                </div>
             </div>
-            <h3 class="text-lg font-black text-white">Survivor Pool Rules</h3>
-            <p class="text-xs text-slate-300 mt-2 mb-5 leading-relaxed">
-                Pick one team to win outright each week. Once you pick a team, they cannot be picked again for the rest of the season.
-            </p>
-            <button type="button" 
-                    onclick="dismissSurvivorIntro()" 
-                    class="w-full py-2.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs font-mono uppercase tracking-wider transition shadow cursor-pointer">
-                Got It!
-            </button>
+
+            <!-- Rules Content -->
+            <div class="space-y-3 my-4 overflow-y-auto pr-1 text-xs text-slate-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-emerald-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">1</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Pick 1 Outright Winner Each Week</strong>
+                        <p class="text-slate-400 mt-0.5">Select exactly one NFL team that you predict will win their matchup outright in Week <?= htmlspecialchars((string)$week) ?>.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-emerald-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">2</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Strict "One and Done" Rule</strong>
+                        <p class="text-slate-400 mt-0.5">Once you select a team, that team is <strong>burned permanently</strong>. You can never select them again for the entire remainder of the season!</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-emerald-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">3</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Win or Go Home (Single Elimination)</strong>
+                        <p class="text-slate-400 mt-0.5">If your picked team wins, you advance to the next week. If your picked team loses or ties, you are eliminated from the pool.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-emerald-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">4</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Lock Deadline &amp; Last Standing</strong>
+                        <p class="text-slate-400 mt-0.5">Your pick locks at the kickoff time of your chosen team's game. Survive all 18 weeks—the last remaining player standing wins the jackpot!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Button -->
+            <div class="pt-2 border-t border-emerald-900/50 shrink-0">
+                <button type="button" 
+                        onclick="dismissSurvivorIntro()" 
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-black text-xs sm:text-sm font-mono uppercase tracking-wider transition shadow-lg shadow-emerald-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2">
+                    <span>Make My Survivor Pick</span>
+                    <span>&rarr;</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 3. General Help Modal (Invoked manually via '?' icon) -->
-    <div id="wizardHelpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="w-full max-w-md p-6 rounded-2xl bg-[#162235] border border-[#243247] text-left shadow-2xl space-y-4">
-            <div class="flex items-center justify-between pb-3 border-b border-[#243247]">
+    <!-- 3. Late Entrant Survivor Catch-Up Modal (Random elimination method briefing) -->
+    <div id="pylCatchupIntroOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/90 backdrop-blur-md">
+        <div class="w-full max-w-lg max-h-[92vh] flex flex-col p-5 sm:p-7 rounded-2xl bg-[#110519] border-2 border-fuchsia-500/60 shadow-2xl text-left overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center gap-3 pb-4 border-b border-fuchsia-900/50 shrink-0">
+                <div class="w-11 h-11 rounded-xl bg-fuchsia-500/20 border border-fuchsia-500/40 flex items-center justify-center text-2xl shrink-0">
+                    🎰
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-pyl uppercase bg-fuchsia-500 text-slate-950">
+                            Press Your Luck
+                        </span>
+                        <span class="text-xs font-mono text-fuchsia-300">Survivor Catch-Up</span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-black text-white tracking-tight">Random Team Elimination</h3>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-3 my-4 overflow-y-auto pr-1 text-xs text-slate-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-fuchsia-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-fuchsia-500/20 text-fuchsia-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">⚖️</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">Why Catch-Up Is Required</strong>
+                        <p class="text-slate-400 mt-0.5">You are joining the Survivor Pool in Week <?= htmlspecialchars((string)$week) ?>. Players who entered in Week 1 have already burned <?= count($missedSurvivorWeeks) ?> team(s) that they can never pick again this season. To ensure fair competition, you must also eliminate <?= count($missedSurvivorWeeks) ?> handicap team(s).</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-fuchsia-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-fuchsia-500/20 text-fuchsia-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">🎲</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">The 100% Random Elimination Method</strong>
+                        <p class="text-slate-400 mt-0.5">Instead of manually sacrificing teams or having commissioners pick for you, the league uses our retro <strong>Press Your Luck</strong> arcade board to randomly decide which teams get eliminated!</p>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-950/80 border border-fuchsia-900/40 flex items-start gap-3">
+                    <span class="w-6 h-6 rounded-full bg-fuchsia-500/20 text-fuchsia-400 font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 text-xs">🕹️</span>
+                    <div>
+                        <strong class="text-white block font-semibold text-xs sm:text-sm">How to Play &amp; Eliminate</strong>
+                        <p class="text-slate-400 mt-0.5">Press the green <strong>"Start!"</strong> button to start the randomized board spinner. When you're ready, hit <strong>"Stop!"</strong>. Whichever team is illuminated is <strong>burned</strong> with the classic Whammy animation. Repeat until all <?= count($missedSurvivorWeeks) ?> missed week(s) are cleared!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Button -->
+            <div class="pt-2 border-t border-fuchsia-900/50 shrink-0">
+                <button type="button" 
+                        onclick="dismissPylIntro()" 
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-400 hover:to-pink-400 text-white font-black text-xs sm:text-sm font-mono uppercase tracking-wider transition shadow-lg shadow-fuchsia-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2">
+                    <span>Got It &bull; Let's Spin!</span>
+                    <span>&rarr;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. General Help & Rules Modal (Invoked manually via 'Rules' button) -->
+    <div id="wizardHelpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm">
+        <div class="w-full max-w-lg max-h-[92vh] flex flex-col p-5 sm:p-6 rounded-2xl bg-[#162235] border border-[#243247] text-left shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between pb-3 border-b border-[#243247] shrink-0">
                 <h3 class="font-bold text-base text-white flex items-center gap-2">
-                    <span>📖 Rules &amp; How to Play</span>
+                    <span>📖 Pool Rules &amp; Guidelines</span>
                 </h3>
                 <button type="button" onclick="closeHelpModal()" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
             </div>
-            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
-                <div>
-                    <h4 class="font-bold text-amber-400 mb-0.5">🏈 Weekly Pick'em</h4>
-                    <p>Pick every game winner. Games lock individually at scheduled kickoff times. Correct picks count toward your weekly and season totals.</p>
+            <div class="space-y-3.5 my-4 overflow-y-auto pr-1 text-xs text-slate-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
+                        <span>🏈</span> <span>Weekly Pick'em Rules</span>
+                    </h4>
+                    <p class="text-slate-400">Pick every game winner on the slate outright (no spread). Games lock individually at scheduled kickoff times. 1 point is awarded per correct pick toward weekly pots and the season title.</p>
                 </div>
-                <div>
-                    <h4 class="font-bold text-amber-400 mb-0.5">🎯 Tiebreaker</h4>
-                    <p>Enter your prediction for total combined points scored in the designated Monday Night Football game to break weekly ties.</p>
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center gap-1.5">
+                        <span>🎯</span> <span>Monday Night Tiebreaker</span>
+                    </h4>
+                    <p class="text-slate-400">Enter your prediction for total combined points scored in Monday Night Football. The player closest to the actual score wins the tiebreaker.</p>
                 </div>
-                <div>
-                    <h4 class="font-bold text-emerald-400 mb-0.5">🛡️ Survivor Pool</h4>
-                    <p>Pick one team to win outright each week. Once you pick a team, they cannot be picked again for the rest of the season. Late arrivals must burn handicap teams via the retro Press Your Luck board.</p>
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <h4 class="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                        <span>🛡️</span> <span>Survivor Pool Rules</span>
+                    </h4>
+                    <p class="text-slate-400">Pick exactly one team to win outright each week. Once you pick a team, they are burned for the rest of the season. A loss or tie eliminates you. Surviving all 18 weeks wins the prize.</p>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <h4 class="font-bold text-fuchsia-400 mb-1 flex items-center gap-1.5">
+                        <span>🎰</span> <span>Late Entrant Random Elimination</span>
+                    </h4>
+                    <p class="text-slate-400">Late arrivals must burn one handicap team per missed week to ensure fair play against Week 1 players. Teams are chosen randomly via the retro Press Your Luck board.</p>
                 </div>
             </div>
-            <button type="button" onclick="closeHelpModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold transition">
-                Close Help
-            </button>
+            <div class="pt-2 border-t border-[#243247] shrink-0">
+                <button type="button" onclick="closeHelpModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs font-bold transition cursor-pointer">
+                    Close Rules
+                </button>
+            </div>
         </div>
     </div>
 
@@ -810,9 +1003,10 @@ window.addEventListener('DOMContentLoaded', () => {
     let pendingSurvivorSelection = null;
     const isSurvivorEliminated = <?= $isSurvivorEliminated ? 'true' : 'false' ?>;
 
-    // Onboarding intro states
-    let hasSeenPickemIntro = <?= $hasSeenPickemIntro ? 'true' : 'false' ?> || (localStorage.getItem('has_seen_pickem_intro') === 'true');
-    let hasSeenSurvivorIntro = <?= $hasSeenSurvivorIntro ? 'true' : 'false' ?> || (localStorage.getItem('has_seen_survivor_intro') === 'true');
+    // Rules presentation & acknowledgment states (Ensures rules are displayed before picking in each session)
+    let hasAcknowledgedPickemRules = (sessionStorage.getItem('wally_pickem_rules_ack') === 'true');
+    let hasAcknowledgedSurvivorRules = (sessionStorage.getItem('wally_survivor_rules_ack') === 'true');
+    let hasAcknowledgedPylRules = (sessionStorage.getItem('wally_pyl_rules_ack') === 'true');
 
     let currentState = 1;
     let currentIndex = 0;
@@ -987,18 +1181,23 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         if (step === 1) {
-            startNflThemeLoop();
             renderCurrentMatchup();
-            // Show first-time Pick'em onboarding overlay if not yet seen
-            if (!hasSeenPickemIntro) {
+            // Display Pick'em rules overlay before user begins making picks
+            if (!hasAcknowledgedPickemRules) {
                 document.getElementById('pickemIntroOverlay').classList.remove('hidden');
+            } else {
+                startNflThemeLoop();
             }
         } else if (step === 3) {
             setupPylCatchupView();
+            // Display late entrant Press Your Luck random elimination briefing before spinning
+            if (!hasAcknowledgedPylRules && missedSurvivorWeeks.length > 0) {
+                document.getElementById('pylCatchupIntroOverlay').classList.remove('hidden');
+            }
         } else if (step === 4) {
             renderSurvivorGrid();
-            // Show first-time Survivor onboarding overlay if not yet seen
-            if (!hasSeenSurvivorIntro) {
+            // Display Survivor pool rules before user makes their survivor pick
+            if (!hasAcknowledgedSurvivorRules) {
                 document.getElementById('survivorIntroOverlay').classList.remove('hidden');
             }
         } else if (step === 5) {
@@ -1007,27 +1206,36 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Onboarding Dismissal Handlers
+    // Onboarding & Rules Modal Handlers
     window.dismissPickemIntro = function() {
         document.getElementById('pickemIntroOverlay').classList.add('hidden');
-        hasSeenPickemIntro = true;
-        localStorage.setItem('has_seen_pickem_intro', 'true');
-        fetch('/api/user/dismiss-intro', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ intro_type: 'pickem' })
-        }).catch(e => console.warn(e));
+        hasAcknowledgedPickemRules = true;
+        sessionStorage.setItem('wally_pickem_rules_ack', 'true');
+        startNflThemeLoop();
+    };
+
+    window.openPickemRules = function() {
+        document.getElementById('pickemIntroOverlay').classList.remove('hidden');
     };
 
     window.dismissSurvivorIntro = function() {
         document.getElementById('survivorIntroOverlay').classList.add('hidden');
-        hasSeenSurvivorIntro = true;
-        localStorage.setItem('has_seen_survivor_intro', 'true');
-        fetch('/api/user/dismiss-intro', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ intro_type: 'survivor' })
-        }).catch(e => console.warn(e));
+        hasAcknowledgedSurvivorRules = true;
+        sessionStorage.setItem('wally_survivor_rules_ack', 'true');
+    };
+
+    window.openSurvivorRules = function() {
+        document.getElementById('survivorIntroOverlay').classList.remove('hidden');
+    };
+
+    window.dismissPylIntro = function() {
+        document.getElementById('pylCatchupIntroOverlay').classList.add('hidden');
+        hasAcknowledgedPylRules = true;
+        sessionStorage.setItem('wally_pyl_rules_ack', 'true');
+    };
+
+    window.openPylIntro = function() {
+        document.getElementById('pylCatchupIntroOverlay').classList.remove('hidden');
     };
 
     window.openHelpModal = function() {
@@ -1036,6 +1244,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.closeHelpModal = function() {
         document.getElementById('wizardHelpModal').classList.add('hidden');
+    };
+
+    window.openContextualRules = function() {
+        if (currentState === 1 || currentState === 2) {
+            openPickemRules();
+        } else if (currentState === 3) {
+            openPylIntro();
+        } else if (currentState === 4) {
+            openSurvivorRules();
+        } else {
+            openHelpModal();
+        }
     };
 
     // -----------------------------------------------------------------
@@ -1656,6 +1876,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (btnLaunchWizard) btnLaunchWizard.onclick = launchWizardModal;
     if (btnLaunchWizardHero) btnLaunchWizardHero.onclick = launchWizardModal;
+    const btnOpenHowItWorks = document.getElementById('btnOpenHowItWorks');
+    if (btnOpenHowItWorks) btnOpenHowItWorks.onclick = openPickemRules;
 
     // Standard Grid Sync Hook
     window.syncWithStandardGrid = function(gameId, team) {
