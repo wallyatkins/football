@@ -6,7 +6,16 @@ declare(strict_types=1);
  * Atkins NFL Pick'em & Survivor League
  */
 
-require_once dirname(__DIR__) . '/vendor/autoload.php';
+$vendorAutoload = file_exists(__DIR__ . '/vendor/autoload.php')
+    ? __DIR__ . '/vendor/autoload.php'
+    : (file_exists(dirname(__DIR__) . '/vendor/autoload.php') ? dirname(__DIR__) . '/vendor/autoload.php' : null);
+
+if (!$vendorAutoload) {
+    throw new RuntimeException('Unable to locate vendor/autoload.php');
+}
+require_once $vendorAutoload;
+
+$projectRoot = dirname($vendorAutoload);
 
 // Session configuration with 90-day persistence matching WallyAuth trusted device duration
 if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
@@ -42,7 +51,7 @@ if (!empty($_SESSION['user'])) {
 }
 
 // Load optional .env file if present
-$envFile = dirname(__DIR__) . '/.env';
+$envFile = $projectRoot . '/.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if ($lines !== false) {
@@ -368,7 +377,7 @@ try {
             </div>
             <?php
             $content = ob_get_clean();
-            require dirname(__DIR__) . '/templates/layout.php';
+            require $projectRoot . '/templates/layout.php';
             exit;
     }
 } catch (\Throwable $e) {
@@ -391,7 +400,7 @@ try {
     </div>
     <?php
     $content = ob_get_clean();
-    require dirname(__DIR__) . '/templates/layout.php';
+    require $projectRoot . '/templates/layout.php';
     exit;
 }
 
