@@ -11,6 +11,7 @@ data/*_raw.json
 data/.last_sync*
 data/.reported_*
 data/*.log
+data/*.sql
 .env
 .env.*
 !.env.example
