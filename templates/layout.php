@@ -337,37 +337,18 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
                 </a>
             </div>
 
-            <!-- Prominent Contest Toggle Tabs (Desktop / Tablet) -->
-            <div class="hidden sm:flex items-center p-1 rounded-xl bg-[#0B1626] border border-[#243247] shadow-inner shrink-0">
-                <a href="/pickem" 
-                   class="px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition <?= $isPickem ? 'bg-[#EAB308] text-[#0B1626] shadow-sm font-black' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                    Weekly Pick 'Em
-                </a>
-                <a href="/survivor" 
-                   class="px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition <?= $isSurvivor ? 'bg-[#15803D] text-[#F8FAFC] shadow-sm font-black' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                    Survivor Pool
-                </a>
-            </div>
-
             <!-- Active Contest Sub-Navigation & Profile -->
             <div class="flex items-center gap-3">
                 <nav class="hidden md:flex items-center gap-1.5 text-xs font-bold font-mono">
-                    <?php if ($isPickem): ?>
-                        <a href="/pickem" class="px-2.5 py-1 rounded <?= !str_contains($reqUri, 'standings') ? 'text-[#EAB308] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                            MATCHUPS
-                        </a>
-                        <a href="/pickem/standings" class="px-2.5 py-1 rounded <?= str_contains($reqUri, 'standings') ? 'text-[#EAB308] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                            STANDINGS
-                        </a>
-                    <?php elseif ($isSurvivor): ?>
-                        <a href="/survivor" class="px-2.5 py-1 rounded <?= !str_contains($reqUri, 'standings') ? 'text-[#15803D] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                            SELECTION
-                        </a>
-                        <a href="/survivor/standings" class="px-2.5 py-1 rounded <?= str_contains($reqUri, 'standings') ? 'text-[#15803D] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
-                            LEADERBOARD
-                        </a>
-                    <?php endif; ?>
-
+                    <a href="/pickem" class="px-2.5 py-1 rounded <?= $isPickem && !str_contains($reqUri, 'standings') ? 'text-[#EAB308] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
+                        PICK'EM
+                    </a>
+                    <a href="/survivor" class="px-2.5 py-1 rounded <?= $isSurvivor && !str_contains($reqUri, 'standings') ? 'text-[#15803D] bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
+                        SURVIVOR
+                    </a>
+                    <a href="<?= $isSurvivor ? '/survivor/standings' : '/pickem/standings' ?>" class="px-2.5 py-1 rounded <?= str_contains($reqUri, 'standings') ? ($isSurvivor ? 'text-[#15803D]' : 'text-[#EAB308]') . ' bg-[#162235] border border-[#243247]' : 'text-[#94A3B8] hover:text-[#F8FAFC]' ?>">
+                        STANDINGS
+                    </a>
                     <?php if ($isCommissioner): ?>
                         <a href="/admin/payments" class="px-2.5 py-1 rounded text-[11px] font-bold <?= str_starts_with($reqUri, '/admin') ? 'text-purple-200 bg-purple-900/60 border border-purple-500/50' : 'text-purple-400 hover:text-purple-200' ?>">
                             COMMISSIONER
@@ -484,17 +465,6 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
             </div>
         </div>
 
-        <!-- Mobile Contest Toggle Bar -->
-        <div class="sm:hidden px-4 py-2 border-t border-[#243247] bg-[#0B1626]">
-            <div class="grid grid-cols-2 p-1 rounded-xl bg-[#162235] border border-[#243247] text-center">
-                <a href="/pickem" class="py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition <?= $isPickem ? 'bg-[#EAB308] text-[#0B1626] shadow-sm font-black' : 'text-[#94A3B8]' ?>">
-                    Weekly Pick 'Em
-                </a>
-                <a href="/survivor" class="py-1.5 text-xs font-black uppercase tracking-wider rounded-lg transition <?= $isSurvivor ? 'bg-[#15803D] text-[#F8FAFC] shadow-sm font-black' : 'text-[#94A3B8]' ?>">
-                    Survivor Pool
-                </a>
-            </div>
-        </div>
     </header>
 
     <!-- Mobile Bottom Navigation (Clean Vector Icons, No Decorative Emojis) -->
