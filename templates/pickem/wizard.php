@@ -97,10 +97,8 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
     || str_contains($_SERVER['REQUEST_URI'] ?? '', '/pickem/wizard');
 ?>
 
-<!-- Retro Arcade 8-Bit Font for Authentic Press Your Luck -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<!-- Retro Arcade 8-Bit Font for Authentic Press Your Luck (Self-Hosted) -->
+<link rel="stylesheet" href="/assets/css/fonts.css">
 
 <style>
   .font-pyl { font-family: 'Press Start 2P', monospace; }
@@ -171,16 +169,26 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
     transform: scale(0.8);
   }
 
-  /* Big Red Arcade Buzzer */
-  .arcade-buzzer-btn {
-    background: radial-gradient(circle at 35% 35%, #ff4d4d, #cc0000 60%, #800000 100%);
-    box-shadow: 0 10px 0 #550000, 0 15px 25px rgba(255, 0, 0, 0.5);
-    border: 3px solid #ff9999;
-    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  /* Circular Start / Stop Center Button */
+  .pyl-circle-button {
+    background: radial-gradient(circle at 35% 35%, #10b981, #059669 60%, #047857 100%);
+    box-shadow: 0 8px 0 #064e3b, 0 15px 30px rgba(16, 185, 129, 0.4);
+    border: 3px solid #6ee7b7;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.2s ease;
   }
-  .arcade-buzzer-btn:active {
-    transform: translateY(6px);
-    box-shadow: 0 4px 0 #550000, 0 8px 15px rgba(255, 0, 0, 0.4);
+  .pyl-circle-button:active {
+    transform: translateY(4px) scale(0.96);
+    box-shadow: 0 4px 0 #064e3b, 0 8px 15px rgba(16, 185, 129, 0.3);
+  }
+  .pyl-circle-button.is-spinning {
+    background: radial-gradient(circle at 35% 35%, #ff4d4d, #cc0000 60%, #800000 100%) !important;
+    box-shadow: 0 8px 0 #550000, 0 0 35px rgba(255, 0, 0, 0.8) !important;
+    border-color: #ff9999 !important;
+    animation: pyl-btn-pulse 0.9s infinite alternate;
+  }
+  @keyframes pyl-btn-pulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    100% { transform: scale(1.05); filter: brightness(1.2); }
   }
 
   /* Audio Equalizer Bars */
@@ -510,68 +518,50 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                     <div class="grid grid-cols-6 grid-rows-5 gap-1.5 sm:gap-2.5 aspect-[6/5] w-full">
                         
                         <!-- TOP ROW: Squares 1 to 6 (Team logos only, centered) -->
-                        <div id="pyl-sq-1" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-2" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-3" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-4" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-5" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-6" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-1" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-2" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-3" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-4" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-5" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-6" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
 
                         <!-- ROW 2: Sq 18 (Left), Sq 7 (Right) -->
-                        <div id="pyl-sq-18" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-18" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
                         
-                        <!-- CENTER STAGE: Buzzer, Whammy Overlay, Status -->
-                        <div class="col-span-4 row-span-3 rounded-2xl bg-gradient-to-b from-[#080f1d] via-[#050a14] to-black border-2 border-slate-800 p-3 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden shadow-2xl">
+                        <!-- CENTER STAGE: Circular Start/Stop Button Only, Whammy Overlay -->
+                        <div class="col-span-4 row-span-3 rounded-2xl bg-gradient-to-b from-[#080f1d] via-[#050a14] to-black border-2 border-slate-800 p-2 sm:p-4 flex items-center justify-center text-center relative overflow-hidden shadow-2xl">
                             
                             <!-- Transparent Whammy Canvas Overlay -->
                             <canvas id="whammyCanvas" width="480" height="360" class="absolute inset-0 w-full h-full object-contain pointer-events-none z-40 hidden"></canvas>
                             <video id="whammyVideoPlayer" playsinline preload="auto" class="hidden"></video>
 
-                            <!-- Sequence HUD -->
-                            <div class="w-full flex items-center justify-between border-b border-slate-800/80 pb-2 z-10">
-                                <span class="font-pyl text-[8px] sm:text-[9px] text-amber-400">SEQUENCE: <span id="pylPatternTxt">LARSON #1</span></span>
-                                <span class="font-mono text-[10px] text-slate-400">Retro Press Your Luck</span>
-                            </div>
-
-                            <!-- Central Message Box -->
-                            <div class="my-auto z-10 flex flex-col items-center justify-center p-2">
-                                <div id="pylMainMsg" class="font-pyl text-sm sm:text-lg text-yellow-300 drop-shadow-[0_2px_10px_rgba(255,234,0,0.5)]">
-                                    HIT BUZZER TO SPIN!
-                                </div>
-                                <p id="pylSubMsg" class="text-xs font-mono text-slate-400 mt-2 max-w-md">
-                                    "No Whammies, Big Bucks... STOP!"
-                                </p>
-                            </div>
-
-                            <!-- Big Red Arcade Buzzer Button -->
-                            <div class="z-20 mt-2 mb-1">
-                                <button type="button" 
-                                        id="btnPylBuzzer"
-                                        onclick="handlePylBuzzer()"
-                                        class="arcade-buzzer-btn px-8 sm:px-12 py-3 sm:py-4 rounded-full font-pyl text-xs sm:text-sm tracking-wider uppercase text-white shadow-2xl active:scale-95 cursor-pointer">
-                                    <span id="pylBuzzerLabel">SPIN BOARD!</span>
-                                </button>
-                            </div>
+                            <!-- Circular Start/Stop Button: Sole element in center stage -->
+                            <button type="button" 
+                                    id="btnPylBuzzer"
+                                    onclick="handlePylBuzzer()"
+                                    class="pyl-circle-button w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full font-black text-xl sm:text-2xl md:text-3xl tracking-wider uppercase text-white shadow-2xl active:scale-95 flex items-center justify-center border-4 border-white/20 cursor-pointer select-none z-20">
+                                <span id="pylBuzzerLabel">Start!</span>
+                            </button>
 
                         </div>
 
-                        <div id="pyl-sq-7" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-7" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
 
                         <!-- ROW 3: Sq 17 (Left), Sq 8 (Right) -->
-                        <div id="pyl-sq-17" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-8" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-17" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-8" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
 
                         <!-- ROW 4: Sq 16 (Left), Sq 9 (Right) -->
-                        <div id="pyl-sq-16" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-9" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-16" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-9" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
 
                         <!-- BOTTOM ROW: Squares 15 to 10 (Right to Left) -->
-                        <div id="pyl-sq-15" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-14" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-13" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-12" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-11" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
-                        <div id="pyl-sq-10" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-2"></div></div>
+                        <div id="pyl-sq-15" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-14" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-13" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-12" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-11" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
+                        <div id="pyl-sq-10" class="pyl-square rounded-xl"><div class="slide-content slide-fade w-full h-full flex items-center justify-center p-1 sm:p-1.5"></div></div>
 
                     </div>
                 </div>
@@ -887,6 +877,28 @@ window.addEventListener('DOMContentLoaded', () => {
                 el.style.height = '4px';
             }
         });
+    }
+
+    const fadeAudioTimers = {};
+    function fadeAudio(audio, targetVolume, durationMs = 500, callback) {
+        if (!audio) return;
+        if (fadeAudioTimers[audio.id]) {
+            cancelAnimationFrame(fadeAudioTimers[audio.id]);
+        }
+        const startVolume = audio.volume;
+        const startTime = performance.now();
+        function tick(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / durationMs);
+            audio.volume = Math.max(0, Math.min(1, startVolume + (targetVolume - startVolume) * progress));
+            if (progress < 1) {
+                fadeAudioTimers[audio.id] = requestAnimationFrame(tick);
+            } else {
+                delete fadeAudioTimers[audio.id];
+                if (callback) callback();
+            }
+        }
+        fadeAudioTimers[audio.id] = requestAnimationFrame(tick);
     }
 
     // Web Audio Synthesizer fallback for crisp UI clicks
@@ -1298,7 +1310,7 @@ window.addEventListener('DOMContentLoaded', () => {
     for (let i = 1; i <= 18; i++) {
         squareSlides[i] = [
             { type: 'team', team: allPylTeams[(i * 2) % allPylTeams.length] },
-            { type: (i === 4 ? 'spin_again' : (i === 8 ? 'you_pick' : 'team')), team: allPylTeams[(i * 3 + 1) % allPylTeams.length] },
+            { type: 'team', team: allPylTeams[(i * 3 + 1) % allPylTeams.length] },
             { type: 'team', team: allPylTeams[(i * 5 + 2) % allPylTeams.length] }
         ];
     }
@@ -1315,24 +1327,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const content = sq.querySelector('.slide-content');
         if (!content) return;
 
-        if (slide.type === 'spin_again') {
-            content.innerHTML = `
-                <div class="text-center font-pyl text-[8px] sm:text-[9px] text-amber-400 leading-tight">
-                    SPIN<br>AGAIN
-                </div>
-            `;
-        } else if (slide.type === 'you_pick') {
-            content.innerHTML = `
-                <div class="text-center font-pyl text-[8px] sm:text-[9px] text-emerald-400 leading-tight">
-                    YOU<br>PICK!
-                </div>
-            `;
-        } else {
-            // Team logo ONLY, centered, NO text labels
-            content.innerHTML = `
-                <img src="${slide.team.logo}" alt="${slide.team.name}" class="w-8 h-8 sm:w-11 sm:h-11 object-contain drop-shadow">
-            `;
-        }
+        // Big bold centered NFL team logo filling the game square
+        content.innerHTML = `
+            <img src="${slide.team.logo}" alt="${slide.team.name}" class="w-full h-full max-h-[88%] max-w-[88%] object-contain drop-shadow-md select-none pointer-events-none">
+        `;
     }
 
     function cyclePylSpaces() {
@@ -1363,32 +1361,45 @@ window.addEventListener('DOMContentLoaded', () => {
         const titleEl = document.getElementById('pylCatchupTitle');
         const countEl = document.getElementById('pylHandicapCounter');
         const ledgerEl = document.getElementById('pylBurnedLedger');
+        const buzzerBtn = document.getElementById('btnPylBuzzer');
+        const buzzerLabel = document.getElementById('pylBuzzerLabel');
         
         const missedCount = missedSurvivorWeeks.length;
         if (titleEl) titleEl.textContent = `Catch-Up: ${missedCount} Missed Week${missedCount > 1 ? 's' : ''} to Burn`;
         if (countEl) countEl.textContent = `0 of ${missedCount} Burned`;
         if (ledgerEl) ledgerEl.textContent = usedSurvivorTeams.length ? usedSurvivorTeams.join(', ') : 'None yet';
+
+        if (buzzerBtn) {
+            buzzerBtn.disabled = false;
+            buzzerBtn.classList.remove('is-spinning');
+        }
+        if (buzzerLabel) buzzerLabel.textContent = 'Start!';
     }
 
     window.handlePylBuzzer = function() {
+        const buzzerBtn = document.getElementById('btnPylBuzzer');
         const buzzerLabel = document.getElementById('pylBuzzerLabel');
-        const mainMsg = document.getElementById('pylMainMsg');
-        const subMsg = document.getElementById('pylSubMsg');
 
         if (!isPylSpinning) {
+            // User pressed START!
             isPylSpinning = true;
-            buzzerLabel.textContent = 'STOP!';
-            mainMsg.textContent = 'SPINNING...';
-            subMsg.textContent = 'Hit the red buzzer to freeze the board!';
+            if (buzzerLabel) buzzerLabel.textContent = 'Stop!';
+            if (buzzerBtn) buzzerBtn.classList.add('is-spinning');
 
+            // 1. Fade NFL theme music into background
+            if (audioNfl && isNflAudioPlaying && !isUserMuted) {
+                fadeAudio(audioNfl, 0.04, 600);
+            }
+
+            // 2. Play Press Your Luck soundboard music
             if (audioPyl && !isUserMuted) {
                 audioPyl.currentTime = 0;
+                audioPyl.volume = 0.45;
                 audioPyl.play().catch(e => console.warn(e));
             }
 
             const pIdx = Math.floor(Math.random() * LARSON_PATTERNS.length);
             currentLarsonPattern = LARSON_PATTERNS[pIdx];
-            document.getElementById('pylPatternTxt').textContent = `LARSON #${pIdx + 1}`;
             larsonStep = 0;
 
             pylSpinInterval = setInterval(() => {
@@ -1400,11 +1411,25 @@ window.addEventListener('DOMContentLoaded', () => {
             }, 110);
 
         } else {
-            // User hit STOP!
+            // User pressed STOP!
             clearInterval(pylSpinInterval);
             isPylSpinning = false;
-            buzzerLabel.textContent = 'SPIN BOARD!';
-            if (audioPyl) audioPyl.pause();
+            if (buzzerLabel) buzzerLabel.textContent = 'Stop!';
+            if (buzzerBtn) {
+                buzzerBtn.classList.remove('is-spinning');
+                buzzerBtn.disabled = true;
+            }
+
+            // 1. Stop Press Your Luck audio immediately
+            if (audioPyl) {
+                audioPyl.pause();
+                audioPyl.currentTime = 0;
+            }
+
+            // 2. Fade NFL theme music back in
+            if (audioNfl && isNflAudioPlaying && !isUserMuted) {
+                fadeAudio(audioNfl, 0.30, 800);
+            }
 
             const landedSqNum = currentLarsonPattern[larsonStep];
             const landedSq = document.getElementById('pyl-sq-' + landedSqNum);
@@ -1421,26 +1446,8 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     function processPylLanding(slide) {
-        const mainMsg = document.getElementById('pylMainMsg');
-        const subMsg = document.getElementById('pylSubMsg');
-
-        if (slide.type === 'spin_again') {
-            mainMsg.textContent = 'SPIN AGAIN!';
-            subMsg.textContent = 'Lucky break! Hit the buzzer to spin again.';
-            return;
-        }
-
-        if (slide.type === 'you_pick') {
-            mainMsg.textContent = 'YOU PICK!';
-            subMsg.textContent = 'Choose which team to eliminate!';
-            openYouPickModal();
-            return;
-        }
-
-        // Team Square Hit -> Whammy Elimination!
+        // Every square is an authentic team square
         const team = slide.team;
-        mainMsg.textContent = `ELIMINATED: ${team.nick.toUpperCase()}!`;
-        subMsg.textContent = 'Whammy takes away this team from your survivor pool!';
 
         // Play Chroma-Keyed Transparent Whammy Canvas Overlay
         playWhammyChromaKeyOverlay(() => {
@@ -1514,16 +1521,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 missedSurvivorWeeks = data.remaining_missed_weeks;
             }
             const remaining = missedSurvivorWeeks.length;
-            document.getElementById('pylBurnedLedger').textContent = usedSurvivorTeams.join(', ');
-            document.getElementById('pylHandicapCounter').textContent = `${usedSurvivorTeams.length} Burned`;
+            const ledgerEl = document.getElementById('pylBurnedLedger');
+            const countEl = document.getElementById('pylHandicapCounter');
+            if (ledgerEl) ledgerEl.textContent = usedSurvivorTeams.join(', ');
+            if (countEl) countEl.textContent = `${usedSurvivorTeams.length} Burned`;
+
+            const buzzerBtn = document.getElementById('btnPylBuzzer');
+            const buzzerLabel = document.getElementById('pylBuzzerLabel');
 
             if (remaining > 0) {
-                document.getElementById('pylMainMsg').textContent = `SPIN AGAIN (${remaining} REMAINING)`;
-                document.getElementById('pylSubMsg').textContent = 'Hit the buzzer to resolve your next missed week.';
+                if (buzzerBtn) buzzerBtn.disabled = false;
+                if (buzzerLabel) buzzerLabel.textContent = 'Start!';
             } else {
                 needsSurvivorCatchup = false;
-                document.getElementById('pylMainMsg').textContent = 'ALL CATCH-UPS COMPLETE!';
-                document.getElementById('pylSubMsg').textContent = 'Advancing to Week ' + weekNumber + ' Survivor selection...';
+                if (buzzerLabel) buzzerLabel.textContent = 'Done!';
                 setTimeout(() => goToState(4), 1600);
             }
         }).catch(e => {

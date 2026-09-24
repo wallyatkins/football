@@ -456,8 +456,8 @@ function renderLandingPage(): void
             g.async = true; g.src = u + 'matomo.js'; s.parentNode.insertBefore(g, s);
           })();
         </script>
-        <!-- End Matomo Code -->
-        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/assets/js/tailwind.js"></script>
+        <link rel="stylesheet" href="/assets/css/fonts.css">
     </head>
     <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
         <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-between">

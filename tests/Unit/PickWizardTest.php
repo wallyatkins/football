@@ -126,6 +126,19 @@ class PickWizardTest extends TestCase
         $this->assertStringNotContainsString('Select Bills', $output);
         $this->assertStringNotContainsString('AFC West', $output);
         $this->assertStringNotContainsString('Auto-saves in real-time', $output);
+
+        // 11. Circular Start/Stop Button & Solitary Center Stage
+        $this->assertStringContainsString('class="pyl-circle-button', $output);
+        $this->assertStringContainsString('id="pylBuzzerLabel">Start!<', $output);
+        $this->assertStringNotContainsString('pylPatternTxt', $output);
+        $this->assertStringNotContainsString('pylMainMsg', $output);
+        $this->assertStringNotContainsString('pylSubMsg', $output);
+        $this->assertStringNotContainsString('HIT BUZZER TO SPIN', $output);
+
+        // 12. Local Assets (No external CDNs)
+        $this->assertStringContainsString('/assets/css/fonts.css', $output);
+        $this->assertStringNotContainsString('fonts.googleapis.com', $output);
+        $this->assertStringNotContainsString('cdn.tailwindcss.com', $output);
     }
 
     public function testIndexPhpRegistersWizardAndSurvivorRoutes(): void

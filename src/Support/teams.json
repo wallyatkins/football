@@ -7,7 +7,7 @@
         "division": "NFC West",
         "color": "#97233F",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/ari.png"
+        "logo": "/assets/logos/ari.png"
     },
     "ATL": {
         "abbr": "ATL",
@@ -17,7 +17,7 @@
         "division": "NFC South",
         "color": "#A71930",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/atl.png"
+        "logo": "/assets/logos/atl.png"
     },
     "BAL": {
         "abbr": "BAL",
@@ -27,7 +27,7 @@
         "division": "AFC North",
         "color": "#241773",
         "color2": "#9E7C0C",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/bal.png"
+        "logo": "/assets/logos/bal.png"
     },
     "BUF": {
         "abbr": "BUF",
@@ -37,7 +37,7 @@
         "division": "AFC East",
         "color": "#00338D",
         "color2": "#C60C30",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/buf.png"
+        "logo": "/assets/logos/buf.png"
     },
     "CAR": {
         "abbr": "CAR",
@@ -47,7 +47,7 @@
         "division": "NFC South",
         "color": "#0085CA",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500-dark\/car.png"
+        "logo": "/assets/logos/car.png"
     },
     "CHI": {
         "abbr": "CHI",
@@ -57,7 +57,7 @@
         "division": "NFC North",
         "color": "#0B162A",
         "color2": "#E64100",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/chi.png"
+        "logo": "/assets/logos/chi.png"
     },
     "CIN": {
         "abbr": "CIN",
@@ -67,7 +67,7 @@
         "division": "AFC North",
         "color": "#FB4F14",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/cin.png"
+        "logo": "/assets/logos/cin.png"
     },
     "CLE": {
         "abbr": "CLE",
@@ -77,7 +77,7 @@
         "division": "AFC North",
         "color": "#FF3C00",
         "color2": "#311D00",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/cle.png"
+        "logo": "/assets/logos/cle.png"
     },
     "DAL": {
         "abbr": "DAL",
@@ -87,7 +87,7 @@
         "division": "NFC East",
         "color": "#002244",
         "color2": "#B0B7BC",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/dal.png"
+        "logo": "/assets/logos/dal.png"
     },
     "DEN": {
         "abbr": "DEN",
@@ -97,7 +97,7 @@
         "division": "AFC West",
         "color": "#002244",
         "color2": "#FB4F14",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/den.png"
+        "logo": "/assets/logos/den.png"
     },
     "DET": {
         "abbr": "DET",
@@ -107,7 +107,7 @@
         "division": "NFC North",
         "color": "#0076B6",
         "color2": "#B0B7BC",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/det.png"
+        "logo": "/assets/logos/det.png"
     },
     "GB": {
         "abbr": "GB",
@@ -117,7 +117,7 @@
         "division": "NFC North",
         "color": "#203731",
         "color2": "#FFB612",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/gb.png"
+        "logo": "/assets/logos/gb.png"
     },
     "HOU": {
         "abbr": "HOU",
@@ -127,7 +127,7 @@
         "division": "AFC South",
         "color": "#03202F",
         "color2": "#A71930",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/hou.png"
+        "logo": "/assets/logos/hou.png"
     },
     "IND": {
         "abbr": "IND",
@@ -137,7 +137,7 @@
         "division": "AFC South",
         "color": "#002C5F",
         "color2": "#a5acaf",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/ind.png"
+        "logo": "/assets/logos/ind.png"
     },
     "JAX": {
         "abbr": "JAX",
@@ -147,7 +147,7 @@
         "division": "AFC South",
         "color": "#006778",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/jax.png"
+        "logo": "/assets/logos/jax.png"
     },
     "KC": {
         "abbr": "KC",
@@ -157,7 +157,7 @@
         "division": "AFC West",
         "color": "#E31837",
         "color2": "#FFB612",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/kc.png"
+        "logo": "/assets/logos/kc.png"
     },
     "LA": {
         "abbr": "LA",
@@ -167,7 +167,7 @@
         "division": "NFC West",
         "color": "#003594",
         "color2": "#FFD100",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lar.png"
+        "logo": "/assets/logos/lar.png"
     },
     "LAC": {
         "abbr": "LAC",
@@ -177,7 +177,7 @@
         "division": "AFC West",
         "color": "#007BC7",
         "color2": "#ffc20e",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lac.png"
+        "logo": "/assets/logos/lac.png"
     },
     "LAR": {
         "abbr": "LAR",
@@ -187,7 +187,7 @@
         "division": "NFC West",
         "color": "#003594",
         "color2": "#FFD100",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lar.png"
+        "logo": "/assets/logos/lar.png"
     },
     "LV": {
         "abbr": "LV",
@@ -197,7 +197,7 @@
         "division": "AFC West",
         "color": "#000000",
         "color2": "#A5ACAF",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lv.png"
+        "logo": "/assets/logos/lv.png"
     },
     "MIA": {
         "abbr": "MIA",
@@ -207,7 +207,7 @@
         "division": "AFC East",
         "color": "#008E97",
         "color2": "#F58220",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/mia.png"
+        "logo": "/assets/logos/mia.png"
     },
     "MIN": {
         "abbr": "MIN",
@@ -217,7 +217,7 @@
         "division": "NFC North",
         "color": "#4F2683",
         "color2": "#FFC62F",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/min.png"
+        "logo": "/assets/logos/min.png"
     },
     "NE": {
         "abbr": "NE",
@@ -227,7 +227,7 @@
         "division": "AFC East",
         "color": "#002244",
         "color2": "#C60C30",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/ne.png"
+        "logo": "/assets/logos/ne.png"
     },
     "NO": {
         "abbr": "NO",
@@ -237,7 +237,7 @@
         "division": "NFC South",
         "color": "#D3BC8D",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/no.png"
+        "logo": "/assets/logos/no.png"
     },
     "NYG": {
         "abbr": "NYG",
@@ -247,7 +247,7 @@
         "division": "NFC East",
         "color": "#0B2265",
         "color2": "#A71930",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/nyg.png"
+        "logo": "/assets/logos/nyg.png"
     },
     "NYJ": {
         "abbr": "NYJ",
@@ -257,7 +257,7 @@
         "division": "AFC East",
         "color": "#003F2D",
         "color2": "#000000",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/nyj.png"
+        "logo": "/assets/logos/nyj.png"
     },
     "OAK": {
         "abbr": "OAK",
@@ -267,7 +267,7 @@
         "division": "AFC West",
         "color": "#000000",
         "color2": "#A5ACAF",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lv.png"
+        "logo": "/assets/logos/lv.png"
     },
     "PHI": {
         "abbr": "PHI",
@@ -277,7 +277,7 @@
         "division": "NFC East",
         "color": "#004C54",
         "color2": "#A5ACAF",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/phi.png"
+        "logo": "/assets/logos/phi.png"
     },
     "PIT": {
         "abbr": "PIT",
@@ -287,7 +287,7 @@
         "division": "AFC North",
         "color": "#000000",
         "color2": "#FFB612",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/pit.png"
+        "logo": "/assets/logos/pit.png"
     },
     "SD": {
         "abbr": "SD",
@@ -297,7 +297,7 @@
         "division": "AFC West",
         "color": "#007BC7",
         "color2": "#ffc20e",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lac.png"
+        "logo": "/assets/logos/lac.png"
     },
     "SEA": {
         "abbr": "SEA",
@@ -307,7 +307,7 @@
         "division": "NFC West",
         "color": "#002244",
         "color2": "#69be28",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/sea.png"
+        "logo": "/assets/logos/sea.png"
     },
     "SF": {
         "abbr": "SF",
@@ -317,7 +317,7 @@
         "division": "NFC West",
         "color": "#AA0000",
         "color2": "#B3995D",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/sf.png"
+        "logo": "/assets/logos/sf.png"
     },
     "STL": {
         "abbr": "STL",
@@ -327,7 +327,7 @@
         "division": "NFC West",
         "color": "#003594",
         "color2": "#FFD100",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/lar.png"
+        "logo": "/assets/logos/lar.png"
     },
     "TB": {
         "abbr": "TB",
@@ -337,7 +337,7 @@
         "division": "NFC South",
         "color": "#A71930",
         "color2": "#322F2B",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/tb.png"
+        "logo": "/assets/logos/tb.png"
     },
     "TEN": {
         "abbr": "TEN",
@@ -347,7 +347,7 @@
         "division": "AFC South",
         "color": "#4495D2",
         "color2": "#D50A0A",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/ten.png"
+        "logo": "/assets/logos/ten.png"
     },
     "WAS": {
         "abbr": "WAS",
@@ -357,6 +357,6 @@
         "division": "NFC East",
         "color": "#5A1414",
         "color2": "#FFB612",
-        "logo": "https:\/\/a.espncdn.com\/i\/teamlogos\/nfl\/500\/wsh.png"
+        "logo": "/assets/logos/wsh.png"
     }
 }

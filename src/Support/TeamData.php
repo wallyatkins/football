@@ -57,7 +57,7 @@ class TeamData
             'nick' => $abbr,
             'color' => '#334155',
             'color2' => '#94A3B8',
-            'logo' => "https://a.espncdn.com/i/teamlogos/nfl/500/" . strtolower($abbr) . ".png",
+            'logo' => "/assets/logos/" . strtolower($abbr) . ".png",
         ];
     }
 
@@ -74,7 +74,7 @@ class TeamData
     public static function getLogo(string $abbr): string
     {
         $team = self::get($abbr);
-        return $team['logo'] ?? "https://a.espncdn.com/i/teamlogos/nfl/500/" . strtolower($abbr) . ".png";
+        return $team['logo'] ?? ("/assets/logos/" . strtolower($abbr) . ".png");
     }
 
     public static function getName(string $abbr): string

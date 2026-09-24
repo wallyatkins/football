@@ -43,10 +43,8 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
             }
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="/assets/js/tailwind.js"></script>
+    <link rel="stylesheet" href="/assets/css/fonts.css">
     <style>
         :root {
             --stadium-navy: #0B1626;
