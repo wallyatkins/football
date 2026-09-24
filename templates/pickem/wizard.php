@@ -306,10 +306,10 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                         🔒 Kickoff Passed &bull; Game Locked
                     </div>
 
-                    <!-- UNIFIED MATCHUP DUEL VIEWPORT (Mobile Vertical Split / Desktop Horizontal Split) -->
-                    <div class="relative w-full flex-1 flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] rounded-2xl border-2 border-[#243247] bg-[#070d17] shadow-2xl overflow-hidden min-h-0 select-none">
+                    <!-- UNIFIED MATCHUP DUEL VIEWPORT (Mobile Vertical Split / Desktop Horizontal Split: Panels Touch Directly, VS Overlay Bridges Seam) -->
+                    <div class="relative w-full flex-1 flex flex-col md:grid md:grid-cols-2 rounded-2xl border-2 border-[#243247] bg-[#070d17] shadow-2xl overflow-hidden min-h-0 select-none">
 
-                        <!-- AWAY TEAM PANEL (Top half on mobile, Left half on desktop) -->
+                        <!-- AWAY TEAM PANEL (Top half on mobile, Left half on desktop - touches Home Panel) -->
                         <div id="wizardAwayCard" 
                              class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group team-panel-vignette"
                              data-team-type="away">
@@ -324,7 +324,7 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
 
                             <!-- Pick Selection Confirmation Badge (Gold Checkmark) -->
                             <div id="wizardAwayCheck" 
-                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
+                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 md:right-auto md:left-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
@@ -334,26 +334,9 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                             <div id="wizardAwaySelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                         </div>
 
-                        <!-- CENTER DIVIDER & VS BADGE -->
-                        <div class="relative flex items-center justify-center -my-3.5 md:my-0 md:h-full z-30 pointer-events-none">
-                            
-                            <!-- Date/Time Header on Desktop above VS -->
-                            <div class="hidden md:flex absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/75 border border-slate-700/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-slate-300 shadow-md" id="wizardKickoffText">
-                            </div>
-
-                            <!-- Centered Minimal Circular VS Badge -->
-                            <div class="w-9 h-9 sm:w-11 sm:h-11 md:w-14 md:h-14 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-2xl">
-                                VS
-                            </div>
-
-                            <!-- Date/Time Header on Mobile overlaid neatly on seam -->
-                            <div class="md:hidden absolute top-1/2 left-3 -translate-y-1/2 bg-black/80 border border-slate-700/80 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-slate-300 shadow" id="wizardKickoffTextMobile">
-                            </div>
-                        </div>
-
-                        <!-- HOME TEAM PANEL (Bottom half on mobile, Right half on desktop) -->
+                        <!-- HOME TEAM PANEL (Bottom half on mobile, Right half on desktop - touches Away Panel) -->
                         <div id="wizardHomeCard" 
-                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l-2 border-slate-900/60 team-panel-vignette"
+                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l border-slate-900/60 team-panel-vignette"
                              data-team-type="home">
                             
                             <!-- Large Prominent Bold Team Logo (Maximized in area) -->
@@ -374,6 +357,21 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
 
                             <!-- Subtle Accent Selection Ring -->
                             <div id="wizardHomeSelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
+                        </div>
+
+                        <!-- Date/Time Header on Desktop (Centered at top of seam above VS) -->
+                        <div class="hidden md:flex absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none whitespace-nowrap bg-black/75 border border-slate-700/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-slate-300 shadow-md" id="wizardKickoffText">
+                        </div>
+
+                        <!-- Date/Time Header on Mobile (Overlaid along horizontal seam) -->
+                        <div class="md:hidden absolute top-1/2 left-3 -translate-y-1/2 z-30 pointer-events-none bg-black/80 border border-slate-700/80 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-slate-300 shadow" id="wizardKickoffTextMobile">
+                        </div>
+
+                        <!-- CONNECTING VS OVERLAY BADGE (Centered right on seam between Away & Home) -->
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex items-center justify-center">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-[0_0_25px_rgba(0,0,0,0.85)] ring-4 ring-[#070d17]/80">
+                                VS
+                            </div>
                         </div>
 
                     </div>
