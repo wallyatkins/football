@@ -55,6 +55,19 @@ class WallyAuthClientTest extends TestCase
         $this->assertSame('random_state_123', $queryParams['state']);
         $this->assertSame('S256', $queryParams['code_challenge_method']);
         $this->assertNotEmpty($queryParams['code_challenge']);
+        $this->assertArrayNotHasKey('prompt', $queryParams);
+    }
+
+    public function testGetAuthorizationUrlWithPromptNone(): void
+    {
+        $state = 'random_state_456';
+        $verifier = $this->client->generateCodeVerifier();
+        $authUrl = $this->client->getAuthorizationUrl($state, $verifier, 'openid profile email roles', 'none');
+
+        $parts = parse_url($authUrl);
+        parse_str($parts['query'], $queryParams);
+
+        $this->assertSame('none', $queryParams['prompt']);
     }
 
     public function testParseIdTokenDecodesValidJwt(): void

@@ -35,7 +35,7 @@ class WallyAuthClient
         return $this->base64UrlEncode(hash('sha256', $codeVerifier, true));
     }
 
-    public function getAuthorizationUrl(string $state, string $codeVerifier, string $scope = 'openid profile email roles'): string
+    public function getAuthorizationUrl(string $state, string $codeVerifier, string $scope = 'openid profile email roles', ?string $prompt = null): string
     {
         $challenge = $this->generateCodeChallenge($codeVerifier);
 
@@ -48,6 +48,10 @@ class WallyAuthClient
             'code_challenge' => $challenge,
             'code_challenge_method' => 'S256',
         ];
+
+        if ($prompt !== null && $prompt !== '') {
+            $params['prompt'] = $prompt;
+        }
 
         return $this->issuer . '/oauth/authorize?' . http_build_query($params);
     }

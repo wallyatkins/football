@@ -171,10 +171,13 @@ try {
                 exit;
             }
 
-            // Auto-redirect if WallyAuth trusted device cookie is detected and user did not explicitly log out
             $isExplicitLogout = isset($_GET['logged_out']) || isset($_GET['logout']);
-            if (!$isExplicitLogout && (!empty($_COOKIE['WALLY_AUTH_DEVICE']) || !empty($_COOKIE['wally_sso']))) {
-                header('Location: /auth/login');
+            $isGuest = isset($_GET['guest']);
+
+            // Auto-check WallyAuth SSO session via silent OIDC handshake (prompt=none)
+            if (!$isExplicitLogout && !$isGuest && empty($_SESSION['sso_checked'])) {
+                $_SESSION['sso_checked'] = 1;
+                (new AuthController())->login('none');
                 exit;
             }
 
@@ -599,7 +602,8 @@ function renderLandingPage(): void
         <script>
         (function() {
             var isLogout = <?= $isExplicitLogout ? 'true' : 'false' ?>;
-            if (isLogout) {
+            var isGuest = window.location.search.indexOf('guest=1') !== -1;
+            if (isLogout || isGuest) {
                 try {
                     sessionStorage.setItem('wally_logged_out', '1');
                     localStorage.removeItem('wally_player_authenticated');

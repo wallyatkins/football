@@ -18,21 +18,30 @@ class AuthController
         $this->db = $db ?? Connection::getInstance();
     }
 
-    public function login(): void
+    public function login(?string $prompt = null): void
     {
+        $prompt = $prompt ?? ($_GET['prompt'] ?? null);
         $state = bin2hex(random_bytes(16));
         $verifier = $this->client->generateCodeVerifier();
 
         $_SESSION['oauth_state'] = $state;
         $_SESSION['oauth_verifier'] = $verifier;
 
-        $authUrl = $this->client->getAuthorizationUrl($state, $verifier);
+        $authUrl = $this->client->getAuthorizationUrl($state, $verifier, 'openid profile email roles', $prompt);
         header('Location: ' . $authUrl);
         exit;
     }
 
     public function callback(): void
     {
+        $error = $_GET['error'] ?? '';
+        if ($error === 'login_required' || $error === 'interaction_required' || $error === 'access_denied') {
+            unset($_SESSION['oauth_state'], $_SESSION['oauth_verifier']);
+            $_SESSION['sso_checked'] = 1;
+            header('Location: /?guest=1');
+            exit;
+        }
+
         $incomingState = $_GET['state'] ?? '';
         $savedState = $_SESSION['oauth_state'] ?? '';
         $verifier = $_SESSION['oauth_verifier'] ?? '';
