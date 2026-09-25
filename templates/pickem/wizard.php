@@ -1871,7 +1871,9 @@ window.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 season_year: seasonYear,
-                week_number: targetWeek,
+                current_week: weekNumber,
+                target_week: targetWeek,
+                burned_team: teamAbbr,
                 eliminated_team: teamAbbr,
             })
         }).then(r => r.json()).then(data => {

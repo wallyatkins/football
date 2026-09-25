@@ -196,4 +196,27 @@ class SurvivorHandicapTest extends TestCase
         $this->assertFalse($data['success']);
         $this->assertStringContainsString('eliminated', $data['error']);
     }
+
+    public function testBurnHandicapSupportsEliminatedTeamAlias(): void
+    {
+        $_SESSION['user'] = ['id' => 10, 'username' => 'tester10'];
+        $_POST = [
+            'season_year' => 2026,
+            'current_week' => 3,
+            'week_number' => 1,
+            'eliminated_team' => 'KC',
+        ];
+
+        ob_start();
+        try {
+            $this->controller->burnHandicap();
+        } catch (\Throwable) {
+        }
+        $out = ob_get_clean();
+
+        $data = json_decode($out, true);
+        $this->assertTrue($data['success']);
+        $this->assertSame('KC', $data['burned_team']);
+        $this->assertSame(1, $data['week_number']);
+    }
 }

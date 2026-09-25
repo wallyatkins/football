@@ -288,9 +288,14 @@ class SurvivorController
             $input = $_POST;
         }
 
-        $season = (int) ($input['season_year'] ?? date('Y'));
-        $currentWeek = (int) ($input['current_week'] ?? ($input['week_number'] ?? 1));
-        $burnedTeam = strtoupper(trim((string) ($input['burned_team'] ?? ($input['selected_team'] ?? ''))));
+        $season = (int) ($input['season_year'] ?? (getenv('NFL_CURRENT_SEASON') ?: date('Y')));
+        $currentWeek = !empty($input['current_week'])
+            ? (int) $input['current_week']
+            : (int) (getenv('NFL_CURRENT_WEEK') ?: ($this->db->queryValue('SELECT MAX(week_number) FROM games WHERE season_year = :s', ['s' => $season]) ?: 1));
+
+        $burnedTeam = strtoupper(trim((string) (
+            $input['burned_team'] ?? ($input['eliminated_team'] ?? ($input['selected_team'] ?? ''))
+        )));
 
         if (!$burnedTeam) {
             http_response_code(400);
@@ -340,11 +345,12 @@ class SurvivorController
 
         // Identify target missed week (< currentWeek)
         $targetWeek = null;
-        if (!empty($input['target_week'])) {
-            $reqWeek = (int) $input['target_week'];
-            if ($reqWeek < $currentWeek && !in_array($reqWeek, $usedWeeks, true)) {
-                $targetWeek = $reqWeek;
-            }
+        $candidateWeek = !empty($input['target_week'])
+            ? (int) $input['target_week']
+            : (!empty($input['week_number']) && (int)$input['week_number'] < $currentWeek ? (int)$input['week_number'] : null);
+
+        if ($candidateWeek !== null && $candidateWeek < $currentWeek && !in_array($candidateWeek, $usedWeeks, true)) {
+            $targetWeek = $candidateWeek;
         }
 
         if ($targetWeek === null) {
