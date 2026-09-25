@@ -98,6 +98,15 @@ class AuthController
                 'avatar_url' => $effectiveAvatar,
             ];
 
+            // Issue long-lived persistent device token (auto-login / trusted device)
+            try {
+                $deviceAuth = new \WallyFootball\Services\DeviceAuthService($this->db);
+                $deviceToken = $deviceAuth->createToken($userId, $_SERVER['HTTP_USER_AGENT'] ?? null);
+                $deviceAuth->setDeviceCookie($deviceToken);
+            } catch (\Throwable) {
+                // Non-blocking
+            }
+
             header('Location: /pickem');
             exit;
         } catch (\Throwable $e) {
@@ -109,9 +118,17 @@ class AuthController
 
     public function logout(): void
     {
+        if (!empty($_COOKIE[\WallyFootball\Services\DeviceAuthService::COOKIE_NAME])) {
+            try {
+                $deviceAuth = new \WallyFootball\Services\DeviceAuthService($this->db);
+                $deviceAuth->revokeToken($_COOKIE[\WallyFootball\Services\DeviceAuthService::COOKIE_NAME]);
+            } catch (\Throwable) {
+                // Non-blocking
+            }
+        }
         unset($_SESSION['user']);
         session_destroy();
-        header('Location: /');
+        header('Location: /?logged_out=1');
         exit;
     }
 }

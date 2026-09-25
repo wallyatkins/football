@@ -35,6 +35,21 @@ if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
     session_start();
 }
 
+// Auto-restore authenticated user session from persistent trusted device cookie
+if (empty($_SESSION['user']) && !empty($_COOKIE[\WallyFootball\Services\DeviceAuthService::COOKIE_NAME])) {
+    try {
+        $deviceAuth = new \WallyFootball\Services\DeviceAuthService();
+        $restoredUser = $deviceAuth->validateToken($_COOKIE[\WallyFootball\Services\DeviceAuthService::COOKIE_NAME]);
+        if ($restoredUser) {
+            $_SESSION['user'] = $restoredUser;
+        } else {
+            $deviceAuth->clearDeviceCookie();
+        }
+    } catch (\Throwable) {
+        // Non-blocking fallback
+    }
+}
+
 // Prevent client and browser proxy caching of dynamic NFL pool state
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
@@ -155,6 +170,14 @@ try {
                 header('Location: /pickem');
                 exit;
             }
+
+            // Auto-redirect if WallyAuth trusted device cookie is detected and user did not explicitly log out
+            $isExplicitLogout = isset($_GET['logged_out']) || isset($_GET['logout']);
+            if (!$isExplicitLogout && (!empty($_COOKIE['WALLY_AUTH_DEVICE']) || !empty($_COOKIE['wally_sso']))) {
+                header('Location: /auth/login');
+                exit;
+            }
+
             renderLandingPage();
             exit;
 
@@ -407,6 +430,7 @@ try {
 function renderLandingPage(): void
 {
     header('Content-Type: text/html; charset=utf-8');
+    $isExplicitLogout = isset($_GET['logged_out']) || isset($_GET['logout']);
     $season = (int) (getenv('NFL_CURRENT_SEASON') ?: date('Y'));
     $landingWinner = null;
     try {
@@ -487,6 +511,24 @@ function renderLandingPage(): void
                     </div>
                 <?php endif; ?>
 
+                <?php if ($isExplicitLogout): ?>
+                    <div class="mb-5 p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs font-mono text-slate-300 flex items-center justify-center gap-2">
+                        <span>👋</span>
+                        <span>You have signed out. Safe to close this window or sign in with another account.</span>
+                    </div>
+                <?php else: ?>
+                    <div id="wallyAutoLoginStatus" class="hidden mb-5 p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-center animate-pulse">
+                        <div class="inline-flex items-center gap-2.5 text-sm font-bold text-emerald-300">
+                            <svg class="animate-spin h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            <span>Trusted Device Recognized &bull; Signing you in...</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1 font-mono">Restoring your session automatically</p>
+                    </div>
+                <?php endif; ?>
+
                 <div class="inline-flex p-3 rounded-xl bg-amber-500/10 text-amber-400 text-3xl mb-4 border border-amber-500/20">
                     🏈
                 </div>
@@ -516,7 +558,7 @@ function renderLandingPage(): void
                     </div>
                 </div>
 
-                <a href="/auth/login" class="w-full inline-flex justify-center items-center gap-2 px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg text-base">
+                <a href="/auth/login" id="btnEnterLeague" class="w-full inline-flex justify-center items-center gap-2 px-5 py-3 rounded-xl font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg text-base">
                     Enter League with WallyAuth SSO &rarr;
                 </a>
 
@@ -553,6 +595,43 @@ function renderLandingPage(): void
                 Protected by WallyAuth SSO &bull; Self-hosted telemetry via Matomo Analytics
             </p>
         </footer>
+
+        <script>
+        (function() {
+            var isLogout = <?= $isExplicitLogout ? 'true' : 'false' ?>;
+            if (isLogout) {
+                try {
+                    sessionStorage.setItem('wally_logged_out', '1');
+                    localStorage.removeItem('wally_player_authenticated');
+                } catch(e) {}
+                return;
+            }
+
+            try {
+                if (sessionStorage.getItem('wally_logged_out') === '1') {
+                    return;
+                }
+
+                var wasAuth = localStorage.getItem('wally_player_authenticated') === '1';
+                var hasDeviceCookie = document.cookie.indexOf('wally_football_device') !== -1 || document.cookie.indexOf('WALLY_AUTH_DEVICE') !== -1;
+
+                if (wasAuth || hasDeviceCookie) {
+                    var statusEl = document.getElementById('wallyAutoLoginStatus');
+                    if (statusEl) statusEl.classList.remove('hidden');
+
+                    var btn = document.getElementById('btnEnterLeague');
+                    if (btn) {
+                        btn.classList.add('opacity-60', 'pointer-events-none');
+                        btn.innerHTML = '<span>Verifying credentials...</span>';
+                    }
+
+                    setTimeout(function() {
+                        window.location.href = '/auth/login';
+                    }, 100);
+                }
+            } catch(e) {}
+        })();
+        </script>
     </body>
     </html>
     <?php

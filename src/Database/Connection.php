@@ -188,6 +188,22 @@ class Connection
             }
         }
 
+        // Ensure user_device_tokens table exists
+        try {
+            $this->pdo->query('SELECT 1 FROM user_device_tokens LIMIT 1');
+        } catch (\Throwable) {
+            $deviceTokensMigration = dirname(__DIR__, 2) . '/db/migrations/005_device_tokens.sql';
+            if (file_exists($deviceTokensMigration)) {
+                $sql = file_get_contents($deviceTokensMigration);
+                if ($sql) {
+                    if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                        $sql = str_replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY', $sql);
+                    }
+                    $this->pdo->exec($sql);
+                }
+            }
+        }
+
         // Ensure fantasy_franchises has contact_emails column
         try {
             $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

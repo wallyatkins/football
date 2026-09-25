@@ -442,6 +442,7 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
                             <!-- Sign Out -->
                             <div class="py-1.5">
                                 <a href="/auth/logout" 
+                                   onclick="try{localStorage.removeItem('wally_player_authenticated');sessionStorage.setItem('wally_logged_out','1');}catch(e){}"
                                    class="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition">
                                     <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                     <span>Sign Out</span>
@@ -520,6 +521,12 @@ $isPickem = !$isSurvivor && !str_starts_with($reqUri, '/fantasy') && !str_starts
 
     <?php if (!empty($user)): ?>
         <?php require __DIR__ . '/partials/chat_widget.php'; ?>
+        <script>
+            try {
+                localStorage.setItem('wally_player_authenticated', '1');
+                sessionStorage.removeItem('wally_logged_out');
+            } catch(e) {}
+        </script>
     <?php endif; ?>
 
     <script>
