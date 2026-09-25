@@ -198,6 +198,63 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
   .eq-b1 { animation: eq-pulse-1 0.7s infinite ease-in-out; }
   .eq-b2 { animation: eq-pulse-2 0.5s infinite ease-in-out; }
   .eq-b3 { animation: eq-pulse-3 0.8s infinite ease-in-out; }
+
+  /* ── Locked game overlay ─────────────────────────────────────────── */
+  .wizard-locked-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(7, 13, 23, 0.72);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: inherit;
+    transition: opacity 0.2s;
+  }
+  .wizard-locked-overlay.hidden { display: none; }
+
+  /* ── Swipe-capture wrapper ───────────────────────────────────────── */
+  #wizardCardOuter {
+    touch-action: pan-y pinch-zoom;
+  }
+
+  /* ── Desktop side-nav arrows ─────────────────────────────────────── */
+  .wizard-side-nav {
+    flex-shrink: 0;
+    width: 3.25rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (min-width: 768px) {
+    .wizard-side-nav { display: flex; }
+  }
+  .wizard-side-nav button {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    background: rgba(22, 34, 53, 0.85);
+    border: 1.5px solid #243247;
+    color: #94A3B8;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, transform 0.1s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wizard-side-nav button:hover:not(:disabled) {
+    background: #1e2e48;
+    color: #EAB308;
+    border-color: #EAB308;
+    transform: scale(1.08);
+  }
+  .wizard-side-nav button:active:not(:disabled) { transform: scale(0.95); }
+  .wizard-side-nav button:disabled { opacity: 0.22; cursor: not-allowed; }
 </style>
 
 <!-- Audio Assets -->
@@ -301,81 +358,117 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
             <section id="state-1-view" class="w-full flex-1 flex flex-col items-center justify-between min-h-0">
                 
                 <!-- Matchup Card Container: 100% Mobile Height & Desktop Grid (No Page Scroll) -->
-                <div id="wizardCardContainer" class="w-full flex-1 flex flex-col items-center justify-center min-h-0 relative py-1">
-                    
-                    <div id="wizardLockNotice" class="hidden w-full mb-1 p-1 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] font-mono text-center">
-                        🔒 Kickoff Passed &bull; Game Locked
+                <div id="wizardCardContainer" class="w-full flex-1 flex flex-col items-center justify-center min-h-0 relative py-2 sm:py-3">
+
+                    <div id="wizardLockNotice" class="hidden w-full mb-2 px-3 py-1.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] font-mono text-center">
+                        🔒 This game has kicked off — pick a team to continue, or swipe → to skip
                     </div>
 
-                    <!-- UNIFIED MATCHUP DUEL VIEWPORT (Mobile Vertical Split / Desktop Horizontal Split: Panels Touch Directly, VS Overlay Bridges Seam) -->
-                    <div class="relative w-full flex-1 flex flex-col md:grid md:grid-cols-2 rounded-2xl border-2 border-[#243247] bg-[#070d17] shadow-2xl overflow-hidden min-h-0 select-none">
+                    <!-- Outer flex row: [← arrow] [card] [→ arrow] — arrows only visible on desktop -->
+                    <div id="wizardCardOuter" class="w-full flex-1 flex items-center gap-2 min-h-0">
 
-                        <!-- AWAY TEAM PANEL (Top half on mobile, Left half on desktop - touches Home Panel) -->
-                        <div id="wizardAwayCard" 
-                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group team-panel-vignette"
-                             data-team-type="away">
-                            
-                            <!-- Large Prominent Bold Team Logo (Maximized in area) -->
-                            <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
-                                <img id="wizardAwayLogo" 
-                                     src="" 
-                                     alt="Away Team Logo" 
-                                     class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
-                            </div>
-
-                            <!-- Pick Selection Confirmation Badge (Gold Checkmark) -->
-                            <div id="wizardAwayCheck" 
-                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 md:right-auto md:left-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
-                                <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                </svg>
-                            </div>
-
-                            <!-- Subtle Accent Selection Ring -->
-                            <div id="wizardAwaySelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
+                        <!-- Desktop PREV arrow -->
+                        <div class="wizard-side-nav">
+                            <button id="btnSideNavPrev" type="button" aria-label="Previous game" title="Previous game">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
                         </div>
 
-                        <!-- HOME TEAM PANEL (Bottom half on mobile, Right half on desktop - touches Away Panel) -->
-                        <div id="wizardHomeCard" 
-                             class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l border-slate-900/60 team-panel-vignette"
-                             data-team-type="home">
-                            
-                            <!-- Large Prominent Bold Team Logo (Maximized in area) -->
-                            <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
-                                <img id="wizardHomeLogo" 
-                                     src="" 
-                                     alt="Home Team Logo" 
-                                     class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                        <!-- UNIFIED MATCHUP DUEL VIEWPORT -->
+                        <div class="relative flex-1 flex flex-col md:grid md:grid-cols-2 rounded-2xl border-2 border-[#243247] bg-[#070d17] shadow-2xl overflow-hidden min-h-0 select-none h-full">
+
+                            <!-- AWAY TEAM PANEL -->
+                            <div id="wizardAwayCard"
+                                 class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group team-panel-vignette"
+                                 data-team-type="away">
+
+                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                    <img id="wizardAwayLogo"
+                                         src=""
+                                         alt="Away Team Logo"
+                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                                </div>
+
+                                <!-- Pick Selection Confirmation Badge -->
+                                <div id="wizardAwayCheck"
+                                     class="absolute top-3 right-3 sm:top-5 sm:right-5 md:right-auto md:left-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
+                                    <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                </div>
+                                <div id="wizardAwaySelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                             </div>
 
-                            <!-- Pick Selection Confirmation Badge (Gold Checkmark) -->
-                            <div id="wizardHomeCheck" 
-                                 class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
-                                <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                </svg>
+                            <!-- HOME TEAM PANEL -->
+                            <div id="wizardHomeCard"
+                                 class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l border-slate-900/60 team-panel-vignette"
+                                 data-team-type="home">
+
+                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                    <img id="wizardHomeLogo"
+                                         src=""
+                                         alt="Home Team Logo"
+                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                                </div>
+
+                                <!-- Pick Selection Confirmation Badge -->
+                                <div id="wizardHomeCheck"
+                                     class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
+                                    <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                                </div>
+                                <div id="wizardHomeSelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                             </div>
 
-                            <!-- Subtle Accent Selection Ring -->
-                            <div id="wizardHomeSelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
-                        </div>
+                            <!-- Date/Time Header on Desktop -->
+                            <div class="hidden md:flex absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none whitespace-nowrap bg-black/75 border border-slate-700/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-slate-300 shadow-md" id="wizardKickoffText"></div>
 
-                        <!-- Date/Time Header on Desktop (Centered at top of seam above VS) -->
-                        <div class="hidden md:flex absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none whitespace-nowrap bg-black/75 border border-slate-700/80 px-3 py-1 rounded-full text-[11px] font-mono font-bold text-slate-300 shadow-md" id="wizardKickoffText">
-                        </div>
+                            <!-- Date/Time Header on Mobile -->
+                            <div class="md:hidden absolute top-1/2 left-3 -translate-y-1/2 z-30 pointer-events-none bg-black/80 border border-slate-700/80 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-slate-300 shadow" id="wizardKickoffTextMobile"></div>
 
-                        <!-- Date/Time Header on Mobile (Overlaid along horizontal seam) -->
-                        <div class="md:hidden absolute top-1/2 left-3 -translate-y-1/2 z-30 pointer-events-none bg-black/80 border border-slate-700/80 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold text-slate-300 shadow" id="wizardKickoffTextMobile">
-                        </div>
-
-                        <!-- CONNECTING VS OVERLAY BADGE (Centered right on seam between Away & Home) -->
-                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex items-center justify-center">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-[0_0_25px_rgba(0,0,0,0.85)] ring-4 ring-[#070d17]/80">
-                                VS
+                            <!-- VS Badge -->
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex items-center justify-center">
+                                <div id="wizardVsBadge" class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-[0_0_25px_rgba(0,0,0,0.85)] ring-4 ring-[#070d17]/80">
+                                    VS
+                                </div>
                             </div>
+
+                            <!-- ── LOCKED GAME OVERLAY ── shows final score + swipe hint -->
+                            <div id="wizardLockedOverlay" class="wizard-locked-overlay hidden">
+                                <!-- FINAL badge -->
+                                <div class="px-3 py-1 rounded-full bg-slate-700/90 border border-slate-500/60 text-[10px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest shadow">
+                                    🔒 Final
+                                </div>
+                                <!-- Score display -->
+                                <div id="wizardFinalScore" class="flex items-center gap-3 sm:gap-5 mt-1">
+                                    <!-- away abbr + score -->
+                                    <div class="text-center">
+                                        <div id="wizardScoreAwayAbbr" class="text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase mb-0.5"></div>
+                                        <div id="wizardScoreAway" class="text-2xl sm:text-4xl md:text-5xl font-black font-mono text-white tabular-nums leading-none">–</div>
+                                    </div>
+                                    <div class="text-slate-500 font-mono font-bold text-lg sm:text-2xl">–</div>
+                                    <!-- home abbr + score -->
+                                    <div class="text-center">
+                                        <div id="wizardScoreHomeAbbr" class="text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase mb-0.5"></div>
+                                        <div id="wizardScoreHome" class="text-2xl sm:text-4xl md:text-5xl font-black font-mono text-white tabular-nums leading-none">–</div>
+                                    </div>
+                                </div>
+                                <!-- Winner label -->
+                                <div id="wizardWinnerLabel" class="text-[11px] sm:text-xs font-mono font-bold text-amber-300 mt-0.5"></div>
+                                <!-- Swipe hint -->
+                                <div class="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-[11px] text-slate-400 font-mono">
+                                    <span class="md:hidden">Swipe ← → or tap PREV / NEXT to navigate</span>
+                                    <span class="hidden md:inline">Use ← → arrows or keyboard to navigate</span>
+                                </div>
+                            </div>
+
+                        </div><!-- end card inner -->
+
+                        <!-- Desktop NEXT arrow -->
+                        <div class="wizard-side-nav">
+                            <button id="btnSideNavNext" type="button" aria-label="Next game" title="Next game">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </button>
                         </div>
 
-                    </div>
+                    </div><!-- end wizardCardOuter -->
                 </div>
 
                 <!-- NAVIGATION FOOTER BAR (PREV, Bubbles 1..N, NEXT) -->
@@ -1181,6 +1274,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         if (step === 1) {
+            // Auto-advance to first game that still needs a pick
+            currentIndex = firstNeedingPickIndex();
             renderCurrentMatchup();
             // Display Pick'em rules overlay before user begins making picks
             if (!hasAcknowledgedPickemRules) {
@@ -1282,36 +1377,98 @@ window.addEventListener('DOMContentLoaded', () => {
     const wizardKickoffTextMobile = document.getElementById('wizardKickoffTextMobile');
     const wizardLockNotice = document.getElementById('wizardLockNotice');
 
+    // Extra elements for locked overlay & side-nav
+    const wizardLockedOverlay  = document.getElementById('wizardLockedOverlay');
+    const wizardScoreAway      = document.getElementById('wizardScoreAway');
+    const wizardScoreHome      = document.getElementById('wizardScoreHome');
+    const wizardScoreAwayAbbr  = document.getElementById('wizardScoreAwayAbbr');
+    const wizardScoreHomeAbbr  = document.getElementById('wizardScoreHomeAbbr');
+    const wizardWinnerLabel    = document.getElementById('wizardWinnerLabel');
+    const wizardVsBadge        = document.getElementById('wizardVsBadge');
+    const btnSideNavPrev       = document.getElementById('btnSideNavPrev');
+    const btnSideNavNext       = document.getElementById('btnSideNavNext');
+    const wizardCardOuter      = document.getElementById('wizardCardOuter');
+
+    // ── Helper: first index that is unlocked and unpicked ───────────
+    function firstNeedingPickIndex() {
+        // Prefer first unpicked unlocked game
+        for (let i = 0; i < wizardGames.length; i++) {
+            if (!wizardGames[i].is_locked && wizardGames[i].user_pick === null) return i;
+        }
+        // All picked or all locked — land on first unlocked game
+        for (let i = 0; i < wizardGames.length; i++) {
+            if (!wizardGames[i].is_locked) return i;
+        }
+        // Everything locked — stay at 0
+        return 0;
+    }
+
     function renderCurrentMatchup() {
         if (!wizardGames.length) return;
         const game = wizardGames[currentIndex];
 
-        // Away Panel: domintated by Away team primary color & large bold logo
+        // Team panel colours & logos
         wizardAwayCard.style.backgroundColor = game.away_color;
         wizardAwayLogo.src = game.away_logo;
         wizardAwayLogo.alt = game.away_name;
-
-        // Home Panel: dominated by Home team primary color & large bold logo
         wizardHomeCard.style.backgroundColor = game.home_color;
         wizardHomeLogo.src = game.home_logo;
         wizardHomeLogo.alt = game.home_name;
 
-        // Kickoff Date & Time header
+        // Kickoff time labels
         if (wizardKickoffText) wizardKickoffText.textContent = game.kickoff_formatted;
         if (wizardKickoffTextMobile) wizardKickoffTextMobile.textContent = game.kickoff_short;
 
-        // Lock Notice
+        // ── Locked overlay ──────────────────────────────────────────
         if (game.is_locked) {
             wizardLockNotice.classList.remove('hidden');
+            wizardLockedOverlay.classList.remove('hidden');
+
+            // Team abbreviations
+            if (wizardScoreAwayAbbr) wizardScoreAwayAbbr.textContent = game.away_team;
+            if (wizardScoreHomeAbbr) wizardScoreHomeAbbr.textContent = game.home_team;
+
+            // Scores (null if not yet available)
+            const as = game.away_score;
+            const hs = game.home_score;
+            if (wizardScoreAway) wizardScoreAway.textContent = (as !== null && as !== undefined) ? as : '–';
+            if (wizardScoreHome) wizardScoreHome.textContent = (hs !== null && hs !== undefined) ? hs : '–';
+
+            // Winner label
+            if (wizardWinnerLabel) {
+                if (as !== null && hs !== null && as !== undefined && hs !== undefined) {
+                    const winner = as > hs ? game.away_team : (hs > as ? game.home_team : null);
+                    wizardWinnerLabel.textContent = winner ? `${winner} wins` : 'Tie';
+                } else if (game.winning_team) {
+                    wizardWinnerLabel.textContent = `${game.winning_team} wins`;
+                } else {
+                    wizardWinnerLabel.textContent = 'In Progress';
+                }
+            }
+
+            // Dim the team panels so the overlay pops
+            wizardAwayCard.style.filter = 'brightness(0.45)';
+            wizardHomeCard.style.filter = 'brightness(0.45)';
+            wizardAwayCard.style.cursor = 'default';
+            wizardHomeCard.style.cursor = 'default';
         } else {
             wizardLockNotice.classList.add('hidden');
+            wizardLockedOverlay.classList.add('hidden');
+            wizardAwayCard.style.filter = '';
+            wizardHomeCard.style.filter = '';
+            wizardAwayCard.style.cursor = '';
+            wizardHomeCard.style.cursor = '';
         }
 
-        // Selection styling
+        // Selection state (checkmarks / rings)
         updateCardSelectionState(game.user_pick);
 
-        // Navigation state
+        // PREV/NEXT footer buttons
         btnWizardPrev.disabled = (currentIndex === 0);
+
+        // Desktop side-nav arrows
+        if (btnSideNavPrev) btnSideNavPrev.disabled = (currentIndex === 0);
+        if (btnSideNavNext) btnSideNavNext.disabled = (currentIndex === wizardGames.length - 1);
 
         // Progress indicators
         updatePickCounters();
@@ -1321,7 +1478,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateCardSelectionState(userPick) {
         const game = wizardGames[currentIndex];
 
-        // Reset checkmarks & selection rings
         wizardAwayCheck.classList.add('scale-0', 'opacity-0');
         wizardHomeCheck.classList.add('scale-0', 'opacity-0');
         if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.add('opacity-0');
@@ -1330,14 +1486,16 @@ window.addEventListener('DOMContentLoaded', () => {
         wizardAwayCard.classList.remove('opacity-40');
         wizardHomeCard.classList.remove('opacity-40');
 
-        if (userPick === game.away_team) {
-            wizardAwayCheck.classList.remove('scale-0', 'opacity-0');
-            if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.remove('opacity-0');
-            wizardHomeCard.classList.add('opacity-40');
-        } else if (userPick === game.home_team) {
-            wizardHomeCheck.classList.remove('scale-0', 'opacity-0');
-            if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.remove('opacity-0');
-            wizardAwayCard.classList.add('opacity-40');
+        if (!game.is_locked) {
+            if (userPick === game.away_team) {
+                wizardAwayCheck.classList.remove('scale-0', 'opacity-0');
+                if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.remove('opacity-0');
+                wizardHomeCard.classList.add('opacity-40');
+            } else if (userPick === game.home_team) {
+                wizardHomeCheck.classList.remove('scale-0', 'opacity-0');
+                if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.remove('opacity-0');
+                wizardAwayCard.classList.add('opacity-40');
+            }
         }
     }
 
@@ -1354,22 +1512,57 @@ window.addEventListener('DOMContentLoaded', () => {
             bubble.type = 'button';
             bubble.title = `Game ${idx + 1}`;
             const isCurrent = (idx === currentIndex);
-            const isPicked = (g.user_pick !== null);
+            const isPicked  = (g.user_pick !== null);
+            const isLocked  = g.is_locked;
 
             bubble.className = `w-7 h-7 sm:w-8 sm:h-8 rounded-full font-mono text-[10px] sm:text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
-                isCurrent 
-                    ? 'ring-2 ring-amber-400 bg-amber-400 text-slate-950 font-black scale-110 shadow-lg z-10' 
-                    : (isPicked 
-                        ? 'bg-emerald-500/90 hover:bg-emerald-400 text-slate-950 font-black border border-emerald-400' 
-                        : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700')
+                isCurrent
+                    ? 'ring-2 ring-amber-400 bg-amber-400 text-slate-950 font-black scale-110 shadow-lg z-10'
+                    : (isPicked
+                        ? 'bg-emerald-500/90 hover:bg-emerald-400 text-slate-950 font-black border border-emerald-400'
+                        : (isLocked
+                            ? 'bg-slate-700/80 hover:bg-slate-600 text-slate-400 border border-slate-600 line-through'
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'))
             }`;
             bubble.innerHTML = isPicked && !isCurrent ? `${idx + 1}✓` : `${idx + 1}`;
+            bubble.title = isLocked ? `Game ${idx + 1} — Locked` : `Game ${idx + 1}`;
             bubble.onclick = () => {
                 currentIndex = idx;
                 renderCurrentMatchup();
             };
             wizardTimeline.appendChild(bubble);
         });
+    }
+
+    // ── Helper: navigate (skip locked if user just picked) ──────────
+    function navigateNext(skipLocked = false) {
+        if (skipLocked) {
+            // After a pick: jump to next UNLOCKED unpicked game
+            let next = currentIndex + 1;
+            while (next < wizardGames.length && wizardGames[next].is_locked) next++;
+            if (next < wizardGames.length) {
+                currentIndex = next;
+                playAdvanceSound();
+                renderCurrentMatchup();
+                return;
+            }
+        }
+        // Normal next
+        if (currentIndex < wizardGames.length - 1) {
+            currentIndex++;
+            playAdvanceSound();
+            renderCurrentMatchup();
+        } else {
+            goToState(2);
+        }
+    }
+
+    function navigatePrev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            playAdvanceSound();
+            renderCurrentMatchup();
+        }
     }
 
     function makePick(team) {
@@ -1383,7 +1576,7 @@ window.addEventListener('DOMContentLoaded', () => {
         updatePickCounters();
         renderTimeline();
 
-        // Autosave quietly to server in background (implicit save)
+        // Autosave quietly in background
         fetch('/pickem/autosave', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1397,48 +1590,68 @@ window.addEventListener('DOMContentLoaded', () => {
 
         window.syncWithStandardGrid(game.id, team);
 
-        // Smooth immediate transition to next game
+        // Advance to next unpicked unlocked game (skip locked ones)
         setTimeout(() => {
-            if (currentIndex < wizardGames.length - 1) {
-                currentIndex++;
-                playAdvanceSound();
-                renderCurrentMatchup();
+            // Check if all unlocked games are picked
+            const unlockedUnpicked = wizardGames.filter(g => !g.is_locked && g.user_pick === null);
+            if (unlockedUnpicked.length === 0) {
+                goToState(2); // All available picks done — move to tiebreaker
             } else {
-                // Last game picked -> advance to Tiebreaker
-                goToState(2);
+                navigateNext(true); // skip locked games when auto-advancing
             }
         }, 220);
     }
 
-    // Tapping top half / left panel selects Away
+    // ── Team panel click handlers ────────────────────────────────────
     wizardAwayCard.onclick = () => {
         const game = wizardGames[currentIndex];
+        if (game.is_locked) {
+            // On locked game, tapping navigates forward
+            navigateNext(false);
+            return;
+        }
         makePick(game.away_team);
     };
 
-    // Tapping bottom half / right panel selects Home
     wizardHomeCard.onclick = () => {
         const game = wizardGames[currentIndex];
+        if (game.is_locked) {
+            navigateNext(false);
+            return;
+        }
         makePick(game.home_team);
     };
 
-    btnWizardPrev.onclick = () => {
-        if (currentIndex > 0) {
-            currentIndex--;
-            playAdvanceSound();
-            renderCurrentMatchup();
-        }
-    };
+    // ── Footer PREV / NEXT ───────────────────────────────────────────
+    btnWizardPrev.onclick = navigatePrev;
+    btnWizardNext.onclick = () => navigateNext(false);
 
-    btnWizardNext.onclick = () => {
-        if (currentIndex < wizardGames.length - 1) {
-            currentIndex++;
-            playAdvanceSound();
-            renderCurrentMatchup();
-        } else {
-            goToState(2);
-        }
-    };
+    // ── Desktop side-nav arrows ──────────────────────────────────────
+    if (btnSideNavPrev) btnSideNavPrev.onclick = navigatePrev;
+    if (btnSideNavNext) btnSideNavNext.onclick = () => navigateNext(false);
+
+    // ── Touch swipe support (horizontal) ────────────────────────────
+    if (wizardCardOuter) {
+        let touchStartX = null;
+        let touchStartY = null;
+        wizardCardOuter.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        wizardCardOuter.addEventListener('touchend', e => {
+            if (touchStartX === null) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            // Only act on clearly horizontal swipes (ratio > 1.5)
+            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                if (dx < 0) navigateNext(false);  // swipe left → next
+                else        navigatePrev();         // swipe right → prev
+            }
+            touchStartX = null;
+            touchStartY = null;
+        }, { passive: true });
+    }
 
     // -----------------------------------------------------------------
     // 5. State 2: Tiebreaker Input Logic & Dynamic Score Generator
