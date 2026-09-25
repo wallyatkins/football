@@ -199,25 +199,6 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
   .eq-b2 { animation: eq-pulse-2 0.5s infinite ease-in-out; }
   .eq-b3 { animation: eq-pulse-3 0.8s infinite ease-in-out; }
 
-  /* ── Locked game overlay ─────────────────────────────────────────── */
-  .wizard-locked-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 25;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background: rgba(7, 13, 23, 0.72);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    border-radius: inherit;
-    transition: opacity 0.2s;
-  }
-  .wizard-locked-overlay.hidden { display: none; }
-
   /* ── Swipe-capture wrapper ───────────────────────────────────────── */
   #wizardCardOuter {
     touch-action: pan-y pinch-zoom;
@@ -360,10 +341,6 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                 <!-- Matchup Card Container: 100% Mobile Height & Desktop Grid (No Page Scroll) -->
                 <div id="wizardCardContainer" class="w-full flex-1 flex flex-col items-center justify-center min-h-0 relative py-2 sm:py-3">
 
-                    <div id="wizardLockNotice" class="hidden w-full mb-2 px-3 py-1.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] font-mono text-center">
-                        🔒 This game has kicked off — pick a team to continue, or swipe → to skip
-                    </div>
-
                     <!-- Outer flex row: [← arrow] [card] [→ arrow] — arrows only visible on desktop -->
                     <div id="wizardCardOuter" class="w-full flex-1 flex items-center gap-2 min-h-0">
 
@@ -382,18 +359,17 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                                  class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group team-panel-vignette"
                                  data-team-type="away">
 
-                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4 relative">
                                     <img id="wizardAwayLogo"
                                          src=""
                                          alt="Away Team Logo"
-                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                    
+                                    <!-- Score Centered Over Away Logo (for played games) -->
+                                    <div id="wizardAwayScore" class="hidden absolute inset-0 flex items-center justify-center font-mono font-black text-6xl sm:text-7xl md:text-8xl text-white drop-shadow-[0_6px_28px_rgba(0,0,0,0.95)] select-none pointer-events-none"></div>
                                 </div>
 
-                                <!-- Pick Selection Confirmation Badge -->
-                                <div id="wizardAwayCheck"
-                                     class="absolute top-3 right-3 sm:top-5 sm:right-5 md:right-auto md:left-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
-                                    <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                                </div>
+                                <!-- Subtle Accent Selection Ring -->
                                 <div id="wizardAwaySelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                             </div>
 
@@ -402,18 +378,17 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                                  class="wizard-team-panel flex-1 h-full w-full flex flex-col items-center justify-center p-3 sm:p-6 lg:p-8 cursor-pointer relative overflow-hidden transition-all duration-200 select-none active:brightness-90 group border-t-2 md:border-t-0 md:border-l border-slate-900/60 team-panel-vignette"
                                  data-team-type="home">
 
-                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4">
+                                <div class="w-full h-full flex items-center justify-center pointer-events-none p-2 sm:p-4 relative">
                                     <img id="wizardHomeLogo"
                                          src=""
                                          alt="Home Team Logo"
-                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-transform duration-200">
+                                         class="max-w-[70%] max-h-[75%] sm:max-w-[75%] sm:max-h-[80%] md:max-w-[80%] md:max-h-[80%] object-contain filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.65)] group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+
+                                    <!-- Score Centered Over Home Logo (for played games) -->
+                                    <div id="wizardHomeScore" class="hidden absolute inset-0 flex items-center justify-center font-mono font-black text-6xl sm:text-7xl md:text-8xl text-white drop-shadow-[0_6px_28px_rgba(0,0,0,0.95)] select-none pointer-events-none"></div>
                                 </div>
 
-                                <!-- Pick Selection Confirmation Badge -->
-                                <div id="wizardHomeCheck"
-                                     class="absolute top-3 right-3 sm:top-5 sm:right-5 w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shadow-xl transition-all duration-200 scale-0 opacity-0 z-20 pointer-events-none">
-                                    <svg class="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
-                                </div>
+                                <!-- Subtle Accent Selection Ring -->
                                 <div id="wizardHomeSelectionRing" class="absolute inset-0 border-4 border-amber-400 pointer-events-none opacity-0 transition-opacity duration-200"></div>
                             </div>
 
@@ -427,35 +402,6 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex items-center justify-center">
                                 <div id="wizardVsBadge" class="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full bg-[#0B1626] border-2 border-amber-400 text-amber-400 font-mono font-black text-xs sm:text-sm md:text-base flex items-center justify-center shadow-[0_0_25px_rgba(0,0,0,0.85)] ring-4 ring-[#070d17]/80">
                                     VS
-                                </div>
-                            </div>
-
-                            <!-- ── LOCKED GAME OVERLAY ── shows final score + swipe hint -->
-                            <div id="wizardLockedOverlay" class="wizard-locked-overlay hidden">
-                                <!-- FINAL badge -->
-                                <div class="px-3 py-1 rounded-full bg-slate-700/90 border border-slate-500/60 text-[10px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest shadow">
-                                    🔒 Final
-                                </div>
-                                <!-- Score display -->
-                                <div id="wizardFinalScore" class="flex items-center gap-3 sm:gap-5 mt-1">
-                                    <!-- away abbr + score -->
-                                    <div class="text-center">
-                                        <div id="wizardScoreAwayAbbr" class="text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase mb-0.5"></div>
-                                        <div id="wizardScoreAway" class="text-2xl sm:text-4xl md:text-5xl font-black font-mono text-white tabular-nums leading-none">–</div>
-                                    </div>
-                                    <div class="text-slate-500 font-mono font-bold text-lg sm:text-2xl">–</div>
-                                    <!-- home abbr + score -->
-                                    <div class="text-center">
-                                        <div id="wizardScoreHomeAbbr" class="text-[10px] sm:text-xs font-mono font-bold text-slate-400 uppercase mb-0.5"></div>
-                                        <div id="wizardScoreHome" class="text-2xl sm:text-4xl md:text-5xl font-black font-mono text-white tabular-nums leading-none">–</div>
-                                    </div>
-                                </div>
-                                <!-- Winner label -->
-                                <div id="wizardWinnerLabel" class="text-[11px] sm:text-xs font-mono font-bold text-amber-300 mt-0.5"></div>
-                                <!-- Swipe hint -->
-                                <div class="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] sm:text-[11px] text-slate-400 font-mono">
-                                    <span class="md:hidden">Swipe ← → or tap PREV / NEXT to navigate</span>
-                                    <span class="hidden md:inline">Use ← → arrows or keyboard to navigate</span>
                                 </div>
                             </div>
 
@@ -558,9 +504,9 @@ $isAutoLaunch = (isset($_GET['mode']) && $_GET['mode'] === 'wizard')
                             <button type="button" 
                                     id="btnSpinTb"
                                     onclick="handleTiebreakerSpin()" 
-                                    class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer">
-                                <span>🎰</span>
-                                <span id="tbSpinBtnLabel">Spin Random Total (34–54)</span>
+                                    class="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95">
+                                <span>🎲</span>
+                                <span id="tbSpinBtnLabel">Random Total (34–54)</span>
                             </button>
                             <button type="button" onclick="setTiebreakerVal(41)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">41</button>
                             <button type="button" onclick="setTiebreakerVal(47)" class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-mono">47</button>
@@ -1105,6 +1051,29 @@ window.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let isTransitioning = false;
 
+    // Pre-load all NFL team logos into browser memory cache for instant transitions
+    function preloadTeamLogos() {
+        try {
+            const logoUrls = new Set();
+            if (Array.isArray(wizardGames)) {
+                wizardGames.forEach(g => {
+                    if (g.away_logo) logoUrls.add(g.away_logo);
+                    if (g.home_logo) logoUrls.add(g.home_logo);
+                });
+            }
+            if (Array.isArray(allPylTeams)) {
+                allPylTeams.forEach(t => {
+                    if (t.logo) logoUrls.add(t.logo);
+                });
+            }
+            logoUrls.forEach(url => {
+                const img = new Image();
+                img.src = url;
+            });
+        } catch(e) {}
+    }
+    preloadTeamLogos();
+
     // -----------------------------------------------------------------
     // 2. Audio Engine (NFL Theme & PYL Soundboard)
     // -----------------------------------------------------------------
@@ -1369,22 +1338,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const wizardHomeCard = document.getElementById('wizardHomeCard');
     const wizardAwayLogo = document.getElementById('wizardAwayLogo');
     const wizardHomeLogo = document.getElementById('wizardHomeLogo');
-    const wizardAwayCheck = document.getElementById('wizardAwayCheck');
-    const wizardHomeCheck = document.getElementById('wizardHomeCheck');
+    const wizardAwayScore = document.getElementById('wizardAwayScore');
+    const wizardHomeScore = document.getElementById('wizardHomeScore');
     const wizardAwaySelectionRing = document.getElementById('wizardAwaySelectionRing');
     const wizardHomeSelectionRing = document.getElementById('wizardHomeSelectionRing');
     const wizardKickoffText = document.getElementById('wizardKickoffText');
     const wizardKickoffTextMobile = document.getElementById('wizardKickoffTextMobile');
-    const wizardLockNotice = document.getElementById('wizardLockNotice');
-
-    // Extra elements for locked overlay & side-nav
-    const wizardLockedOverlay  = document.getElementById('wizardLockedOverlay');
-    const wizardScoreAway      = document.getElementById('wizardScoreAway');
-    const wizardScoreHome      = document.getElementById('wizardScoreHome');
-    const wizardScoreAwayAbbr  = document.getElementById('wizardScoreAwayAbbr');
-    const wizardScoreHomeAbbr  = document.getElementById('wizardScoreHomeAbbr');
-    const wizardWinnerLabel    = document.getElementById('wizardWinnerLabel');
-    const wizardVsBadge        = document.getElementById('wizardVsBadge');
     const btnSideNavPrev       = document.getElementById('btnSideNavPrev');
     const btnSideNavNext       = document.getElementById('btnSideNavNext');
     const wizardCardOuter      = document.getElementById('wizardCardOuter');
@@ -1419,48 +1378,38 @@ window.addEventListener('DOMContentLoaded', () => {
         if (wizardKickoffText) wizardKickoffText.textContent = game.kickoff_formatted;
         if (wizardKickoffTextMobile) wizardKickoffTextMobile.textContent = game.kickoff_short;
 
-        // ── Locked overlay ──────────────────────────────────────────
-        if (game.is_locked) {
-            wizardLockNotice.classList.remove('hidden');
-            wizardLockedOverlay.classList.remove('hidden');
+        // Scores centered directly over logos for played games
+        const as = game.away_score;
+        const hs = game.home_score;
+        const hasScores = (as !== null && as !== undefined && as !== '') || (hs !== null && hs !== undefined && hs !== '');
 
-            // Team abbreviations
-            if (wizardScoreAwayAbbr) wizardScoreAwayAbbr.textContent = game.away_team;
-            if (wizardScoreHomeAbbr) wizardScoreHomeAbbr.textContent = game.home_team;
-
-            // Scores (null if not yet available)
-            const as = game.away_score;
-            const hs = game.home_score;
-            if (wizardScoreAway) wizardScoreAway.textContent = (as !== null && as !== undefined) ? as : '–';
-            if (wizardScoreHome) wizardScoreHome.textContent = (hs !== null && hs !== undefined) ? hs : '–';
-
-            // Winner label
-            if (wizardWinnerLabel) {
-                if (as !== null && hs !== null && as !== undefined && hs !== undefined) {
-                    const winner = as > hs ? game.away_team : (hs > as ? game.home_team : null);
-                    wizardWinnerLabel.textContent = winner ? `${winner} wins` : 'Tie';
-                } else if (game.winning_team) {
-                    wizardWinnerLabel.textContent = `${game.winning_team} wins`;
-                } else {
-                    wizardWinnerLabel.textContent = 'In Progress';
-                }
+        if (hasScores) {
+            if (wizardAwayScore) {
+                wizardAwayScore.textContent = (as !== null && as !== undefined) ? as : '–';
+                wizardAwayScore.classList.remove('hidden');
             }
+            if (wizardHomeScore) {
+                wizardHomeScore.textContent = (hs !== null && hs !== undefined) ? hs : '–';
+                wizardHomeScore.classList.remove('hidden');
+            }
+            wizardAwayLogo.style.opacity = '0.30';
+            wizardHomeLogo.style.opacity = '0.30';
+        } else {
+            if (wizardAwayScore) wizardAwayScore.classList.add('hidden');
+            if (wizardHomeScore) wizardHomeScore.classList.add('hidden');
+            wizardAwayLogo.style.opacity = '1';
+            wizardHomeLogo.style.opacity = '1';
+        }
 
-            // Dim the team panels so the overlay pops
-            wizardAwayCard.style.filter = 'brightness(0.45)';
-            wizardHomeCard.style.filter = 'brightness(0.45)';
+        if (game.is_locked) {
             wizardAwayCard.style.cursor = 'default';
             wizardHomeCard.style.cursor = 'default';
         } else {
-            wizardLockNotice.classList.add('hidden');
-            wizardLockedOverlay.classList.add('hidden');
-            wizardAwayCard.style.filter = '';
-            wizardHomeCard.style.filter = '';
             wizardAwayCard.style.cursor = '';
             wizardHomeCard.style.cursor = '';
         }
 
-        // Selection state (checkmarks / rings)
+        // Selection state (yellow borders only, no corner checkmarks)
         updateCardSelectionState(game.user_pick);
 
         // PREV/NEXT footer buttons
@@ -1478,8 +1427,6 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateCardSelectionState(userPick) {
         const game = wizardGames[currentIndex];
 
-        wizardAwayCheck.classList.add('scale-0', 'opacity-0');
-        wizardHomeCheck.classList.add('scale-0', 'opacity-0');
         if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.add('opacity-0');
         if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.add('opacity-0');
 
@@ -1488,11 +1435,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (!game.is_locked) {
             if (userPick === game.away_team) {
-                wizardAwayCheck.classList.remove('scale-0', 'opacity-0');
                 if (wizardAwaySelectionRing) wizardAwaySelectionRing.classList.remove('opacity-0');
                 wizardHomeCard.classList.add('opacity-40');
             } else if (userPick === game.home_team) {
-                wizardHomeCheck.classList.remove('scale-0', 'opacity-0');
                 if (wizardHomeSelectionRing) wizardHomeSelectionRing.classList.remove('opacity-0');
                 wizardAwayCard.classList.add('opacity-40');
             }
@@ -1524,7 +1469,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             ? 'bg-slate-700/80 hover:bg-slate-600 text-slate-400 border border-slate-600 line-through'
                             : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'))
             }`;
-            bubble.innerHTML = isPicked && !isCurrent ? `${idx + 1}✓` : `${idx + 1}`;
+            bubble.innerHTML = `${idx + 1}`;
             bubble.title = isLocked ? `Game ${idx + 1} — Locked` : `Game ${idx + 1}`;
             bubble.onclick = () => {
                 currentIndex = idx;
@@ -1673,27 +1618,9 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     window.handleTiebreakerSpin = function() {
-        const btn = document.getElementById('btnSpinTb');
-        const label = document.getElementById('tbSpinBtnLabel');
-
-        if (!isTbSpinning) {
-            // Start spinning
-            isTbSpinning = true;
-            if (label) label.textContent = 'STOP / Settle Score';
-            if (btn) btn.className = 'px-4 py-2 rounded-xl bg-red-500/30 hover:bg-red-500/40 text-red-300 border border-red-500/50 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer animate-pulse';
-
-            tbSpinInterval = setInterval(() => {
-                tbInput.value = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
-            }, 60);
-        } else {
-            // Stop spinning and settle
-            clearInterval(tbSpinInterval);
-            isTbSpinning = false;
-            const finalScore = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
-            setTiebreakerVal(finalScore);
-            if (label) label.textContent = 'Spin Random Total (34–54)';
-            if (btn) btn.className = 'px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer';
-        }
+        playPickSound();
+        const randomScore = Math.floor(Math.random() * (54 - 34 + 1)) + 34;
+        setTiebreakerVal(randomScore);
     };
 
     function saveTiebreaker(points) {
